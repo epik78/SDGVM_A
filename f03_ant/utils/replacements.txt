@@ -1,0 +1,37 @@
+# sed -f replacements.txt < sdgvm.txt
+s/\(^ *\)if\|IF *\((.*)\) *\(THEN\|then\)/\1if \2 then/g
+s/\(^ *\)PROGRAM/\1program/g
+s/\(^ *\)END PROGRAM/\1end program/g
+s/\(^ *\)FUNCTION/\1function/g
+s/\(^ *\)END FUNCTION/\1end function/g
+s/\(^ *\)END/\1end/g
+s/\(^ *\)DO/\1do/g
+s/\(^ *\)ENDDO/\1enddo/g
+s/\(^ *\)IF/\1if/g
+s/\(^ *\)ENDIF/\1endif/g
+s/\(^ *\)ELSEIF/\1elseif/g
+s/\(^ *\)EXIT/\1exit/g
+s/\(^ *\)STOP/\1stop/g
+s/\(^ *\)OPEN/\1open/g
+s/\(^ *\)CLOSE/\1close/g
+s/\(^ *\)PRINT/\1print/g
+s/\(^ *\)WRITE/\1write/g
+s/\(^ *\)SELECT/\1select/g
+s/\(^ *\)TYPE/\1TYPE/g
+s/\(^ *\)CLASS/\1class/g
+s/\.OR\./\.or\./g
+s/\.NOT\./\.not\./g
+s/\.AND\./\.and\./g
+s/\.GT\.\|\.gt\./>/g
+s/\.GE\.\|\.ge\./>=/g
+s/\.LT\.\|\.lt\./</g
+s/\.LE\.\|\.le\./<=/g
+s/\.EQ\.\|\.eq\./==/g
+s/\.NE\.\|\.ne\./\/=/g
+s/!\-\-\-\-\-\-\-\-\+!/!----------------------------------------------------------------------!/g
+s/\(^ *\)INTEGER\|integer +[a-zA-Z]/\1integer ::/g
+s/\(^ *\)REAL\|real +[a-zA-Z]/\1real ::/g
+s/\(^ *\)CHARACTER\|character +[a-zA-Z]/\1character ::/g
+s/\(^ *\)LOGICAL\|logical +[a-zA-Z]/\1logical ::/g
+s/\(^ *\)DOUBLE PRECISION\|double precision +[a-zA-Z]/\1double precision ::/g
+

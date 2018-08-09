@@ -1,0 +1,48 @@
+The data in the input file is split into sections. The sections are defined by xml style tags ie opening tag <dirs> 
+followed by a matching closing tag </dirs>. 
+
+Outside of a section all content is ignored.
+Within a section blank lines and anything following a '!' is ignored
+
+In each section the corresponding parameters can be set as the parameter name followed by the parameter value or values, 
+the name and value are seperated by two colons eg
+
+<dirs>
+  climate :: ../../data/cru
+  land_use :: ../../data/landuse
+</dirs>
+
+Each section corresponds to a derived type which is defined in the 'input_methods' module.
+The parameters are data members of these derived types. So to add a new section a new derived 
+type must be defined, and to add a new parameter a new data member must be defined.
+Read methods for each parameter must be defined in the set_input_parameters subroutine which 
+can be found in the 'input_methods' module. A double layered nested case structure is employed to select 
+the correct read method, the first layer spans the sections and the second spans the 
+parameters.
+
+To add a new tag say 'xxx':
+  1, define a new type with parameters (at the start of the module)
+type xxx
+  integer :: y
+  character :: z
+end type xxx
+
+  2, add the type to the 'input' type
+type input
+  type(xxx) :: xxx
+  ...
+end type input
+
+  3, add a read method in 'set_input_parameters', and declare the new variables
+case ('run')
+  select case (trim(param_name))
+    case ('y')
+      read(param_values,'(a)') this%xxx%y
+    case ('z')
+      read(param_values,'(a)') this%xxx%z
+    case default	
+      write(*,*) 'Error in case xxx!!!'
+      write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
+      write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+      stop
+  end select
