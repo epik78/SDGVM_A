@@ -260,7 +260,7 @@ sum = 0.0
 eff_dec = 0.75
 eff_age = 90.0
 !DO i=1,leafls
-!  IF (i.LE.eff_age) THEN
+!  IF (i<=eff_age) THEN
 !    eff = 1.0
 !  ELSE
 !    eff = eff_dec + real(leafls - i)*(1.0 - eff_dec)/(real(leafls) - &
@@ -270,11 +270,11 @@ eff_age = 90.0
 !  sum = sum + leafv(i)
 !ENDDO
 
-!IF (abs(sum-rlai).gt.0.001) THEN
+!IF (abs(sum-rlai)>0.001) THEN
 !  WRITE(*,*) 'leafv not = rlai ',SUM,RLAI,mnth,day,nppstore
 !  STOP
 !ENDIF
-!IF (sum.GT.0.0) THEN
+!IF (sum>0.0) THEN
 !  npp_eff = npp_eff/sum
 !ELSE
 !  npp_eff = 0.0
@@ -313,7 +313,7 @@ pet = eemm
 pet2 = pet
 
 !----------------------------------------------------------------------!
-! Set switch 'stseas' to find when a new growing season has started.   *
+! Set switch 'stseas' to find when a new growing season has started.   !
 ! 'stseas = 1' for the first day of a new growing season.              !
 !----------------------------------------------------------------------!
 

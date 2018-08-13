@@ -175,6 +175,7 @@ end type Output
 type, private :: Sites
   logical :: create_land_sites_only = .false.
   logical :: n_range_argument = .false.
+  logical :: filename_argument = .false.
   character(len=str_len) :: style
   integer :: n = 0
   integer :: site0 = 1
@@ -207,7 +208,9 @@ type(Input) :: inp
 
 contains
   
+!**********************************************************************!
   subroutine read_input_file(this,input_filename)
+!**********************************************************************!
     class(input) :: this
     character(len=*) :: input_filename
     character(len=str_len) :: open_tag,close_tag,param_name
@@ -216,6 +219,7 @@ contains
     character(len=str_len),dimension(max_pftps) :: tag_list
     integer :: param_or_closing_tag,iostatus
     integer, parameter :: nTags = 8
+!----------------------------------------------------------------------!
     tag_list(1) = 'dirs'
     tag_list(2) = 'pft'
     tag_list(3) = 'pft_mapping'
@@ -226,7 +230,12 @@ contains
     tag_list(8) = 'land_use'
 
     open(11,file=input_filename,status='old',iostat=kode)
-    
+    if (kode/=0) then
+      write(*,'(''Input file does not exist'')')
+      write(*,*) trim(input_filename)
+      stop
+    endif
+
 ! Loop through the tags
     do    
       call find_next_open_tag(open_tag,iostatus)
@@ -252,8 +261,9 @@ contains
 
 
 
-
+!**********************************************************************!
   subroutine set_input_parameters(this,tag,param_name,param_values)
+!**********************************************************************!
   class(input) :: this
   character(len=str_len) :: tag,param_name
   character(len=str_len) :: param_values
@@ -264,6 +274,7 @@ contains
   character(len=str_len), dimension(max_pftps), save :: pfttag
   integer, save :: pftn = 0, nlist = 0
   logical :: match
+!----------------------------------------------------------------------!
   
   select case (trim(tag))
     case ('land_use')
@@ -321,8 +332,11 @@ contains
         case('res')
           read(param_values,*) this%sites%res
         case('filename')
-          read(param_values,'(a)') this%sites%filename
-
+          if (trim(param_values)=='ARGUMENT') then
+            this%sites%filename_argument = .true.
+          else
+            read(param_values,'(a)') this%sites%filename
+          endif
         case default    
           write(*,*) 'Error in case sites!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
@@ -1188,18 +1202,18 @@ contains
           read(param_values,*) this%run%no_soil_water_limitation
         case('cstype')
           read(param_values,*) i
-          if (i.ge.10) then
+          if (i>=10) then
             this%run%cstype = int(real(i)/10.0)
             i = i - 10*this%run%cstype
           endif
-          if (i.gt.-1)  this%run%ncalc_type = i 
+          if (i>-1)  this%run%ncalc_type = i 
         case('ttype')
           read(param_values,*) i
-          if (i.ge.10) then
+          if (i>=10) then
             this%run%ttype = int(real(i)/10.0)
             i = i - 10*this%run%ttype
           endif
-          if (i.gt.-1)  this%run%vcmax_type = i
+          if (i>-1)  this%run%vcmax_type = i
         case('soilp_map')
           read(param_values,*) this%run%soilp_map
         case('gs_func')
@@ -1302,9 +1316,12 @@ contains
   
   
   
+!**********************************************************************!
   function nfields(text)
+!**********************************************************************!
   character(len=*) :: text
   integer :: nfields,nwords,pos,i 
+!----------------------------------------------------------------------!
 
   pos = 1 
   nfields = 0
@@ -1318,18 +1335,22 @@ contains
     if (i == 0) exit             !-- No blank found. 
     pos = pos + i - 1            !-- Move to the blank. 
   enddo
+
   end function nfields
   
   
   
   
   
+!**********************************************************************!
   subroutine read_tag_parameter(param_name,param_values,tag,param_or_closing_tag)
+!**********************************************************************!
   character(len=str_len) :: line
   character(len=str_len) :: param_name,tag
   character(len=str_len) :: param_values
   integer :: param_or_closing_tag,iostatus
   integer :: ii
+!----------------------------------------------------------------------!
 
   do
     read(11,'(a)',iostat=iostatus) line
@@ -1385,12 +1406,15 @@ contains
   
   
   
+!**********************************************************************!
   function check_tag_exists(tag,nTags,tag_list) result(check)
+!**********************************************************************!
     character(len=str_len) :: tag
     character(len=str_len),dimension(max_pftps) :: tag_list
     integer :: nTags,leq,i
     logical :: check
-    
+!----------------------------------------------------------------------!
+
     check = .false.
     do i=1,nTags
       if (tag == tag_list(i)) check = .true.
@@ -1399,11 +1423,14 @@ contains
   
   
   
+!**********************************************************************!
   subroutine find_next_open_tag(tag,iostatus)
+!**********************************************************************!
     character(len=str_len) :: line
     character(len=str_len) :: tag
     integer :: iostatus,ii
-    
+!----------------------------------------------------------------------!
+   
     do
       read(11,'(a)',iostat=iostatus) line
       if (iostatus /= 0) exit

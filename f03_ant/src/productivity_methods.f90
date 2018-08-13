@@ -75,7 +75,7 @@ integer :: s070607
 logical :: gold,hw_j
 !----------------------------------------------------------------------!
 
-      if ((day.eq.100).and.(mnth.eq.1).and.(year.eq.1902)) stop
+      if ((day==100).and.(mnth==1).and.(year==1902)) stop
 !      print*
 !      print'(3i5,2f10.5)',year,mnth,day,soil2g,rlai
 !      print*,'age in nppstore',ssv(ssp%cohort)%age
@@ -124,7 +124,7 @@ tk = 273.0 + t
 
 suma = 0.0
 sumd = 0.0
-if(inp%run%vcmax_type.ne.9) then
+if(inp%run%vcmax_type/=9) then
   vcmax = 0.0
   jmax  = 0.0
 endif
@@ -171,7 +171,7 @@ kc  = exp(35.8 - 80.5/(0.00831*tk))
 ko  = exp(9.6 - 14.51/(0.00831*tk))*1000.0
 tau = exp(-3.949 + 28.99/(0.00831*tk))
 
-! changed by Ghislain 08/10/03      IF (rlai.GT.0.1) THEN
+! changed by Ghislain 08/10/03      IF (rlai>0.1) THEN
 q = qdiff + qdirect
 
 ! if there are light and leaves - calculate canopy properties 
@@ -203,13 +203,13 @@ if ((rlai>0.1).and.(q>0.0)) then
   if (nupw<0.0) nupw = 0.0
 
 ! Nitrogen multiplier.
-  IF(pft(ft)%phen.NE.3) THEN
+  if(pft(ft)%phen/=3) THEN
     nmult = soiln*tgp%p_nu4
     if (nmult>=1.0)  nmult = 1.0
   ELSE
 ! nmult = soiln*tgp%p_nu4
     nmult=pft(ft)%fert(6)+pft(ft)%fert(1)/pft(ft)%fert(4)
-  ENDIF
+  endIF
 
 ! All the lines that lead to the calculation of mmult are not
 ! needed since its not used,variable nup is overwritten in the
@@ -231,7 +231,7 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! canopy N scaling
 !----------------------------------------------------------------------!
   k = 0.5
-  if (inp%run%cstype.eq.1)  k = 0.5*pft(ssp%cohort)%can_clump
+  if (inp%run%cstype==1)  k = 0.5*pft(ssp%cohort)%can_clump
 ! Total the Beer's Law values for each lai up to the current one.      !
   if (inp%run%s070607) then
     coeff =-0.5
@@ -245,9 +245,9 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! Total the Beer's Law values for canopy
     can_sum = 0.0
     do i=1,lai-1
-      if(inp%run%cstype.lt.2) then
+      if(inp%run%cstype<2) then
         can_sum = can_sum + exp(-k*real(i))
-      elseif (inp%run%cstype.eq.2) then
+      elseif (inp%run%cstype==2) then
 ! use light proportion to scale
         can_sum = can_sum + sum(ce_light(:,i))
       else
@@ -256,12 +256,12 @@ if ((rlai>0.1).and.(q>0.0)) then
         stop
       endif
     enddo
-    if(inp%run%cstype.lt.2) can_sum = can_sum + exp(-k*real(lai))*rem
-    if(inp%run%cstype.eq.2) can_sum = can_sum + sum(ce_light(:,lai))*rem
+    if(inp%run%cstype<2) can_sum = can_sum + exp(-k*real(lai))*rem
+    if(inp%run%cstype==2) can_sum = can_sum + sum(ce_light(:,lai))*rem
   endif
 
 !calculate maximum daily change in vcmax for LUNA model after Ali, Xu, et al 2015
-  if (inp%run%vcmax_type.eq.9) then
+  if (inp%run%vcmax_type==9) then
     max_dpchg = max_daily_pchg(sum(ce_t(:))/30.0)  
   endif
 
@@ -277,26 +277,26 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! Proportion of canopy N in the LAI layer 'lyr'
 ! - this is supposed to be proportional to the light in layer 'lyr' 
 ! but this is inconsistent with the rad scheme used by SDGVM
-      if(inp%run%cstype.lt.2) then 
+      if(inp%run%cstype<2) then 
         can(i) = exp(-k*(lyr))/can_sum
-      elseif(inp%run%cstype.eq.2) then
+      elseif(inp%run%cstype==2) then
 ! use light proportion to scale
         can(i) = sum(ce_light(:,i))/can_sum
       endif
     endif
 ! Leaf nitrogen
 !    nleaf(i) = (upt(i))*tgp%p_nleaf
-    if((i.eq.lai).and.(.not.(inp%run%s070607))) can(i) = can(i)*rem
+    if((i==lai).and.(.not.(inp%run%s070607))) can(i) = can(i)*rem
 
     upt(i) = up*can(i)
 
 !----------------------------------------------------------------------!
 ! calculate leaf N in canopy layer i
 !----------------------------------------------------------------------!
-    IF (inp%run%ncalc_type.le.1) THEN 
+    if (inp%run%ncalc_type<=1) then 
 ! default topleaf N 
       nleaf(i) = up*can(i)*tgp%p_nleaf
-    ELSEIF (inp%run%ncalc_type.eq.2) THEN
+    elseif (inp%run%ncalc_type==2) THEN
 ! based on trait regressions/specified top leaf N
 ! calculate total canopy n
        ncan     = tleaf_n*can_sum
@@ -304,14 +304,14 @@ if ((rlai>0.1).and.(q>0.0)) then
     ELSE
       write(*,*) 'ncalc_type ',inp%run%ncalc_type,' undefined. set to a value &
      &<3 in <input.dat> or define your own N calculation method'
-       STOP
-    ENDIF
+       stop
+    endIF
 
 ! this scales the bottom layer from a fractional layer to a full layer
 ! - unless total LAI is <1, in which case leaf N is assumed for a full leaf layer 
 ! calculations below this assume a full leaf layer and then scale all fluxes in lowest lai layer by rem 
     if (.not.(inp%run%s070607)) then 
-      if ((i.eq.lai).and.(lai.ne.1)) nleaf(i) = nleaf(i)/rem
+      if ((i==lai).and.(lai/=1)) nleaf(i) = nleaf(i)/rem
     endif
 
 !----------------------------------------------------------------------!
@@ -328,40 +328,40 @@ if ((rlai>0.1).and.(q>0.0)) then
 !----------------------------------------------------------------------!
 ! calculate Vcmax@25oC (vm) 
 !----------------------------------------------------------------------!
-      IF(inp%run%vcmax_type.eq.0) THEN
+      if(inp%run%vcmax_type==0) THEN
 ! default 070607 SDGVM
         vm(i) = nleaf(i)*tgp%p_vm         
 
-      ELSEIF(inp%run%vcmax_type.eq.1) THEN
+      elseif(inp%run%vcmax_type==1) THEN
 ! from Walker et al - N only
         vm(i) = exp(3.712+0.65*log(nleaf(i)))
 
 ! from Walker et al - N & P
 
-        IF(inp%run%soilp_map.eq.1) THEN
+        if(inp%run%soilp_map==1) THEN
 ! assume same change in leaf p through the canopy as leaf n
           pcan = tleaf_p*can_sum
           pleaf(i) = can(i)*pcan
           vm(i) = exp(3.946 + 0.921*log(nleaf(i)) + & 
  0.121*log(pleaf(i))+0.282*log(nleaf(i))*log(pleaf(i)))
-        ENDIF
+        endIF
 
-      ELSEIF ((inp%run%vcmax_type.eq.2).OR.(inp%run%vcmax_type.eq.3).or.(inp%run%vcmax_type.eq.5).or.(inp%run%vcmax_type.eq.6)) THEN
+      elseif ((inp%run%vcmax_type==2).or.(inp%run%vcmax_type==3).or.(inp%run%vcmax_type==5).or.(inp%run%vcmax_type==6)) THEN
 ! vcmax based on environment 
         vm(i) = env_vcmax * can(i)/can(1)
 
-      ELSEIF (inp%run%vcmax_type.eq.4) THEN
+      elseif (inp%run%vcmax_type==4) THEN
 ! specified as a PFT parameter
         vm(i) = ftvna + ftvnb*nleaf(i)
             
 ! if specified as a constant, i.e. ftvnb = 0 then scale using can
-        IF(ftvnb.lt.1d-5) vm(i) = vm(i)*can(i)/can(1)
+        if(ftvnb<1d-5) vm(i) = vm(i)*can(i)/can(1)
 
-      ELSEIF (inp%run%vcmax_type.eq.7) THEN
+      elseif (inp%run%vcmax_type==7) THEN
 ! after Maire et al 2012
             
-!       if(i.eq.1) print'(30(f6.1,1x))', ce_light(:,1) *1d6
-!       if(i.eq.1) print'(f6.1)',   sum(ce_light(:,1))/30.d0 *1d6
+!       if(i==1) print'(30(f6.1,1x))', ce_light(:,1) *1d6
+!       if(i==1) print'(f6.1)',   sum(ce_light(:,1))/30.d0 *1d6
            
 ! Jmax is simulated as a function of Vcmax 
         jfv    = .TRUE.
@@ -381,74 +381,74 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! convert to umol m-2s-1
         vm(i) = vm(i)*1e6
 
-      ELSEIF (inp%run%vcmax_type.eq.8) THEN
+      elseif (inp%run%vcmax_type==8) THEN
 ! specified as a PFT parameter but jmax specified as the Walker function of Vcmax
         vm(i) = ftvna + ftvnb*nleaf(i)
              
 ! if specified as a constant, i.e. ftvnb = 0 then scale using can
-        IF (ftvnb.lt.1e-5) vm(i) = vm(i)*can(i)/can(1)
+        if (ftvnb<1e-5) vm(i) = vm(i)*can(i)/can(1)
 
-      ELSEIF (inp%run%vcmax_type.eq.9) THEN
+      elseif (inp%run%vcmax_type==9) THEN
 ! use LUNA model after Ali, Xu, et al 2015
 
         vm(i) = vcmax(i)
         jm(i) = jmax(i)
 
-        IF (mod(day,luna_calc_days).eq.0) THEN
+        if (mod(day,luna_calc_days)==0) then
           call LUNA(i,vm(i),jm(i),PNlc(i),enzs(i),sum(ce_ga(:,i))/30.0, &
  sla,nleaf(i),sum(ce_light(:,i))/30.0,sum(ce_maxlight(:,i))/30.0, &
  ca,oi,hrs,sum(ce_rh(:))/30.0,sum(ce_t(:))/30.0, &
  gs_type,ftg0,ftg1,max_dpchg*luna_calc_days,inp%run%ttype,ftToptV,ftHaV, &
  ftHdV,ftToptJ,ftHaJ,ftHdJ)  
-        ENDIF
+        endIF
 
       ELSE
         write(*,*) 'vcmax_type:',inp%run%vcmax_type,'undefined. set to a value &
  &1-9 in <input.dat> or define your own vcmax calculation method'
-        STOP
-      ENDIF
+        stop
+      endIF
 
 !----------------------------------------------------------------------!
 ! calculate Jmax@25oC (jm) 
 !----------------------------------------------------------------------!   
-      IF ((inp%run%vcmax_type.eq.0).or.(inp%run%vcmax_type.eq.5).or.(inp%run%vcmax_type.eq.6)) THEN
+      if ((inp%run%vcmax_type==0).or.(inp%run%vcmax_type==5).or.(inp%run%vcmax_type==6)) then
 ! 070607 default - Wullschleger 1993 
         jm(i)  = (29.1 + 1.64*vm(i))
         jfv    = .TRUE.
-      ELSEIF((inp%run%vcmax_type.eq.1).or.(inp%run%vcmax_type.eq.7).or.(inp%run%vcmax_type.eq.8)) THEN
+      elseif((inp%run%vcmax_type==1).or.(inp%run%vcmax_type==7).or.(inp%run%vcmax_type==8)) THEN
 ! Walker -  only vcmax
         jm(i)  = exp(1.0+0.890*log(vm(i)))
         jfv    = .TRUE.
-      ELSEIF((inp%run%vcmax_type.eq.2).OR.(inp%run%vcmax_type.eq.3)) THEN
+      elseif((inp%run%vcmax_type==2).or.(inp%run%vcmax_type==3)) THEN
 ! from van Bodegom for TERRABITES project
 ! - not a function of vcmax 
         jm(i)  = env_jmax * can(i)/can(1)
         jfv    = .FALSE.
-      ELSEIF(inp%run%vcmax_type.eq.4) THEN
+      elseif(inp%run%vcmax_type==4) THEN
 ! specified as a PFT parameter
         jm(i)  = ftjva + ftjvb*vm(i)
         jfv    = .TRUE.
-      ELSEIF(inp%run%vcmax_type.eq.9) THEN
+      elseif(inp%run%vcmax_type==9) THEN
 ! do nothing - jmax already defined above            
         jfv    = .FALSE.
       ELSE
         write(*,*) 'vcmax_type ',inp%run%vcmax_type,' undefined. set to a value<1-9 in <input.dat>'
-        STOP
-      ENDIF
+        stop
+      endIF
 
 !----------------------------------------------------------------------!
 ! Always set C4 vcmax and PEPC (hijacking the jmax variable) from van Bodegom trait environment
 ! relationships or mean. 
 ! currently assumes same canopy and temp scaling and age reduction as C3 
 !----------------------------------------------------------------------!
-      IF (c3.NE.1) THEN
+      if (c3/=1) then
         vm(i) = env_vcmax * can(i)/can(1)
         jm(i) = env_jmax  * can(i)/can(1)
         jfv   = .FALSE.
-      ENDIF
+      endIF
 
 ! temperature scale Vcmax & Jmax
-!     if(inp%run%vcmax_type.le.6) then
+!     if(inp%run%vcmax_type<=6) then
       vmx(i) = vm(i)*T_SCALAR(t,'v',inp%run%ttype,ftToptV,ftHaV,ftHdV,sum(ce_t(:))/30.0,jfv)
       jmx(i) = jm(i)*T_SCALAR(t,'j',inp%run%ttype,ftToptJ,ftHaJ,ftHdJ,sum(ce_t(:))/30.0,jfv)
 
@@ -511,7 +511,7 @@ if ((rlai>0.1).and.(q>0.0)) then
 !----------------------------------------------------------------------!
     else
 
-      if (subd_par.eq.0) then
+      if (subd_par==0) then
         CALL GOUDRIAANSLAW_ANT(lyr-0.5,rlai,qdirect,qdiff, &
  fsunlit(i),qsunlit(i), fshade(i),qshade(i),can_clump,cos_zen,inp%run%s070607)
 
@@ -521,7 +521,7 @@ if ((rlai>0.1).and.(q>0.0)) then
       endif
 
 ! LUNA model has a term that reduces Vcmax during drought and periods of stress 
-      if (inp%run%vcmax_type.eq.9) then
+      if (inp%run%vcmax_type==9) then
         vm(i) = vcmax(i)
         jm(i) = jmax(i)
 
@@ -548,8 +548,8 @@ if ((rlai>0.1).and.(q>0.0)) then
     endif
 
 ! leaf respiration - nighttime 
-    if ((inp%run%vcmax_type.eq.2).or.(inp%run%vcmax_type.eq.3).or.(inp%run%vcmax_type.eq.5).or. &
- (inp%run%vcmax_type.eq.6).or.(inp%run%vcmax_type.eq.7) ) then
+    if ((inp%run%vcmax_type==2).or.(inp%run%vcmax_type==3).or.(inp%run%vcmax_type==5).or. &
+ (inp%run%vcmax_type==6).or.(inp%run%vcmax_type==7) ) then
 ! these vcmax types assume no leaf N and that day AND night leaf resp = f(vcmax)
       nleaf(i) = 0.0
       nleaf_sum= 0.0
@@ -560,13 +560,13 @@ if ((rlai>0.1).and.(q>0.0)) then
     drespt(i) = dresp(i)         ! I'm not sure what drespt does - nothing I think
 
 ! sum to get canopy N & Respiration
-    IF (i.LT.lai) THEN
+    if (i<lai) then
       nleaf_sum = nleaf_sum + nleaf(i)
       canres    = canres + dresp(i)
     ELSE
       nleaf_sum = nleaf_sum + nleaf(i)*rem
       canres    = canres + dresp(i)*rem
-    ENDIF
+    endIF
 
 ! initial LAI loop
   enddo
@@ -574,7 +574,7 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! else there is no light or leaves
 else
 
-  if (inp%run%vcmax_type.eq.9) then
+  if (inp%run%vcmax_type==9) then
 ! LUNA model retains the final value of vcmax pre total leaf-loss to initialise the following year
     vm(:)     = vcmax(:) 
     jm(:)     = jmax(:)
@@ -642,10 +642,10 @@ if (rlai>0.1) then
 ! this needs attention, this is not right to use canga divided by lai
     ga = canga/(8.3144*tk/p)/rlai
 
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
 !subd_par if statement mean daily PAR or downscaled sub-daily PAR 
 ! - if a daily mean PAR is used (SDGVM default) use above calculated PAR values
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
   if (.not.(inp%run%subdaily)) then
 
     do i=1,lai
@@ -662,9 +662,9 @@ if (rlai>0.1) then
     enddo
 
   else
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
 ! scaling factor for integration of subdaily variability 
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
     sd_scale(:) = 1.0
     sd_scale(1) = 2.0
     sd_scale(par_loops+1) = 2.0
@@ -700,7 +700,7 @@ if (rlai>0.1) then
 
 ! At dawn assume diffuse light is 5 umol/m2/s and cos_zen a fraction above zero
       if (qdirect_sd + qdiff_sd<5.0e-6)  qdiff_sd = 5.0e-6  
-      if (cos_zen.le.0.0)  cos_zen  = cos(3.141/2)
+      if (cos_zen<=0.0)  cos_zen  = cos(3.141/2)
 
       do i=1,lai
         ssp%lai = i
@@ -734,9 +734,9 @@ if (rlai>0.1) then
       qdiff      =  qdiff      + qdiff_sd      / sd_scale(ii)  
 
       if (ii==1) maxlight(:) = fsunlit_sd(:)*qsunlit_sd(:) + fshade_sd(:)*qshade_sd(:)
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
 ! End of sub-daily loop
-!------------------------------------------------------------------------!
+!----------------------------------------------------------------------!
     enddo
 
     a       =  a        * sd_scale2  
@@ -788,8 +788,8 @@ can2a = 0.0
 can2g = 0.0
 canrd = 0.0
 apar  = 0.0
-DO i=1,lai
-  IF (i.LT.lai) THEN
+do i=1,lai
+  if (i<lai) then
     can2a = can2a + a(i)
     can2g = can2g + gs(i)
     canrd = canrd + rd(i)
@@ -799,8 +799,8 @@ DO i=1,lai
     can2g = can2g + gs(i)*rem
     canrd = canrd + rd(i)*rem
     apar  = apar + rem*(fsunlit(i)*qsunlit(i)+fshade(i)*qshade(i))
-  ENDIF
-ENDDO
+  endIF
+endDO
 
 ! calculate fapar
 fpr    = apar/(qdiff+qdirect)
@@ -813,7 +813,7 @@ tci    = ci(1)
 !----------------------------------------------------------------------!
 ! Cumulate daily assimilation of the last lai layer, 'suma'.           !
 !----------------------------------------------------------------------!
-IF (lai.GT.1) THEN
+if (lai>1) then
   suma = suma + (rem*a(lai) + (1.0 - rem)*a(lai - 1))* &
  3600.0*hrs - (rem*dresp(lai) + (1.0 - rem)*dresp(lai - 1))*3600.0*(24.0 - hrs)
   sumd = sumd + (rem*dresp(lai) + (1.0 - rem)*dresp(lai - 1))*3600.0*(24.0 - hrs)
@@ -822,7 +822,7 @@ ELSE
 !3600.0*(24.0 - hrs)
   sumd = sumd + rem*dresp(lai)*3600.0*(24.0 - hrs)
   suma = 0.0
-ENDIF
+endIF
 
 
 if (lai>1) then
@@ -876,7 +876,7 @@ end subroutine nppcalc
 !                                                                      !
 ! SUBROUTINE assj2(a,w,pc,gs,po,pa,j,g0,g1,rh,kg,tau,rd,acheck)        !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine assj2(a,w,pc,gs,po,pa,j,g0,g1,rh,kg,tau,rd,acheck)
 !**********************************************************************!
 real(dp) :: a,w,pc,gs,po,pa,j,g0,g1,rh,kg,tau,rd,acheck,r2q3,arg1, &
@@ -895,7 +895,7 @@ cx = 4.0*pa*kg*tau*g1*rh - 640.0*pa*tau + 4.0*po*kg*g1*rh
 dx = 4.0*pa**2.0*kg*tau*g0 + 4.0*po*kg*g0*pa
 
 !----------------------------------------------------------------------!
-! 'ex,fx,gx,hx' are such that '0.5po/(taupc)-1=(exa+fx)/(gxa+hx)'.     *
+! 'ex,fx,gx,hx' are such that '0.5po/(taupc)-1=(exa+fx)/(gxa+hx)'.     !
 !----------------------------------------------------------------------!
 ex =-tau*pa*kg*g1*rh + 160.0*tau*pa + 0.5*po*kg*g1*rh
 fx =-tau*pa**2.0*kg*g0 + 0.5*po*kg*g0*pa
@@ -949,9 +949,7 @@ pc = pa - a*160.0/gs
 w = j*pc/4.0/(pc + po/tau)
 acheck = (w*(1.0 - 0.5*po/(tau*pc)) - rd)*sc
 
-!**********************************************************************!
 end subroutine assj2
-!**********************************************************************!
 
 
 
@@ -967,7 +965,7 @@ end subroutine assj2
 !                                                                      !
 ! SUBROUTINE xamax(a,xt,oi,vmx,rd,j,dresp,pc)                          !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine xamax(a,xt,oi,vmx,rd,j,dresp,pc)
 !**********************************************************************!
 real(dp) :: a,xt,oi,vmx,rd,j,dresp,pc,t,tk,c1,c2,kc,ko,tau,tpav,tpwv,&
@@ -990,7 +988,7 @@ ko = exp(9.6 - 14.51/(0.00831*tk))*1000.0
 tau = exp(-3.949 + 28.99/(0.00831*tk))
 
 !      rht = rh
-!      IF (kg*c2*rh.LT.170.0)  rht = 170.0/(kg*c2)
+!      IF (kg*c2*rh<170.0)  rht = 170.0/(kg*c2)
 !      CALL ASSVMAX(tpav,tpwv,tppcv,tpgsv,oi,ca,vmx,c1,c2,
 !     &rht,ko,kc,kg,tau,rd,acheck)
 !      CALL ASSJ(tpaj,tpwj,tppcj,tpgsj,oi,ca,j,c1,c2,rht,
@@ -1009,9 +1007,7 @@ else
 endif
 if (A<-dresp)  A =-dresp
 
-!**********************************************************************!
 end subroutine xamax
-!**********************************************************************!
 
 
 
@@ -1037,7 +1033,7 @@ end subroutine xamax
 ! SUBROUTINE assc42(a,w,pc,gs,po,pa,vmax,g0,g1,rh,kg,tau,rd,t,qg,      !
 ! acheck,up)                                                           !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine assc42(a,w,pc,gs,po,pa,vmax,g0,g1,rh,kg,tau,rd,t,qg,acheck,&
  up)
 !**********************************************************************!
@@ -1181,9 +1177,7 @@ if (av<a) then
   pc = pa - a*160.0/gs
 endif
 
-!**********************************************************************!
 end subroutine assc42
-!**********************************************************************!
 
 
 
@@ -1199,7 +1193,7 @@ end subroutine assc42
 !                                                                      !
 ! SUBROUTINE xvjmax(vmx,jmx,j,xt,xq,sum,nup,oi,dresp)                  !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine xvjmax(vmx,jmx,j,xt,xq,sum,nup,oi,dresp)
 !**********************************************************************!
 real(dp) :: vmx,jmx,j,xt,xq,sum,nup,oi,tk,shapex,maxx,conv,cc,ea,num,&
@@ -1262,9 +1256,7 @@ endif
 irc = q*exp(-0.5)
 j = 0.24*irc/(1.0 + (0.24**2)*(irc**2)/(jmx**2))**0.5
 
-!**********************************************************************!
 end subroutine xvjmax
-!**********************************************************************!
 
 
 
@@ -1280,7 +1272,7 @@ end subroutine xvjmax
 !                                                                      !
 ! SUBROUTINE jcalc(q,jmx,fw1984,j)                                     !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine jcalc(q,jmx,fw1984,j)
 !**********************************************************************!
 real(dp) :: q,jmx,j,I2,qa,qb,qc
@@ -1305,9 +1297,7 @@ else
   j  = (qb - (qb**2.0 - 4.0*qa*qc)**0.5)/(2.0*qa)
 endif
 
-!**********************************************************************!
 end subroutine jcalc
-!**********************************************************************!
 
 
 
@@ -1315,10 +1305,10 @@ end subroutine jcalc
 
 !**********************************************************************!
 ! Brent solver from wikipedia
-!**********************************************************************!
+!----------------------------------------------------------------------!
 function brent_solver(func,i1,i2,oi,ca,vmx,j,rh,kg,rd,ga,t,p,gs_func, &
  g0,g1,dv,i,ci,light,ttype,ftToptV,ftHaV,ftHdV,ftToptJ,ftHaJ,ftHdJ,tmonth,jfv) 
-
+!**********************************************************************!
 real(dp) :: brent_solver,i1,i2,errortol
 real(dp) :: a,b,c,d,s,fa,fb,fc,fs,tmp,tmp2,fa00
 real(dp) :: fassv,fassj
@@ -1327,6 +1317,7 @@ real(dp) :: oi,ca,rh,rd,vmx,j,p,ga,dv,t,cs,kg,g0,g1,ci,light
 real(dp) :: kc,ko,tau,km,gstar,vt,jt,alp
 integer :: func,gs_func,i,n,farq_pars_func,ttype
 logical :: mflag,done,jfv
+!**********************************************************************!
 
 ! Error tolerance umol m-2 s-1
 errortol = 1.0e-3
@@ -1342,7 +1333,7 @@ gstar = 0.5*oi/tau
 ! initial guess  
 a  = i1
 b  = i2
-! if (func.eq.0) then
+! if (func==0) then
 ! Error tolerance mol m-2 s-1
 errortol = 1.0e-7
 ! vcmax25 & jmax25 to leaf t scalar 
@@ -1351,19 +1342,19 @@ jt = T_SCALAR(tmonth,'j',ttype,ftToptJ,ftHaJ,ftHdJ,tmonth,jfv)
 
 fa = VCMAX_MAIRE(a,vt,jt,ci,km,gstar,alp,light,farq_pars_func,i)
 fb = VCMAX_MAIRE(b,vt,jt,ci,km,gstar,alp,light,farq_pars_func,i)
-!      elseif (func.eq.1) then
+!      elseif (func==1) then
 !        fa = a -FASSV(a,gstar,km,ca,vmx,kg,rd,ga,t,p,gs_func,g0,g1,dv,i)
 !        fb = b -FASSV(b,gstar,km,ca,vmx,kg,rd,ga,t,p,gs_func,g0,g1,dv,0)
-!        if(fa.ge.0.d0) then
+!        if(fa>=0.d0) then
 !          ! in this case rd is greater than gross a 
 !          ! therefore assume a = 0 and anet = rd i
 !          b = 0.d0
 !          done = .true.
 !        endif
-!      elseif(func.eq.2) then
+!      elseif(func==2) then
 !        fa = a - FASSJ(a,gstar,ca,kg,rd,ga,t,p,j,gs_func,g0,g1,dv,i)
 !        fb = b - FASSJ(b,gstar,ca,kg,rd,ga,t,p,j,gs_func,g0,g1,dv,0)
-!        if(fa.ge.0.d0) then
+!        if(fa>=0.d0) then
 !          ! in this case rd is greater than gross a 
 !          ! therefore assume a = 0 and anet = rd i
 !          b = 0.d0
@@ -1374,14 +1365,14 @@ fb = VCMAX_MAIRE(b,vt,jt,ci,km,gstar,alp,light,farq_pars_func,i)
 !      endif
       
 fa00 = fa 
-! if(i.eq.1) print*, i,fa,fb
+! if(i==1) print*, i,fa,fb
 ! if f(a) f(b) >= 0 then error-exit
-if ((.not.done).and.(fa*fb.ge.0).and.(func.gt.0)) then
+if ((.not.done).and.(fa*fb>=0).and.(func>0)) then
   write(*,*) 'f(a) and f(b) do not span 0'
   write(*,*) 'a =',a,'fa =',fa,'b =',b,'fb =',fb
   write(*,*) 'solver function:', func 
   stop
-elseif ((.not.done).and.(abs(fa).lt.abs(fb))) then
+elseif ((.not.done).and.(abs(fa)<abs(fb))) then
 ! if |f(a)| < |f(b)| then swap (a,b) end if
   tmp = a
   a   = b
@@ -1397,9 +1388,9 @@ mflag = .TRUE.
  
 n = 0 
 do 
-  if(done.or.(fb.eq.0.0).or.(fs.eq.0.0).or.(abs(b-a).lt.errortol)) exit 
+  if(done.or.(fb==0.0).or.(fs==0.0).or.(abs(b-a)<errortol)) exit 
 
-  if((fa.ne.fc).and.(fb.ne.fc)) then
+  if((fa/=fc).and.(fb/=fc)) then
 ! Inverse quadratic interpolation
     s = a*fb*fc/(fa - fb)/(fa - fc) + b*fa*fc/ &
  (fb - fa)/(fb - fc) + c*fa*fb/(fc - fa)/(fc - fb)
@@ -1409,11 +1400,11 @@ do
   endif
 
   tmp2 = (3.0*a + b)/4.0
-  if((.not.(((s.gt.tmp2).and.(s.lt.b)).or.((s.lt.tmp2).and.(s.gt.b)))).or. &
- (mflag.and.(abs(s - b).ge.(abs(b - c)/2.0))).or. &
- (.not.mflag.and.(abs(s - b).ge.(abs(c - d)/2.0))).or. &
- (mflag.and.(abs(b - c).lt.errorTol)).or. &
- (.not.mflag.and.(abs(c - d).lt.errorTol))) then
+  if((.not.(((s>tmp2).and.(s<b)).or.((s<tmp2).and.(s>b)))).or. &
+ (mflag.and.(abs(s - b)>=(abs(b - c)/2.0))).or. &
+ (.not.mflag.and.(abs(s - b)>=(abs(c - d)/2.0))).or. &
+ (mflag.and.(abs(b - c)<errorTol)).or. &
+ (.not.mflag.and.(abs(c - d)<errorTol))) then
     s = (a + b)/2.0
     mflag = .TRUE.
   else
@@ -1423,18 +1414,18 @@ do
 ! calculates a new value based on functions is the new value 
 ! fs = function(s)
     
-!  if (func.eq.0) then
+!  if (func==0) then
   fs = VCMAX_MAIRE(s,vt,jt,ci,km,gstar,alp,light,farq_pars_func,i)
-!  elseif (func.eq.1) then
+!  elseif (func==1) then
 !    fs=s-FASSV(s,gstar,km,ca,vmx,kg,rd,ga,t,p,gs_func,g0,g1,dv,0)
-!  elseif(func.eq.2) then
+!  elseif(func==2) then
 !    fs = s - FASSJ(s,gstar,ca,kg,rd,ga,t,p,j,gs_func,g0,g1,dv,0)
 !  endif  
 
   d  = c
   c  = b
   fc = fb
-  if ((fa * fs).lt.0) then
+  if ((fa * fs)<0) then
     b  = s
     fb = fs
   else
@@ -1443,7 +1434,7 @@ do
   endif 
 
 ! if |f(a)| < |f(b)| then swap (a,b)
-  if (abs(fa).lt.abs(fb)) then
+  if (abs(fa)<abs(fb)) then
     tmp = a
     a   = b
     b   = tmp
@@ -1464,21 +1455,22 @@ end function brent_solver
 
 
 
-!----------------------------------------------------------------------*
-!                                                                      *
-!                          FUNCTION MAIRE VCMAX                        *
-!                          ********************                        *
-!     Gives vcmax AT LEAF TEMPERATURE  in mol m-2 s-1                  *  
-!     Calculate vcmax that satisfies the condition that Wc = Wj        *
-!     under the past months environmental conditions                   *
-!     see Maire et al 2012 PLoS ONE                                    *
-!                                                                      *
-!----------------------------------------------------------------------*
+!**********************************************************************!
+!                                                                      !
+!                          FUNCTION MAIRE VCMAX                        !
+!                          ********************                        !
+!     Gives vcmax AT LEAF TEMPERATURE  in mol m-2 s-1                  !  
+!     Calculate vcmax that satisfies the condition that Wc = Wj        !
+!     under the past months environmental conditions                   !
+!     see Maire et al 2012 PLoS ONE                                    !
+!                                                                      !
+!----------------------------------------------------------------------!
 function VCMAX_MAIRE(vm,vt,jt,ci,km,gstar,alpha,light,farq_pars_func,i)
-  
+!**********************************************************************!
 real(dp) :: vcmax_maire,t,ci,oi,light,vm
 real(dp)  :: vt,jt,km,gstar,alpha
 integer :: farq_pars_func,i,ttype
+!----------------------------------------------------------------------!
 
 vcmax_maire = vm*(1.0+(alpha*light/(jt*(exp(1.0)*(vm/vt)**0.89)))**2.0)**0.5 &
  *(4*ci+8*gstar) - alpha*light*(ci+km) 
@@ -1486,9 +1478,9 @@ vcmax_maire = vm*(1.0+(alpha*light/(jt*(exp(1.0)*(vm/vt)**0.89)))**2.0)**0.5 &
 ! vcmax_maire = alpha*light / 
 ! &(1.d0+(alpha*light/(jt*(exp(1.d0)*(vm/vt)**0.89d0)))**2.d0)**0.5d0
 ! &*(ci+km)/(4*ci+8*gstar)  
-! if(i.eq.1) print*, 'maire vcmax calc'
-! if(i.eq.1) print'(4f8.4)', vt,jt,km,gstar
-! if(i.eq.1) print'(3f14.8)', vcmax_maire,ci,light
+! if(i==1) print*, 'maire vcmax calc'
+! if(i==1) print'(4f8.4)', vt,jt,km,gstar
+! if(i==1) print'(3f14.8)', vcmax_maire,ci,light
 
 end function vcmax_maire
 
@@ -1496,18 +1488,19 @@ end function vcmax_maire
 
 
 
-!----------------------------------------------------------------------*
-!                                                                      *
-!                          SUBROUTINE FARQ_PARS                        *
-!                          *****************!                          *
-!     Gives M-M parameters from Farquhar model of photosynthesis       *  
-!     Parameters Kc and Ko given in Pa                                 *
-!                                                                      *
-!----------------------------------------------------------------------*
+!**********************************************************************!
+!                                                                      !
+!                          SUBROUTINE FARQ_PARS                        !
+!                          *****************!                          !
+!     Gives M-M parameters from Farquhar model of photosynthesis       !  
+!     Parameters Kc and Ko given in Pa                                 !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine FARQ_PARS(t,kc,ko,tau,alpha,farq_pars_func)
-
+!**********************************************************************!
 real(dp) :: t,tk,kc,ko,tau,alpha,c_p,oi
 integer :: farq_pars_func
+!----------------------------------------------------------------------!
 
 tk = t + 273.15  
 oi = 21000.0 

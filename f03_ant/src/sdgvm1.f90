@@ -110,32 +110,28 @@ end function outputs
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine set_landuse(ftprop,ilanduse,tmp,prc,nat_map,nft,cluse,year,yr0)
+subroutine set_landuse(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
 !**********************************************************************!
-integer :: ilanduse,ft,nft,nat_map(8)
+integer :: ft,nft,nat_map(8)
 integer :: year,yr0
-real(dp) :: tmp(12,31),prc(12,31),cluse(max_cohorts,max_years) &
- ,ftprop(max_cohorts)
+real(dp) :: tmp(12,31),prc(12,31),cluse(max_cohorts,max_years)
+real(dp) :: ftprop(max_cohorts)
 !----------------------------------------------------------------------!
 
-if (ilanduse==2) then
-  call NATURAL_VEG(tmp,prc,ftprop,nat_map)
-else ! 0 and 1
-  ftprop(1) = 100.0
-  do ft=2,nft
-    if (check_ft_grow(tmp,ssv(1)%chill,ssv(1)%dschill,ft)==1) then
-      ftprop(ft) = cluse(ft,year-yr0+1)
-      ftprop(1) = ftprop(1) - ftprop(ft)
-    else
-      ftprop(ft) = 0.0
-    endif
-  enddo
-  if (ftprop(1)<0.0) then
-    do ft=2,nft
-      ftprop(ft) = ftprop(ft)*100.0/(100.0 - ftprop(1))
-    enddo
-    ftprop(1) = 0.0
+ftprop(1) = 100.0
+do ft=2,nft
+  if (check_ft_grow(tmp,ssv(1)%chill,ssv(1)%dschill,ft)==1) then
+    ftprop(ft) = cluse(ft,year-yr0+1)
+    ftprop(1) = ftprop(1) - ftprop(ft)
+  else
+    ftprop(ft) = 0.0
   endif
+enddo
+if (ftprop(1)<0.0) then
+  do ft=2,nft
+    ftprop(ft) = ftprop(ft)*100.0/(100.0 - ftprop(1))
+  enddo
+  ftprop(1) = 0.0
 endif
 
 end subroutine set_landuse
@@ -180,7 +176,7 @@ real(dp) :: tmp(12,31),prc(12,31),hum(12,31),cld(12),swr(12,31)
 !nn2 plays no role unless we are in the last year of the run where it
 !ensures that we wont be reading outside the array.
 nn2=0
-IF(iyear.EQ.nyears.AND.nn1.EQ.1) nn2=-1
+if(iyear==nyears.and.nn1==1) nn2=-1
 
 ssp%mnthtmp(:)=0.
 ssp%mnthprc(:)=0.
@@ -210,7 +206,7 @@ do mnth=1,12
   enddo
 enddo
 
-IF(iyear.EQ.1) THEN
+if(iyear==1) THEN
   ssp%emnthtmp(:,nn1+1)=ssp%mnthtmp(:)
   ssp%emnthprc(:,nn1+1)=ssp%mnthprc(:)
   ssp%emnthhum(:,nn1+1)=ssp%mnthhum(:)
@@ -218,7 +214,7 @@ ELSE
   ssp%emnthtmp(:,nn1+1)=0.95*ssp%emnthtmp(:,nn1+1)+0.05*ssp%mnthtmp(:)
   ssp%emnthprc(:,nn1+1)=0.95*ssp%emnthprc(:,nn1+1)+0.05*ssp%mnthprc(:)
   ssp%emnthhum(:,nn1+1)=0.95*ssp%emnthhum(:,nn1+1)+0.05*ssp%mnthhum(:)
-ENDIF
+endIF
 
 
 end subroutine set_climate
@@ -232,7 +228,7 @@ end subroutine set_climate
 !                          set_co2 :: sdgvm1                           !
 !                          -----------------                           !
 !                                                                      !
-! subroutine set_co2(ca,iyear,speedc,co2,year,yr0)      !
+! subroutine set_co2(ca,iyear,speedc,co2,year,yr0)                     !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Set CO2 value 'ca'.
@@ -269,9 +265,10 @@ end subroutine set_co2
 !                        read_landuse :: sdgvm1                        !
 !                        ----------------------                        !
 !                                                                      !
-! subroutine read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,  !
+! subroutine read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,       !
 ! luse,cluse,l_lu)                                                     !
 !                                                                      !
+!----------------------------------------------------------------------!
 !> @brief
 !! @details
 !! @author Mark Lomas
@@ -349,7 +346,7 @@ end subroutine read_landuse
 !                       read_climate :: sdgvm1                         !
 !                       ----------------------                         !
 !                                                                      !
-! subroutine read_climate(ststats,lat,lon,xlatf,               !
+! subroutine read_climate(ststats,lat,lon,xlatf,                       !
 ! xlatres,xlatresn,xlon0,xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,   !
 ! xcldv,isite,xyear0,xyearf,du,seed1,seed2,seed3,l_clim,l_stats,siteno,!
 ! day_mnth,thty_dys,sit_grd,withcloudcover))                           !
@@ -374,6 +371,7 @@ real(dp), dimension(500,12) :: xcldv
 integer :: read_par
 logical :: l_clim,l_stats,withcloudcover
 !----------------------------------------------------------------------!
+
 if ((day_mnth==1).and.(thty_dys==1)) then
   call EX_CLIM(lat,lon,xlatf,xlatres,xlatresn,xlon0,xlonres, &
  xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,isite,xyear0,xyearf,siteno,du, &
@@ -443,7 +441,7 @@ end subroutine get_input_filename
 !                          country :: sdgvm1                           !
 !                          -----------------                           !
 !                                                                      !
-! subroutine country(lat,lon,country_name,country_id,l_regional)!
+! subroutine country(lat,lon,country_name,country_id,l_regional)       !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Read internal parameters from "param.dat" file, and io
@@ -474,7 +472,7 @@ open(99,file=trim(inp%dirs%land_mask)//'/country.dat',status='old')
 close(99)
 
 !----------------------------------------------------------------------!
-! If OCEAN was found try the nearest adjacent squares.                 *
+! If OCEAN was found try the nearest adjacent squares.                 !
 !----------------------------------------------------------------------!
 if (country_id==0) then
 
@@ -604,7 +602,8 @@ if (country_id==0) then
 endif
 
 !----------------------------------------------------------------------!
-! Regional or country switch.                                          *
+! Regional or country switch.                                          !
+!----------------------------------------------------------------------!
 if (.not.(l_regional)) country_id = country_id-mod(country_id,100)
 !----------------------------------------------------------------------!
 
@@ -627,7 +626,7 @@ end subroutine country
 !                          co2_0_f :: sdgvm1                           !
 !                          -----------------                           !
 !                                                                      !
-! subroutine co2_0_f(co20,co2f,yearv,yr0,co2,nyears)    !
+! subroutine co2_0_f(co20,co2f,yearv,yr0,co2,nyears)                   !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Read internal parameters from "param.dat" file, and io
@@ -678,7 +677,7 @@ end subroutine co2_0_f
 !                          read_soil :: sdgvm1                         !
 !                          -------------------                         !
 !                                                                      !
-! subroutine read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)    !
+! subroutine read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)           !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Read internal parameters from "param.dat" file, and io

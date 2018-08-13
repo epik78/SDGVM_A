@@ -283,7 +283,7 @@ if (rlai>1.0e-6) then
       ss = day + (mnth - 1)*30
     elseif (bbgs>100) then
 !----------------------------------------------------------------------!
-! Check for senescence, senescence occurs there are 'sss' days colder  *
+! Check for senescence, senescence occurs there are 'sss' days colder  !
 ! than 'sslim' out of the last 'ssm' days.                             !
 !----------------------------------------------------------------------!
       sssum = 0
@@ -588,15 +588,13 @@ end subroutine phenology2
 !! @date Jan 2017
 !----------------------------------------------------------------------!
 subroutine phenology3(yield,laiinc)
-
+!**********************************************************************!
 real(dp), parameter :: maxlai = 10.9
-
 real(dp) :: wtwp,wtfc,ftagh,stemfr,bb0,bbmax,bblim,sslim,lairat
 real(dp) :: rlai,soilw,soil2g,bbsum,maint,tsuma,laiinc,oldphen,newopt
 real(dp) :: dft,dfp,hrs,phen,oldopt,optinc,sssum,yield,gddmix(3),hi,fv
 integer :: co,day,mnth,ftdth,bb,ss,bbgs,chill,dschill,leafls,bbm
 integer :: ssm,sss,i
-
 !----------------------------------------------------------------------!
 
   co = ssp%cohort
@@ -633,58 +631,58 @@ integer :: ssm,sss,i
 
   ! If it's the start of the year set yield to zero.We do this because yield is
   ! cumulative added as in some years we might have two harvests
-  IF(mnth.EQ.1.AND.day.EQ.1) ssv(co)%yield=0.
+  if(mnth==1.and.day==1) ssv(co)%yield=0.
 
 
-  IF(mnth.EQ.1.AND.day.EQ.1.AND.ssv(co)%sown.EQ.1) THEN
+  if(mnth==1.and.day==1.and.ssv(co)%sown==1) THEN
       pft(co)%sowday(3)=pft(co)%sowday(2)
       pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)
-  ENDIF
+  endIF
 
 
-  IF(ssv(co)%sown.EQ.0) THEN
-      IF((day+ (mnth-1)*30).EQ.pft(co)%sowday(1)) THEN
+  if(ssv(co)%sown==0) THEN
+      if((day+ (mnth-1)*30)==pft(co)%sowday(1)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
           pft(co)%sowday(3)=pft(co)%sowday(1)
           pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,1)
-      ELSEIF((day+ (mnth-1)*30).EQ.pft(co)%sowday(2)) THEN
+      elseif((day+ (mnth-1)*30)==pft(co)%sowday(2)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
           pft(co)%sowday(3)=pft(co)%sowday(2)
           pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)          
-      ENDIF
-  ENDIF
+      endIF
+  endIF
 
   
   ! Add up days that the crop has been sowed,set to zero if not
-  IF(ssv(co)%sown.EQ.1) THEN
+  if(ssv(co)%sown==1) THEN
       ssv(co)%sowni=ssv(co)%sowni+1
   ELSE
       ssv(co)%sowni=0
-  ENDIF
+  endIF
 
 
   ! If nothing is going to be sowed,return
-  IF(ssv(co)%sown.EQ.0) THEN 
+  if(ssv(co)%sown==0) THEN 
       ssv(co)%phu=0.
       laiinc=0.
       ssv(co)%vdays=0;
       RETURN
-  ENDIF
+  endIF
   
     
-  IF (ssv(co)%sown.EQ.1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
+  if (ssv(co)%sown==1.and.(bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))) then
       !----------------------------------------------------------------------!
       ! Check for budburst using degree days.                                !
       !----------------------------------------------------------------------!
 
       bbsum = 0.0
-      DO i=1,ssv(co)%sowni+1
-          IF(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
-      ENDDO 
+      do i=1,ssv(co)%sowni+1
+          if(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
+      endDO 
  
-      IF(REAL(bbsum).GE.REAL(bblim)) THEN
+      if(REAL(bbsum)>=REAL(bblim)) THEN
       !----------------------------------------------------------------------!
       ! Adjust proportion of gpp going into stem production based on suma.   !
       ! This is essentially the LAI control.                                 !
@@ -715,10 +713,10 @@ integer :: ssm,sss,i
       !ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
       !laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
       !ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
-      ENDIF ! (REAL(bbsum).GE.REAL(bblim))
-  ENDIF
+      endIF ! (REAL(bbsum)>=REAL(bblim))
+  endIF
 
-  IF(bb>0)  bbgs = bbgs + 1
+  if(bb>0)  bbgs = bbgs + 1
 
   
   ! Previous value of phenology
@@ -733,52 +731,52 @@ integer :: ssm,sss,i
   ! It also checks if we are in maturity stage (GT crophen(5)).In all 3 cases
   ! it calculates the phenological heat units by multiplying temperature by
   ! fv,ft and fp which are the vernalization,development and photoperiod functions
-  IF(bb.GT.0.AND.oldphen.LT.1) THEN
+  if(bb>0.and.oldphen<1) THEN
       dft=0.0d0; dfp=0.0d0;fv=1.; 
-      IF(oldphen.LT.pft(co)%cropphen(5)) THEN
-          IF(pft(co)%croptype(2).EQ.1) THEN
+      if(oldphen<pft(co)%cropphen(5)) THEN
+          if(pft(co)%croptype(2)==1) THEN
               CALL streck(pft(co)%cardinal(4), &
                 pft(co)%cardinal(5),pft(co)%cardinal(6), &
                 ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(3), &
                 pft(co)%photoperiod(4),hrs,ssv(co)%vdays,fv)
-          ENDIF
+          endIF
           CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
             ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
             ,hrs,dft,dfp)
           pft(co)%cropgdd(2,3)=pft(co)%cardinal(1)
-      ELSEIF(oldphen.ge.pft(co)%cropphen(5)) THEN
+      elseif(oldphen>=pft(co)%cropphen(5)) THEN
           CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
             ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
             ,hrs,dft,dfp)
           pft(co)%cropgdd(2,3)=pft(co)%cardinal(7)
-      ENDIF
+      endIF
       ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*fv*dft*dfp
-  ENDIF ! (bb.gt.0.and.oldphen.lt.1)
+  endIF ! (bb>0.and.oldphen<1)
 
 
   ! Phenological index of maturity,PHU divided by the max PHU obtained from seasonality
   ! for the specific crop and gridcell      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,3)
 
-  !IF(ssp%year.EQ.1991) THEN
+  !IF(ssp%year==1991) THEN
   !  WRITE(*,*)ssp%year,mnth,day,phen,rlai
   !ENDIF
 
   ! If the days that it is sowed exceeds a limit then set phen straight to 1
   ! so it is harvested.For most crops the limit is set to 120 but for vern crops
   ! it is set to 210 to allow a much bigger growing cycle
-  IF(ssv(co)%sowni.GT.pft(co)%limdharv) phen=1.
+  if(ssv(co)%sowni>pft(co)%limdharv) phen=1.
     
   ! If plants are mature (as determined by degree-days) harvest them
   ! Just check the flags,harvest will happen in allocation sub 
-  IF(phen.GE.0.95.AND.ssv(co)%harvest(1).EQ.0) THEN
+  if(phen>=0.95.and.ssv(co)%harvest(1)==0) THEN
       ss=day + (mnth - 1)*30
       ssv(co)%harvest(1)=1
       ssv(co)%harvest(2)=day + (mnth - 1)*30
       ssv(co)%sown=0
       ssv(co)%bb=0
       ssv(co)%sowni=0
-  ELSEIF(phen.GE.pft(co)%cropphen(5)) THEN
+  elseif(phen>=pft(co)%cropphen(5)) THEN
       ! Senescence begins, start killing leaves based on PHU
       ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
       
@@ -794,30 +792,30 @@ integer :: ssm,sss,i
       !----------------------------------------------------------------------!
       ! Set LAI increase.                                                    !
       !----------------------------------------------------------------------!
-      IF (ssv(co)%nppstore(1).GT.0.0d0) THEN
+      if (ssv(co)%nppstore(1)>0.0d0) then
           ! Optimal LAI increase (Neisch et al 2002 SWAT documentation Eqns 18.1.9)
           ! cropphen(3) and (4) are the shape parameters after Neisch et al 2002
           oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
           newopt=phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen))
           optinc=(newopt-oldopt)*pft(co)%optlai
-          IF(optinc*msv%mv_leafmol*12.0*1.25.LT.0.5*ssv(co)%nppstore(1)) THEN
-          !IF(optinc*12.0/pft(co)%sla/25.0.LT.0.5*ssv(co)%nppstore(1)) THEN
+          if(optinc*msv%mv_leafmol*12.0*1.25<0.5*ssv(co)%nppstore(1)) THEN
+          !IF(optinc*12.0/pft(co)%sla/25.0<0.5*ssv(co)%nppstore(1)) THEN
               laiinc=optinc
           ELSE
               gddmix(1)=oldphen*pft(co)%cropgdd(1,3)
               gddmix(2)=phen*pft(co)%cropgdd(1,3)
               gddmix(3)=gddmix(1) 
 
-              !IF(ssp%year.EQ.2001) THEN
+              !IF(ssp%year==2001) THEN
               !  WRITE(*,*)'A: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
               !  optinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
               !ENDIF
 
               laiinc=0. 
-              DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*msv%mv_leafmol*1.25*12.0)
-              !DO WHILE (gddmix(3).LE.gddmix(2).AND.0.5*ssv(co)%nppstore(1).GE.laiinc*12.0/pft(co)%sla/25.0) 
+              do WHILE (gddmix(3)<=gddmix(2).and.0.5*ssv(co)%nppstore(1)>=laiinc*msv%mv_leafmol*1.25*12.0)
+              !DO WHILE (gddmix(3)<=gddmix(2).and.0.5*ssv(co)%nppstore(1)>=laiinc*12.0/pft(co)%sla/25.0) 
 
-                  !IF(ssp%year.EQ.2001) THEN
+                  !IF(ssp%year==2001) THEN
                   !  WRITE(*,*)'B: ',mnth,day,oldphen,gddmix(3),phen,gddmix(2),&
                   !    laiinc*msv%mv_leafmol*12.0*1.25,0.5*ssv(co)%nppstore(1)
                   !ENDIF
@@ -829,20 +827,20 @@ integer :: ssm,sss,i
                   laiinc=optinc
                   ssv(co)%phu=gddmix(3) 
                   gddmix(3)=gddmix(3)+1
-              ENDDO
-          ENDIF
-          IF(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
-          IF((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
+              endDO
+          endIF
+          if(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
+          if((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
       ELSE
           laiinc = 0.0
-      ENDIF
-  ENDIF ! crop is mature or optimal LAI attained
+      endIF
+  endIF ! crop is mature or optimal LAI attained
 
   !----------------------------------------------------------------------!
   ! Senescence, if rlai is greater than zero, compute senescence.        !
   !----------------------------------------------------------------------!
-  IF (rlai>1.0e-6) THEN
-    IF(soil2g<wtwp*0.0) THEN
+  if (rlai>1.0e-6) then
+    if(soil2g<wtwp*0.0) THEN
       !----------------------------------------------------------------------!
       ! Senescence event due to soil moisture.                               !
       !----------------------------------------------------------------------!
@@ -854,20 +852,20 @@ integer :: ssm,sss,i
       ! than 'sslim' out of the last 'ssm' days.                             !
       !----------------------------------------------------------------------!
       sssum = 0
-      DO i=1,ssm
+      do i=1,ssm
 !        IF (ssp%tmem(i)<sslim)  sssum = sssum + 1
-        IF (ssp%tmem(i).LT.pft(co)%lethal(1).OR.ssp%tmem(i).GT.pft(co)%lethal(2)) &
+        if (ssp%tmem(i)<pft(co)%lethal(1).or.ssp%tmem(i)>pft(co)%lethal(2)) &
            sssum = sssum + 1
-      ENDDO
-      IF (sssum>=sss) THEN
+      endDO
+      if (sssum>=sss) then
         !----------------------------------------------------------------------!
         ! Senescence event due to temperature.                                 !
         !----------------------------------------------------------------------!
         laiinc =-rlai
         ss = day + (mnth - 1)*30
-      ENDIF
-    ENDIF
-  ENDIF
+      endIF
+    endIF
+  endIF
 
 
   ssv(co)%stemfr      = stemfr
@@ -885,6 +883,7 @@ end subroutine phenology3
 !                                                                      !
 !                    allocation :: phenological_methods                !
 !                    ----------------------------------                !
+!                                                                      !
 ! SUBROUTINE allocation(laiinc,daygpp,resp_l,lmor_sc,resp,leaflit,&    !
 ! stemnpp,rootnpp,resp_s,resp_r,resp_m,check_closure)                  !
 !                                                                      !
@@ -957,9 +956,9 @@ call LAI_DIST(lmor_sc,leaflit)
 ! before it was harvested as it can be seen in the harv sub
 lit=0.
 yielit=0.
-IF(pft(co)%phen.EQ.3.AND.ssv(co)%harvest(1).EQ.1.AND.ssv(co)%lai%tot(1).GT.0.) THEN
+if(pft(co)%phen==3.and.ssv(co)%harvest(1)==1.and.ssv(co)%lai%tot(1)>0.) THEN
   CALL HARV(lit,yielit)
-ENDIF
+endIF
 leaflit=leaflit+lit
 
 !----------------------------------------------------------------------!
@@ -1486,7 +1485,7 @@ end subroutine stem_dist
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine ROOT_DIST(respref,resp)
+subroutine root_dist(respref,resp)
 !**********************************************************************!
 integer :: i,co
 real(dp) :: ans,resp,respref
@@ -1511,7 +1510,7 @@ do i=1,ssv(co)%root%no
   ssv(co)%root%tot(1) = ssv(co)%root%tot(1) + ssv(co)%root%c(i,1)%val
 enddo
 
-end subroutine ROOT_DIST
+end subroutine root_dist
 
 
 

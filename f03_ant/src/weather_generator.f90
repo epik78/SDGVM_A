@@ -9,15 +9,15 @@ implicit none
 
 contains
 
-!----------------------------------------------------------------------*
+!**********************************************************************!
 !     Interface between ForestETP Weather Generator and SDGVMd
 !     Written by Ghislain Picard 30/06/03
 !
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 subroutine EX_CLIM_WEATHER_GENERATOR(lat,lon,xlatf,xlatres,xlatresn, &
  xlon0,xlonres,xlonresn,yr0,yrf,tmpv,humv,prcv,mcldv,swrv,isite,year0, &
  yearf,du,seed1,seed2,seed3,l_clim,l_stats,read_par)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 real(dp) :: lat,lon,xlon0,xlatf,xlatres,xlonres
 ! daily data
 real(dp), dimension(500,12,31) :: tmpv,humv,prcv,swrv
@@ -63,22 +63,22 @@ endif
 
 nyears = yearf - year0 + 1
 
-!----------------------------------------------------------------------*
-! Find the real(dp) row col corresponding to lat and lon.              *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Find the real(dp) row col corresponding to lat and lon.              !
+!----------------------------------------------------------------------!
 
 rrow = (xlatf - lat)/xlatres
 rcol = (lon - xlon0)/xlonres
 
 ynorm = rrow - real(int(rrow))
 xnorm = rcol - real(int(rcol))
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 fno = 90
 
-!----------------------------------------------------------------------*
-! Find the four sites closest to the desired from the maskpam file.    *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Find the four sites closest to the desired from the maskpam file.    !
+!----------------------------------------------------------------------!
 open(fno+1,file=trim(inp%dirs%climate)//'/maskmap.dat', &
  access='DIRECT',recl=recl2,form='formatted',status='old')
 
@@ -102,7 +102,7 @@ do ii=1,4
   enddo
 enddo
 close(fno+1)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 isite = 0
 if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
@@ -214,9 +214,9 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
     enddo
   enddo
 
-!----------------------------------------------------------------------*
-! Interpolate climate.                                                 *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Interpolate climate.                                                 !
+!----------------------------------------------------------------------!
   do year=yr0,yrf
     do mnth=1,12
       do ii=1,4
@@ -255,7 +255,7 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
         do ii=1,4           
           do jj=1,4
             xx(ii,jj) = mswrvv(ii,jj,year-yr0+1,mnth)
-          ENDDO
+          endDO
         enddo
         call bi_lin(xx,indx,xnorm,ynorm,ans)
         mswrv(year-yr0+1,mnth) = ans
@@ -355,7 +355,7 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
 
 ! check interpolation
       mswrvcheck(:) = 0.0d0
-      if (year.EQ.yr0) then 
+      if (year==yr0) then 
         do mnth=1,12
           do day=1,30
             mswrvcheck(mnth) = mswrvcheck(mnth) + (swrv(year-yr0+1,mnth,day))
@@ -375,9 +375,9 @@ end subroutine EX_CLIM_WEATHER_GENERATOR
 
 
 
-!----------------------------------------------------------------------*
+!**********************************************************************!
 subroutine READ_WG_FILE(du,filename,values,lon,lat,l_stats)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 character(len=str_len) :: filename,st1,st2,st3
 real(dp) :: lon,lat,latr,lonr,values(12),statsv(4,4,12),xx(4,4),latf
 real(dp) :: lon0,xnorm,ynorm,ans,rrow,rcol
@@ -418,16 +418,16 @@ elseif (stcmp(st1,st3)==1) then
   read(99,*) latn,lonn
   close(99)
 
-!----------------------------------------------------------------------*
-! Find the real(dp) row col corresponding to lat and lon.                  *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Find the real(dp) row col corresponding to lat and lon.              !
+!----------------------------------------------------------------------!
   rrow = (latf - lat)/latr
   rcol = (lon - lon0)/lonr
 
   ynorm = rrow - real(int(rrow))
   xnorm = rcol - real(int(rcol))
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   open(99,file=filename,status='old',form='formatted',access='direct',recl=recl1)
 
   do ii=1,4
@@ -478,9 +478,9 @@ end subroutine READ_WG_FILE
 
 
 
-!----------------------------------------------------------------------*
+!**********************************************************************!
 real(dp) function FLOATINGMEAN(day,mnth,year,lastyear,array)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 integer :: day,mnth,year,lastyear,y,m
 integer :: array(500,12)
 real(dp) :: mean
@@ -522,9 +522,10 @@ end function FLOATINGMEAN
 
 
 
-!----------------------------------------------------------------------*
+
+!**********************************************************************!
 real(dp) function FLOATINGMEAN2(day,mnth,year,lastyear,array)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 integer :: day,mnth,year,lastyear
 real(dp) :: array(500,12)
 real(dp) :: x0,x,xf,y,xx0,xxf
@@ -561,7 +562,7 @@ else
 endif
 
 !      print'(i3,5f8.2)',day,floatingmean2,x,x0,xf,y
-!      if (day.eq.10) print'(3f8.2)',x0,x,xf
+!      if (day==10) print'(3f8.2)',x0,x,xf
 
 end function floatingmean2
 
@@ -569,10 +570,10 @@ end function floatingmean2
 
 
 
-!----------------------------------------------------------------------*
+!**********************************************************************!
 subroutine RAIN_DAY_SUB_FULLY_NORMALISED(NO_RAIN_DAYS, &
  RAIN_IN_MONTH,DAYS_IN_MONTH,SEED1,SEED2,SEED3,RAIN)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 implicit none
 
 !** The routine simulates daily rainfall for all days in a month
@@ -714,8 +715,10 @@ end subroutine RAIN_DAY_SUB_FULLY_NORMALISED
 
 
 
+!**********************************************************************!
 subroutine RAIN_DAY_SUB_NORMALISED(NO_RAIN_DAYS, RAIN_IN_MONTH, &
  DAYS_IN_MONTH,SEED1,SEED2,SEED3,RAIN)
+!**********************************************************************!
 implicit none
 !** The routine simulates daily rainfall for all days in a month
 !** The typical number of rainy-days and average rainfall for the month 
@@ -806,19 +809,19 @@ do 120 IDAY = 1, DAYS_IN_MONTH
 !  TR2 = EXP(-18.42*(1-MU))
 
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
-!         IF(RAND01 - TR1 .LE. 0) THEN
+!         IF(RAND01 - TR1 <= 0) THEN
 !           S1 = 0
 !         ELSE
 !           S1 = RAND01*EXP(1/MU)
 !         ENDIF
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
-!         IF(RAND01 - TR2 .LE. 0) THEN
+!         IF(RAND01 - TR2 <= 0) THEN
 !           S2 = 0
 !         ELSE
 !           S2 = RAND01*EXP(1/(1-MU))
 !         ENDIF
-!         IF(S1+S2-1 .LE. 0) THEN
-!           IF( (S1+S2).EQ.0 )THEN
+!         IF(S1+S2-1 <= 0) THEN
+!           IF( (S1+S2)==0 )THEN
 !             Z = 0.0
 !           ELSE
 !             Z = S1/(S1+S2)
@@ -826,7 +829,7 @@ do 120 IDAY = 1, DAYS_IN_MONTH
 !         ELSE
 !           FLAG = 1
 !         ENDIF
-!         IF(FLAG.EQ.1) GOTO  30
+!         IF(FLAG==1) GOTO  30
 !
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
 !         RAIN(IDAY) = -Z*LOG(RAND01)*GAMMA
@@ -943,6 +946,8 @@ end subroutine RAIN_DAY_SUB_NORMALISED
 
 
 
+
+!**********************************************************************!
 ! from ForestETP weather generator.
 ! the function which generate the temperature
 ! has been tranformed into humidity generator
@@ -950,21 +955,19 @@ end subroutine RAIN_DAY_SUB_NORMALISED
 !       real(dp) FUNCTION TEMP_DAY_MEAN2_FN(TEMP_MEAN_MONTH,
 !     1  TEMP_SD_MONTH, TEMP_AUTOCORR_MONTH, TEMP_YESTERDAY, IS1,
 !     2  IS2, IS3, NORMSWITCH)
-!
-!
-
-
+!** calculates mean daily temperature  from monthly values   
+!----------------------------------------------------------------------!
 real(dp) function HUM_DAY_MEAN2_FN(HUM_MEAN_MONTH, &
  HUM_SD_MONTH, HUM_AUTOCORR_MONTH, HUM_YESTERDAY, IS1, &
  IS2, IS3, NORMSWITCH)
-
-!** calculates mean daily temperature  from monthly values   
+!**********************************************************************!
 real(dp) :: HUM_MEAN_MONTH
 real(dp) :: HUM_SD_MONTH, HUM_AUTOCORR_MONTH
 real(dp) :: HUM_YESTERDAY
 real(dp) :: NORM, NORMMN, NORMSD
 integer :: IS1, IS2, IS3, NORMSWITCH
-! 
+!----------------------------------------------------------------------!
+
 !** approximate a function to get a normal distribution, mean=0, sd=1
 NORMMN=0.0
 NORMSD = 1.0
@@ -1027,18 +1030,22 @@ HUM_DAY_MEAN2_FN = HUM_MEAN_MONTH + HUM_AUTOCORR_MONTH* &
 end function HUM_DAY_MEAN2_FN
 
 
-!----------------------------------------------------------------------*
+
+
+
+!----------------------------------------------------------------------!
 ! mean preserving interpolation Rymes & Myers 2001
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
+!**********************************************************************!
 subroutine mean_pres(iyear,mswrv,swrv)
-
+!**********************************************************************!
 implicit none
-
 real(dp), dimension(500,12,31) :: swrv
 real(dp), dimension(500,12) :: mswrv
 real(dp) :: mnthly(12),daily(360),daily_new(360),corr(12),sumdiff
 integer :: iter,mnth,day,loop,iyear
+!----------------------------------------------------------------------!
 
 corr(:) = 0.0d0
 iter = 360
@@ -1052,9 +1059,9 @@ enddo
 
 do loop=1,iter
   do day=1,iter
-    if (day.eq.1) then
+    if (day==1) then
       daily_new(day) = (daily(iter)+daily(day)+daily(day+1))/3
-    elseif (day.eq.iter) then
+    elseif (day==iter) then
       daily_new(day) = (daily(day-1)+daily(day)+daily(1))/3
     else
       daily_new(day) = (daily(day-1)+daily(day)+daily(day+1))/3

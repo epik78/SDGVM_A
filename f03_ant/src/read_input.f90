@@ -37,7 +37,7 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine read_input_file(buff1,xlatf,xlon0,xlatres,xlonres,&
+subroutine process_input_file(buff1,xlatf,xlon0,xlatres,xlonres,&
  speedc,xspeedc,crand,&
  outyears,nyears,yr0,yrf,yearind,idum,yearv,nomdos,otags,omav, &
  ofmt_daily,ofmt_monthly,ofmt_yearly, &
@@ -53,14 +53,15 @@ real(dp) :: latdel,londel,lat_lon(max_sites,2),iadj,jadj, &
  grassrc,barerc,topsl,defaulttopsl,soil_chr(10),lutab(255,100),&
  lmor_sc(3600,max_cohorts),lutab2(255,100)
 character(len=str_len) :: st1,st2,st3,st4,st5
-character(len=str_len), dimension(max_outputs) :: otags,ofmt_daily,ofmt_monthly,ofmt_yearly,fttags
+character(len=str_len), dimension(max_outputs) :: otags,ofmt_daily, &
+ ofmt_monthly,ofmt_yearly,fttags
 character(len=80) :: buff1
 integer, dimension(max_years) :: snpshts
 integer :: i,du,xyear0,xyearf,xlatresn,xlonresn,kode,ii, &
  xseed1,spinl,yr0s,cycle,yr0p,yrfp,outyears,yr0,yrf,idum, &
- nyears,yearv(max_years),yearind(max_years),nomdos,omav(max_outputs),outyears1,&
+ nyears,yearv(max_years),yearind(max_years),nomdos,omav(max_outputs),&
  oymd,otagsn(max_outputs),otagsnft(max_outputs),outyears2,snp_no, &
- sit_grd,day_mnth,thty_dys,narg,j,iofnft,iofn,ft,nft,k,oymdft
+ sit_grd,day_mnth,thty_dys,narg,j,iofnft,iofn,ft,nft,k,oymdft,outyears1
 real(dp) :: xlatf,xlon0,lon0,lonf,lat0,latf,xlatres,xlonres
 logical :: speedc,xspeedc,crand
 logical :: out_cov,out_bio,out_bud,out_sen,l_b_and_c
@@ -80,26 +81,26 @@ integer :: nlat,nlon
 !----------------------------------------------------------------------!
 
       met_seq = .FALSE.
-      IF(ii.gt.1) THEN
+      if(ii>1) THEN
         st3 = 'seq'
         CALL STRIPBS(st1,st2)
-        IF (stcmp(st2,st3).EQ.1) THEN
+        if (stcmp(st2,st3)==1) then
           met_seq = .TRUE.
         ELSE
-          WRITE(*,*) &
+          write(*,*) &
  'If it exists, second field of second line in input.dat must read "seq"' 
-           STOP 
-        ENDIF
-      ENDIF
+           stop 
+        endIF
+      endIF
 
-      OPEN(newunit=fid,FILE=trim(inp%dirs%climate)//'/readme.dat', &
+      open(newunit=fid,FILE=trim(inp%dirs%climate)//'/readme.dat', &
  STATUS='OLD',iostat=kode)
-      IF (kode.NE.0) THEN
-        WRITE(*,'('' PROGRAM TERMINATED'')')
-        WRITE(*,*) 'Climate data file does not exist:'
-        WRITE(*,'('' "'',A,''/readme.dat"'')') trim(inp%dirs%climate)
-        STOP
-      ENDIF
+      if (kode/=0) then
+        write(*,'('' PROGRAM TERMINATED'')')
+        write(*,*) 'Climate data file does not exist:'
+        write(*,'('' "'',A,''/readme.dat"'')') trim(inp%dirs%climate)
+        stop
+      endIF
       READ(fid,'(A)') st1
 
 !----------------------------------------------------------------------!
@@ -160,9 +161,9 @@ else
 endif
 close(fid)
 
-!----------------------------------------------------------------------*
-! read input switches                                                  *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! read input switches                                                  !
+!----------------------------------------------------------------------!
 
       !line 9 in <input.dat> determines SDVGM version
       !0 is current version 1 is old 070607 version
@@ -171,25 +172,25 @@ close(fid)
       !read next line of input switches. ln 10 in input.dat
 !      READ(fid_input,*)
 !!      ii = n_fields(st1) 
-!      IF (ii.EQ.6) THEN 
+!      IF (ii==6) THEN 
 !        CALL STRIPBN(st1,i)
 !        !read in daily co2 
-!        IF (i.gt.-1)  daily_co2  = i 
+!        IF (i>-1)  daily_co2  = i 
 !        CALL STRIPBN(st1,i) 
 !        !read PAR data 
-!        IF (i.gt.-1)  read_par   = i 
+!        IF (i>-1)  read_par   = i 
 !        CALL STRIPBN(st1,i)
 !        !use sub-daily PAR scaling
-!        IF (i.gt.-1)  subd_par   = i 
+!        IF (i>-1)  subd_par   = i 
 !        CALL STRIPBN(st1,i) 
 !        !canopy clumping index: 0-do not use; 1-from pft values; 2-from a map
-!        IF (i.gt.-1)  read_clump = i 
+!        IF (i>-1)  read_clump = i 
 !        CALL STRIPBN(st1,i) 
 !        !calculate solar zenith angle and use in canopy light interception 
-!        IF (i.gt.-1)  calc_zen   = i 
+!        IF (i>-1)  calc_zen   = i 
 !        CALL STRIPBN(st1,i) 
 !        !no soil water limitation
-!        IF (i.gt.-1)  no_slw_lim = i 
+!        IF (i>-1)  no_slw_lim = i 
 !      ELSE !
 !        WRITE(*,'('' PROGRAM TERMINATED'')') !
 !        WRITE(*,*) 'Line 10 must contain 6 fields' !
@@ -209,36 +210,36 @@ close(fid)
       !read next line of input switches. ln 11 in input.dat
 !      READ(fid_input,*)
 !      ii = n_fields(st1) 
-!      IF (ii.EQ.5) THEN 
+!      IF (ii==5) THEN 
 !        CALL STRIPBN(st1,i)
 !        !select canopy nitrogen calculation method
 !        cstype = 0
-!        IF (i.ge.10) THEN
+!        IF (i>=10) THEN
 !          cstype = int(real(i)/10.0)
 !          i      = i - 10*cstype
 !        ENDIF
-!        IF (i.gt.-1)  ncalc_type = i 
+!        IF (i>-1)  ncalc_type = i 
 !        CALL STRIPBN(st1,i) 
 !        !select vcmax parameterisation
 !        ttype = 0
-!        IF (i.ge.10) THEN
+!        IF (i>=10) THEN
 !          ttype = int(real(i)/10.0)
 !          i     = i - 10*ttype
 !        ENDIF
-!        IF (i.gt.-1)  vcmax_type = i 
+!        IF (i>-1)  vcmax_type = i 
 !        CALL STRIPBN(st1,i) 
 !        !use soil P from a map to calculate Vcmax (Vcmax switch must also be 1 for P to be used in Vcmax calc) 
 !        !- even if this variable is 0, it is expected to be read from the soils database 
-!        IF (i.gt.-1)  soilp_map = i 
+!        IF (i>-1)  soilp_map = i 
 !        CALL STRIPBN(st1,i) 
 !        !switch to run with 070607 routines that have been changed in the new version but don't have individual switches (rd, swlim, et multiplier etc)
-!        IF (i.gt.-1)  s070607   = i 
+!        IF (i>-1)  s070607   = i 
 !        CALL STRIPBN(st1,i) 
 !        !switch stomatal conductance function
-!        IF (i.gt.-1)  gs_func = i 
+!        IF (i>-1)  gs_func = i 
 !        !CALL STRIPBN(st1,i) 
 !        !switch electron transport function
-!        !IF (i.gt.-1)  hw_j = i 
+!        !IF (i>-1)  hw_j = i 
 !      ELSE !
 !        WRITE(*,'('' PROGRAM TERMINATED'')') !
 !        WRITE(*,*) 'Line 11 must contain 5 fields' !
@@ -266,17 +267,17 @@ close(fid)
       !read next line of input switches. ln 12 in input.dat
 !      READ(98,'(1000a)') st1 
 !      ii = n_fields(st1) 
-!      IF (ii.EQ.4) THEN 
+!      IF (ii==4) THEN 
 !      CALL STRIPBN(st1,i) 
 !      !master switch for these switches
-!      IF (i.gt.-1)  mswitch = i 
+!      IF (i>-1)  mswitch = i 
 !      CALL STRIPBN(st1,i) 
 !      !switch 1 
-!      IF (i.gt.-1)  switch1 = i 
+!      IF (i>-1)  switch1 = i 
 !      !switch 2
-!      IF (i.gt.-1)  switch2 = i 
+!      IF (i>-1)  switch2 = i 
 !      !switch 3
-!      IF (i.gt.-1)  switch3 = i 
+!      IF (i>-1)  switch3 = i 
 !      ELSE !
 !        WRITE(*,'('' PROGRAM TERMINATED'')') !
 !        WRITE(*,*) 'Line 12 must contain 4 fields' !
@@ -284,10 +285,10 @@ close(fid)
 !        STOP !   
 !      ENDIF !
 
-      if(gs_func.eq.3) goudriaan_old = .TRUE.
+      if(gs_func==3) goudriaan_old = .TRUE.
 
       !set default configurations for standard versions
-      IF (inp%run%subdaily) THEN
+      if (inp%run%subdaily) then
         daily_co2  = 0 
         read_par   = 1
         subd_par   = 1
@@ -325,12 +326,12 @@ close(fid)
         soilcn_map = 0
         phen_cor   = 0 
         hw_j       = 0
-      ENDIF
+      endIF
 
       if(goudriaan_old) hw_j = 3
 
       !parameters for 070607 version
-      if(s070607.eq.1) then
+      if(s070607==1) then
         p_et  = 0.7
         p_pet = 0.7
       endif
@@ -483,24 +484,24 @@ endif
 !----------------------------------------------------------------------!
       yr0ms = yr0p
       yrfms = yrfp 
-      IF(met_seq) THEN
-        OPEN(99,FILE='met_seq.dat',iostat=kode)
-        IF (kode.NE.0) THEN
-          WRITE(*,'('' PROGRAM TERMINATED'')')
-          WRITE(*,*) &
+      if(met_seq) THEN
+        open(99,FILE='met_seq.dat',iostat=kode)
+        if (kode/=0) then
+          write(*,'('' PROGRAM TERMINATED'')')
+          write(*,*) &
  'non-sequential met sequence selected but file does not exist.'
-          WRITE(*,'('' "'',A,''"'')') 'met_seq.dat'
-          STOP
-        ENDIF
-        DO i=1,(yrfp-yr0p+1)
+          write(*,'('' "'',A,''"'')') 'met_seq.dat'
+          stop
+        endIF
+        do i=1,(yrfp-yr0p+1)
           READ(99,*) met_seqv(i)
-          IF(i.eq.1) yr0ms = met_seqv(i)
-          if(i.gt.1) yr0ms = min(yr0ms,met_seqv(i))
-          IF(i.eq.1) yrfms = met_seqv(i)
-          if(i.gt.1) yrfms = max(yrfms,met_seqv(i))
-        ENDDO
-        CLOSE(99)
-      ENDIF
+          if(i==1) yr0ms = met_seqv(i)
+          if(i>1) yr0ms = min(yr0ms,met_seqv(i))
+          if(i==1) yrfms = met_seqv(i)
+          if(i>1) yrfms = max(yrfms,met_seqv(i))
+        endDO
+        close(99)
+      endIF
 
 !----------------------------------------------------------------------!
 ! Set 'yr0' and 'yrf' which are the years of actual climate required   !
@@ -511,14 +512,14 @@ endif
       yrf = max(inp%run%spinup_year0+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1,inp%run%yearf)
       yr0m = yr0
       yrfm = yrf
-IF(met_seq) yr0m = min(yr0s,yr0ms)
-IF(met_seq) yrfm = max(yr0s+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1,yrfms)
-IF ((yr0m.LT.xyear0).OR.(yrfm.GT.xyearf)) THEN
-  WRITE(*,'('' PROGRAM TERMINATED'')')
-  WRITE(*,'('' Trying to use '',i4,''-'',i4,'' climate.'')') yr0m,yrfm 
-  WRITE(*,'('' Climate database runs from '',i4,''-'',i4,''.'')') xyear0,xyearf
-  STOP
-ENDIF
+if(met_seq) yr0m = min(yr0s,yr0ms)
+if(met_seq) yrfm = max(yr0s+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1,yrfms)
+if ((yr0m<xyear0).or.(yrfm>xyearf)) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,'('' Trying to use '',i4,''-'',i4,'' climate.'')') yr0m,yrfm 
+  write(*,'('' Climate database runs from '',i4,''-'',i4,''.'')') xyear0,xyearf
+  stop
+endIF
 
 !----------------------------------------------------------------------!
 ! Set up year climate sequence.                                        !
@@ -538,11 +539,11 @@ do i=1,nyears
     endif
   else
     yearv(i) = i - inp%run%spinup_length + inp%run%year0 - 1
-    IF (met_seq) THEN
+    if (met_seq) then
       met_yearv(i) = met_seqv(i-inp%run%spinup_length)
     ELSE
       met_yearv(i) = yearv(i)
-    ENDIF
+    endIF
   endif
 enddo
 
@@ -998,21 +999,21 @@ elseif (trim(inp%sites%style)=='file') then
 
   recl1 = 17
 
-  OPEN(99,FILE=trim(inp%sites%filename),STATUS='OLD',FORM='FORMATTED', &
+  open(99,FILE=trim(inp%sites%filename),STATUS='OLD',FORM='FORMATTED', &
  ACCESS='DIRECT',RECL=recl1,iostat=kode)
-  IF (kode.NE.0) THEN
-    WRITE(*,'('' PROGRAM TERMINATED'')')
-    WRITE(*,*) 'File containing list of sites does not exist.'
-    WRITE(*,'('' "'',A,''"'')') trim(inp%sites%filename)
-    STOP
-  ENDIF
-  DO site=site0,sitef
+  if (kode/=0) then
+    write(*,'('' PROGRAM TERMINATED'')')
+    write(*,*) 'File containing list of sites does not exist.'
+    write(*,'('' "'',A,''"'')') trim(inp%sites%filename)
+    stop
+  endIF
+  do site=site0,sitef
     READ(99,'(F7.3,F9.3)',REC=site,iostat=kode) &
  lat_lon(site-site0+1,1),lat_lon(site-site0+1,2)
     if (kode/=0) then
       exit
     endif
-  ENDDO
+  endDO
 
   if (kode/=0) then
     sites = site - site0
@@ -1086,7 +1087,7 @@ call OPEN_SNAPSHOTS(snp_no,snpshts)
 
 ssp%nft = nft
 
-end subroutine read_input_file
+end subroutine process_input_file
 
 
 

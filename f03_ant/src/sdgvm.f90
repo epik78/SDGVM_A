@@ -1,16 +1,16 @@
-! ============================================================================
+! ==================================================================== !
 ! Name        : sdgvm.f90
 ! Author      : Mark Lomas
 ! Version     : 0.1 Comments
 ! Copyright   : Your copyright notice
 ! Description : sdgvm
-! ============================================================================
+! ==================================================================== !
 
 program sdgvm
 
-use real_precision,     only: dp
-use dims,               only: max_cohorts, max_years, max_outputs, str_len
-use system_state,       only: ssv
+use real_precision,  only: dp
+use dims,            only: max_cohorts, max_years, max_outputs, str_len
+use system_state,    only: ssv
 use pft_parameters
 use state_methods
 use sdgvm1
@@ -36,34 +36,36 @@ parameter(defaulttopsl = 5.0)
 logical :: check_closure
 parameter(check_closure = .true.)
 
-real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop,nppstoreold, &
- trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
+real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
+ nppstoreold,trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
  leafnpp,stemnpp,rootnpp,bioleaf
 
-real(dp) :: lat,lon,ca,resp,soilt,grassrc,tmp(12,31),prc(12,31),hum(12,31), &
- cld(12),latdel,londel,leafper,stemper,rootper,avnpp,avgpp,avlai,co20,co2f, &
- avrof,infix,avnppst,sum1,oscale,yield,co2(max_years),sumcov, &
- maxcov,maxbio,barerc,avtrn,firec,pet2,f2,f3,avevt,sumbio,kd,kx, &
- stembio,rootbio,sum,lutab(255,100),awl(4),nci(4),gsn,eemm,etmm,rn, &
- xlatf,xlatres,xlon0,xlonres,lat_lon(max_sites,2),nleaf,canga,s1in,dp2, &
- h2o,adp(4),sfc(4),sw(4),sswc(4),nupc,swc,swf,ssm,xfprob,xno_fires, &
- nfix,daygpp,evap,tran,roff,pet,daily_out(max_outputs,max_cohorts,12,31), &
+real(dp) :: lat,lon,ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
+ hum(12,31),cld(12),latdel,londel,leafper,stemper,rootper,avnpp,avgpp, &
+ avlai,co20,co2f,avrof,infix,avnppst,sum1,oscale,yield,co2(max_years), &
+ sumcov,maxcov,maxbio,barerc,avtrn,firec,pet2,f2,f3,avevt,sumbio,kd, &
+ kx,stembio,rootbio,sum,lutab(255,100),awl(4),nci(4),gsn,eemm,etmm,rn, &
+ xlatf,xlatres,xlon0,xlonres,lat_lon(max_sites,2),nleaf,canga,s1in,  &
+ dp2,h2o,adp(4),sfc(4),sw(4),sswc(4),nupc,swc,swf,ssm,xfprob, &
+ xno_fires,nfix,daygpp,evap,tran,roff,pet, &
  ans(12,31),interc,evbs,soil_chr(10),cluse(max_cohorts,max_years), &
  cirr(max_cohorts,max_years),cfert(max_cohorts,max_years,3), &
  soil_chr2(10),fprob,q,qdirect,qdiff,topsl,hrs,fpr,resp_s,resp_r, &
  lmor_sc(3600,max_cohorts),leaflitter,laiinc,daynpp,resp_l,resp_m, &
- pm_tmp,pm_prc,pm_hum,pm_evbs,pm_swc,pm_swf,pm_ssm,cos_zen
+ pm_tmp,pm_prc,pm_hum,pm_evbs,pm_swc,pm_swf,pm_ssm,cos_zen, &
+ daily_out(max_outputs,max_cohorts,12,31)
 
-real(dp), dimension(30,12,max_cohorts) :: ce_light,ce_ci,ce_ga,ce_maxlight
+real(dp), dimension(30,12,max_cohorts) :: ce_light,ce_ci,ce_ga, &
+ ce_maxlight
 real(dp), dimension(30,max_cohorts) :: ce_t,ce_rh
 
 integer :: sites,yr0,yrf,snp_no,snpshts(max_years),snp_year,day,d, &
- isite,du,otagsn(max_outputs),otagsnft(max_outputs),nft,nat_map(8),ilanduse,siteno,iofn, &
- iofnft,iofngft,nomdos,i,j,k,ft,site,year, &
+ isite,du,otagsn(max_outputs),otagsnft(max_outputs),nft,nat_map(8), &
+ ilanduse,siteno,iofn, iofnft,iofngft,nomdos,i,j,k,ft,site,year, &
  covind,bioind,xyearf,mnth,fireres,xyear0,omav(max_outputs),year_out, &
  luse(max_years),fno,iyear,oymd,oymdft,iargc,yearind(max_years),idum, &
- outyears,thty_dys,xlatresn,xlonresn,day_mnth,yearv(max_years),nyears,narg,seed1, &
- seed2,seed3,spinl,xseed1,site_dat,site_out, &
+ outyears,thty_dys,xlatresn,xlonresn,day_mnth,yearv(max_years),nyears, &
+ narg,seed1,seed2,seed3,spinl,xseed1,site_dat,site_out, &
  country_id,outyears1,outyears2,budo(max_cohorts),seno(max_cohorts), &
  sit_grd,co,nn1,fid,kode,imap,par_loops,gs_type,nco
 
@@ -81,7 +83,8 @@ logical :: harvest_ant(max_years)
 real(dp) :: swrv(500,12,31)
 
 character(len=str_len) :: st1
-character(len=str_len), dimension(max_outputs) :: ofmt_daily,ofmt_monthly,ofmt_yearly,otags
+character(len=str_len), dimension(max_outputs) :: &
+ ofmt_daily,ofmt_monthly,ofmt_yearly,otags
 character(len=str_len) :: country_name
 character(len=80) :: buff1
 
@@ -92,10 +95,10 @@ logical :: speedc,crand,xspeedc,withcloudcover,l_clim,l_lu, &
 
 logical :: met_seq,goudriaan_old
 
-character(len=32) :: arg
+character(len=200) :: arg
 
 logical :: arg_input_not_set,arg_output_not_set,arg_n_range_1_not_set
-logical :: arg_n_range_2_not_set
+logical :: arg_n_range_2_not_set,arg_filename_not_set
 integer :: additional_arguments
 
 call fnms%set_names()
@@ -140,6 +143,7 @@ call inp%read_input_file(trim(buff1))
 !----------------------------------------------------------------------!
 arg_input_not_set     = .true.
 arg_output_not_set    = .true.
+arg_filename_not_set  = .true.
 arg_n_range_1_not_set = .true.
 arg_n_range_2_not_set = .true.
 
@@ -147,6 +151,8 @@ additional_arguments = 0
 if (inp%dirs%input_argument) additional_arguments = &
  additional_arguments + 1
 if (inp%dirs%output_argument) additional_arguments = &
+ additional_arguments + 1
+if (inp%sites%filename_argument) additional_arguments = &
  additional_arguments + 1
 if (inp%sites%n_range_argument) additional_arguments = &
  additional_arguments + 2
@@ -162,6 +168,29 @@ enddo
 if (additional_arguments/=i-2) then
   write(*,'(''There are'',i2,'' arguments to sdgvm,'',i2 &
  ,'' were expected.'')') i-1,additional_arguments+1
+  write(*,'(''Expected'')')
+  i = 1
+  write(*,'(i2,''. input file'')') i
+  if (inp%dirs%input_argument) then
+    i = i + 1
+    write(*,'(i2''. input directory'')') i
+  endif
+  if (inp%dirs%output_argument) then
+    i = i + 1
+    write(*,'(i2''. output directory'')') i
+  endif
+  if (inp%sites%filename_argument) then
+    i = i + 1
+    write(*,'(i2''. land sites file directory'')') i
+  endif
+  if (inp%sites%n_range_argument) then
+    i = i + 1
+    write(*,'(i2,''. site0'')') i
+  endif
+  if (inp%sites%n_range_argument) then
+    i = i + 1
+    write(*,'(i2''. sitef'')') i
+  endif
   stop
 endif
 
@@ -170,13 +199,15 @@ do
 call get_command_argument(i,arg)
   if (len_trim(arg) == 0) exit
   if (i>1) then
-!    write(*,*) trim(arg)
     if ((inp%dirs%input_argument).and.(arg_input_not_set)) then
       read(arg,'(A)') inp%dirs%input
       arg_input_not_set = .false.
     elseif ((inp%dirs%output_argument).and.(arg_output_not_set)) then
       read(arg,'(A)') inp%dirs%output
       arg_output_not_set = .false.
+    elseif ((inp%sites%filename_argument).and.(arg_filename_not_set)) then
+      read(arg,'(A)') inp%sites%filename
+      arg_filename_not_set = .false.
     elseif ((inp%sites%n_range_argument).and.(arg_n_range_1_not_set)) then
       read(arg,*) inp%sites%site0
       arg_n_range_1_not_set = .false.
@@ -191,7 +222,7 @@ enddo
 !----------------------------------------------------------------------!
 ! Process the input file data.                                         !
 !----------------------------------------------------------------------!
-call read_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
+call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
  speedc,xspeedc,crand,outyears,nyears, yr0,yrf,yearind,idum,yearv, &
  nomdos,otags,omav,ofmt_daily,ofmt_monthly,ofmt_yearly,outyears1, &
  outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov, &
@@ -307,7 +338,7 @@ if (outyears2>0) call open_optional(out_cov,out_bio,out_bud,out_sen)
 call open_tile_pft()
 
 !----------------------------------------------------------------------!
-if(inp%run%gs_func.eq.3) goudriaan_old = .TRUE.
+if(inp%run%gs_func==3) goudriaan_old = .TRUE.
 
 if (inp%run%s070607) then
   inp%run%s140129 = .false.
@@ -411,10 +442,10 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in canopy clumping index from a map                             !
 !----------------------------------------------------------------------!
-!      IF(read_clump.eq.0)THEN
+!      IF(read_clump==0)THEN
 !      !if no clumping set canopy clumping index to 1
 !        ftcan_clump(:) = 1
-!      ELSEIF(read_clump.eq.2)THEN
+!      ELSEIF(read_clump==2)THEN
 !        CALL EX_CLUMP(lat,lon,map_clump,du)
 !        ftcan_clump(:) = map_clump
 !      ENDIF
@@ -496,7 +527,7 @@ do site=1,sites
       endif
 
 !----------------------------------------------------------------------!
-! Set 'tmp' 'hum' 'prc' and 'cld', and calc monthly and yearly avs.    *
+! Set 'tmp' 'hum' 'prc' and 'cld', and calc monthly and yearly avs.    !
 !----------------------------------------------------------------------!
       do nn1=1,0,-1
         call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,xswrv,withcloudcover, &
@@ -521,7 +552,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
-      call SET_LANDUSE(ftprop,ilanduse,tmp,prc,nat_map,nft,cluse,year,yr0)
+      call SET_LANDUSE(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
       
       call COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
@@ -604,11 +635,11 @@ do site=1,sites
 
           if (ssv(ft)%cov>0.0) then
           
-            IF(pft(ft)%fert(1).LE.0.0) THEN
+            if(pft(ft)%fert(1)<=0.0) THEN
               nfix=0.5
             ELSE
               nfix=0.1*pft(ft)%fert(1)          
-            ENDIF
+            endIF
             
             call SET_MISC_VALUES(pft(ft)%sla,tmp(mnth,day))
 
@@ -653,12 +684,12 @@ do site=1,sites
 !----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
-! Compute fire inputs and call fire routine on the last day of the     *
+! Compute fire inputs and call fire routine on the last day of the     !
 ! month.                                                               !
 !----------------------------------------------------------------------!
 !       CALL BFIRE_INPUTS(pm_tmp,pm_prc,pm_hum,pm_evbs,pm_swc,pm_swf,pm_ssm, &
 ! tmp(mnth,day),prc(mnth,day),hum(mnth,day),evbs,swc,swf,ssm,day)
-!       IF ((day == 30).AND.(ft == ssp%cohorts)) CALL FIRE_B(xfprob,pm_tmp,pm_prc,pm_hum, &
+!       IF ((day == 30).and.(ft == ssp%cohorts)) CALL FIRE_B(xfprob,pm_tmp,pm_prc,pm_hum, &
 ! pm_evbs,pm_swc,pm_swf,pm_ssm,lat,mnth,ssp%cohort)
 
 !----------------------------------------------------------------------!

@@ -42,7 +42,7 @@ end subroutine open_diag
 !                     open_snapshots :: open_files                     !
 !                     ----------------------------                     !
 !                                                                      !
-! subroutine open_snapshots(snp_no,snpshts)                   !
+! subroutine open_snapshots(snp_no,snpshts)                            !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Open snapshot files file.
@@ -319,6 +319,7 @@ end subroutine open_state
 subroutine open_site_info()
 !**********************************************************************!
 integer :: fid,ft
+!----------------------------------------------------------------------!
 
 call fun%open(trim(inp%dirs%output)//'/site_info.dat',fid)
 write(fid, &
@@ -337,7 +338,6 @@ end subroutine open_site_info
 !                     write_lat_lon :: open_files                      !
 !                     ---------------------------                      !
 !                                                                      !
-!                                     !
 ! subroutine WRITE_LAT_LON(lat,lon,nft,out_cov,out_bio,out_bud,        !
 ! out_sen,oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)             !
 !                                                                      !
@@ -355,6 +355,7 @@ integer, dimension(max_outputs) :: otagsn,otagsnft
 real(dp):: lat,lon
 logical :: out_cov,out_bio,out_bud,out_sen
 character(len=str_len) :: st1
+!----------------------------------------------------------------------!
 
 do i=1,fun%n
   if (fun%opened(i)) then

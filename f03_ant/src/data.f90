@@ -348,16 +348,16 @@ do ii=1,4
       else
         indx8(ii,jj) = 1
       endif
-      IF (sol_chr2(9).LT.0.0d0) THEN
+      if (sol_chr2(9)<0.0d0) then
         indx9(ii,jj) = 0
       ELSE
         indx9(ii,jj) = 1
-      ENDIF
-      IF (sol_chr2(10).LT.0.0d0) THEN
+      endIF
+      if (sol_chr2(10)<0.0d0) then
         indx10(ii,jj) = 0
       ELSE
         indx10(ii,jj) = 1
-      ENDIF
+      endIF
     else
       indx1(ii,jj) = -1
       indx2(ii,jj) = -1
@@ -439,22 +439,22 @@ if ((indx8(2,2)==1).or.(indx8(2,3)==1).or.(indx8(3,2)==1).or. &
 else
   l_soil(8) = .false.
 endif
-IF ((indx9(2,2).EQ.1).OR.(indx9(2,3).EQ.1).OR.(indx9(3,2).EQ.1).or. &
- (indx9(3,3).EQ.1)) THEN
+if ((indx9(2,2)==1).or.(indx9(2,3)==1).or.(indx9(3,2)==1).or. &
+ (indx9(3,3)==1)) THEN
   CALL BI_LIN(xx9,indx9,xnorm,ynorm,ans)
   sol_chr2(9) = ans
   l_soil(9) = .true.
 ELSE
   l_soil(9) = .false.
-ENDIF
-IF ((indx10(2,2).EQ.1).OR.(indx10(2,3).EQ.1).OR.(indx10(3,2).EQ.1).or. &
- (indx10(3,3).EQ.1)) THEN
+endIF
+if ((indx10(2,2)==1).or.(indx10(2,3)==1).or.(indx10(3,2)==1).or. &
+ (indx10(3,3)==1)) THEN
   CALL BI_LIN(xx10,indx10,xnorm,ynorm,ans)
   sol_chr2(10) = ans
   l_soil(10) = .true.
 ELSE
   l_soil(10) = .false.
-ENDIF
+endIF
 
 end subroutine ex_soil
 
@@ -762,7 +762,7 @@ do i=1,yrf-yr0+1
       x = int(ans+0.5)
       
       !This allows only specific crops
-      !IF (k.NE.29) ans=0.
+      !IF (k/=29) ans=0.
       
       classprop(classes(k)) = ans
       close(99)
@@ -799,7 +799,7 @@ enddo
 
 !! TRENDY SDGVM method - assumes smoothed change in land-use between years specified in input dataset
 !DO i=1,years(n)-yr0a
-!  IF ( (i.EQ.1).OR.((i+yr0a-1).EQ.years(j1)) ) THEN
+!  IF ( (i==1).or.((i+yr0a-1)==years(j1)) ) THEN
 !    ij  = i
 !    ij1 = ij + years(j1+1) - years(j1) 
 !    j1  = j1 + 1
@@ -1215,21 +1215,21 @@ return
 !      i = 1
 !11    CONTINUE
 !        READ(98,*,end=21) year,use
-!        IF (year-yr0+1.GT.0)  luse(year-yr0+1) = use
-!        IF ((year.LT.early).AND.(use.GT.0)) rep = use
+!        IF (year-yr0+1>0)  luse(year-yr0+1) = use
+!        IF ((year<early).and.(use>0)) rep = use
 !        !early = year
 !        i = i+1
 !      GOTO 11
 !21    CONTINUE
 
-!      if(rep.LE.0) then
+!      if(rep<=0) then
 !        print*, 'ERROR:: Land use mapping equal to or below 0'
 !        print*, 'you must specifiy at least one year with a cover type'
 !      endif
 
 !      DO i=1,max_years
-!        If ((luse(i).GT.0).AND.(luse(i).LT.1000)) rep = luse(i)
-!        If (luse(i).LT.0) fire_ant(i)    = .TRUE.
+!        If ((luse(i)>0).and.(luse(i)<1000)) rep = luse(i)
+!        If (luse(i)<0) fire_ant(i)    = .TRUE.
 !        If (luse(i)==0) harvest_ant(i) = .TRUE.
 !        luse(i) = rep
 !      ENDDO

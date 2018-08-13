@@ -10,20 +10,26 @@ implicit none
 
 contains
 
-subroutine assimilation_calc(c3,t,rn,soil2g,wtwp,fshade,fsunlit,qshade,qsunlit, &
- jshade,jsunlit,canga,tk,p, &
+!**********************************************************************!
+!                                                                      !
+!                      assimilation_calc :: productivity_methods       !
+!                      -----------------------------------------       !
+!                                                                      !
+!**********************************************************************!
+subroutine assimilation_calc(c3,t,rn,soil2g,wtwp,fshade,fsunlit, &
+ qshade,qsunlit,jshade,jsunlit,canga,tk,p, &
  rlai,rh,oi,ca,vmx,kg,ko,kc,tau,rd,ga,t154,xdvy,dv,px,oitau1,oitau2, &
  gsmin,kcoiko,upt,a,ci,gs,gs_type,ii)
+!**********************************************************************!
 integer :: c3,gs_type,ii
 real(dp) :: t,rn,soil2g,wtwp,fshade,fsunlit,qshade,qsunlit,canga,tk,p,rlai,rh
 real(dp) :: oi,ca,vmx,kg,ko,kc,tau,rd,ga,t154,xdvy,dv,px,oitau1,oitau2,gsmin,kcoiko
 real(dp) :: a,ci,gs
-
 real(dp) :: tpaj,tppcj,tpgsj,tppcv,tpgsv,tpgsc4,tpav,tpac4,tppcc4
 real(dp) :: rht,ashade,asunlit,pcshade,pcsunlit,jsunlit,jshade,gsshade,gssunlit
 real(dp) :: upt,xvmax,cs
-
 save tpav,tppcv,tpgsv
+!----------------------------------------------------------------------!
 
 if ((t>0.0).and.(rn>0.0).and.(soil2g>wtwp).and.(fshade+fsunlit>0.1)) then
 
@@ -130,9 +136,9 @@ end subroutine assimilation_calc
 !     = oi,ca,vmx(i),c1,c2,rh,ko,kc,kg,tau,rd.                         !
 !                                                                      !
 ! SUBROUTINE assj3(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,px,   !
-! oitau1,oitau2,gsmin)                                                                     !
+! oitau1,oitau2,gsmin)                                                 !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine assj3(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,dv,px,&
  oitau1,oitau2,gsmin,gs_type,ii)
 !**********************************************************************!
@@ -154,36 +160,35 @@ else
 endif
 ssv(ssp%cohort)%assj(ssp%lai,1,ii) = a
 
-!**********************************************************************!
 end subroutine assj3
+
+
+
+
+
+
 !**********************************************************************!
-
-
-
-
-
-
-!----------------------------------------------------------------------*
-!                                                                      *
-!                          FUNCTION T_SCALAR                           *
-!                          *****************                           *
-!     Gives vcmax or jmax temperature scalar                           *  
-!                                                                      *
-!----------------------------------------------------------------------*
-FUNCTION T_SCALAR(t,jv,ttype,ftTopt,ftkHa,ftkHd,tmonth,jfv)
-
+!                                                                      !
+!                          FUNCTION T_SCALAR                           !
+!                          *****************                           !
+!     Gives vcmax or jmax temperature scalar                           !
+!                                                                      !
+!----------------------------------------------------------------------!
+function T_SCALAR(t,jv,ttype,ftTopt,ftkHa,ftkHd,tmonth,jfv)
+!**********************************************************************!
 REAL(dp)    :: t,qt,t_scalar,ftTopt,ftkHa,ftkHd,ftHa,ftHd,tmonth
 REAL(dp)    :: Tsk,Trk,R,deltaS,dS
 INTEGER, intent(in) :: ttype 
 LOGICAL, intent(in) :: jfv 
 CHARACTER :: jv
+!----------------------------------------------------------------------!
 
-if(ttype.eq.0) then
+if(ttype==0) then
 ! SDGVM original
   qt = 2.3
-  if (t.gt.30.0) t = 30.0
+  if (t>30.0) t = 30.0
   t_scalar = qt**(t/10.0d0)/qt**(2.5)
-elseif (ttype.ge.1) then
+elseif (ttype>=1) then
 ! modified Arrhenius
         
   R = 8.31446        
@@ -193,12 +198,12 @@ elseif (ttype.ge.1) then
   ftHa = ftkHa*1.0e3
   ftHd = ftkHd*1.0e3
 
-  if(ttype.eq.2) then
+  if(ttype==2) then
 ! employ Kattge&Knorr scaling based on mean temp of previous month 
           
     ftHd = 2.0e5
 
-    if(jv.eq.'v') then
+    if(jv=='v') then
       ftHa   = 71513.0
       deltaS = 668.390 - 1.070*tmonth
     else
@@ -218,7 +223,7 @@ elseif (ttype.ge.1) then
  (1 + exp((Trk*deltaS-ftHd)/(Trk*R)))/(1 + exp((Tsk*deltaS-ftHd)/(Tsk*R))))  
 
 ! adjust jmax based on kattge&knorr Jmax to Vcmax ratio relationship to temp
-  if((jv.eq.'j').and.(ttype.ge.2).and.jfv)  t_scalar = t_scalar*(2.59-0.035*tmonth)/1.715
+  if((jv=='j').and.(ttype>=2).and.jfv)  t_scalar = t_scalar*(2.59-0.035*tmonth)/1.715
 
 else
   t_scalar = 0.0
@@ -227,7 +232,7 @@ else
 endif
 
 
-END function t_scalar
+end function t_scalar
 
 
 
@@ -699,7 +704,7 @@ end subroutine ASSC4
 
 
 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 function max_daily_pchg(tleaf10) ! - define this as a function to return max_daily_pchg  
 ! !LOCAL VARIABLES:
 ! local pointers to implicit in variables
@@ -708,13 +713,13 @@ real(dp), intent (in)  :: tleaf10                         ! 10-day running mean 
 real(dp), parameter    :: Q10Enz = 2.0                 ! Q10 value for enzyme decay rate
 real(dp), parameter    :: Enzyme_turnover_daily = 0.1  ! the daily turnover rate for photosynthetic enzyme at 25oC in view of ~7 days of half-life time for Rubisco (Suzuki et al. 2001)
 real(dp)               :: EnzTurnoverTFactor              ! temperature adjust factor for enzyme decay
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !calculate the enzyme ternover rate
 EnzTurnoverTFactor = Q10Enz**(0.1*(min(40.0, tleaf10)- 25.))
 max_daily_pchg     = EnzTurnoverTFactor * Enzyme_turnover_daily
 
 end function max_daily_pchg
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 
 
