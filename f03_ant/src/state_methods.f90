@@ -153,10 +153,10 @@ ssv_temp%dsbb =    int((real(ssv(co1)%dsbb)   *t1 + real(ssv(co2)%dsbb)   *t2)/t
 ssv_temp%chill =   int((real(ssv(co1)%chill)  *t1 + real(ssv(co2)%chill)  *t2)/t12 + 0.5)
 ssv_temp%dschill = int((real(ssv(co1)%dschill)*t1 + real(ssv(co2)%dschill)*t2)/t12 + 0.5)
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 !print*,ssv(co1)%lai%no,ssv(co1)%stem%no,ssv(co1)%root%no,ssv(co1)%suma%no
 !print*,ssv(co2)%lai%no,ssv(co2)%stem%no,ssv(co2)%root%no,ssv(co2)%suma%no
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 !print*,ssv(co1)%lai%no
 !print*,ssp%jday - ssv(co1)%lai_comps(1:ssv(co1)%lai%no,2)
 !print*,ssv(co1)%lai_comps(1:ssv(co1)%lai%no,1)
@@ -205,7 +205,7 @@ do i=1,max_lai_comps
 enddo
 ssv_temp%lai%tot(1) = (ssv(co1)%lai%tot(1)*t1 + ssv(co2)%lai%tot(1)*t2)/t12
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 oldestx = ssp%jday
 if (ssv(co1)%stem%no > 0) oldestx = min(oldestx,ssv(co1)%stem%c(1,1)%age)
 if (ssv(co2)%stem%no > 0) oldestx = min(oldestx,ssv(co2)%stem%c(1,1)%age)
@@ -242,7 +242,7 @@ do i=1,max_stem_comps
 enddo
 ssv_temp%stem%tot(1) = (ssv(co1)%stem%tot(1)*t1 + ssv(co2)%stem%tot(1)*t2)/t12
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 !oldest = ssp%jday
 !if (ssv(co1)%root%no > 0) oldest = min(oldest,real(ssv(co1)%root%c(1,1)%age))
 !if (ssv(co2)%root%no > 0) oldest = min(oldest,real(ssv(co2)%root%c(1,1)%age))
@@ -251,7 +251,7 @@ oldestx = ssp%jday
 if (ssv(co1)%root%no > 0) oldestx = min(ssp%jday,ssv(co1)%root%c(1,1)%age)
 if (ssv(co2)%root%no > 0) oldestx = min(oldestx,ssv(co2)%root%c(1,1)%age)
 
-!if (int(oldest).ne.oldestx) then
+!if (int(oldest)/=oldestx) then
 !  print*,'oldest old new ',int(oldest),oldestx
 !  print*,ssv(co1)%root%c(1,1)%age,ssv(co2)%root%c(1,1)%age
 !  print*,ssp%jday
@@ -289,7 +289,7 @@ do i=1,max_root_comps
 enddo
 ssv_temp%root%tot(1) = (ssv(co1)%root%tot(1)*t1 + ssv(co2)%root%tot(1)*t2)/t12
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 oldestx = ssp%jday
 if (ssv(co1)%suma%no > 0) oldestx = min(oldestx,ssv(co1)%suma%c(1)%age)
 if (ssv(co2)%suma%no > 0) oldestx = min(oldestx,ssv(co2)%suma%c(1)%age)
@@ -326,7 +326,7 @@ do i=1,max_suma_comps
 enddo
 ssv_temp%suma%tot = (ssv(co1)%suma%tot*t1 + ssv(co2)%suma%tot*t2)/t12
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ssv_temp%stemfr = (ssv(co1)%stemfr*t1 + ssv(co2)%stemfr*t2)/t12
 ssv_temp%npp = (ssv(co1)%npp*t1 + ssv(co2)%npp*t2)/t12
 ssv_temp%nps = (ssv(co1)%nps*t1 + ssv(co2)%nps*t2)/t12
@@ -337,13 +337,13 @@ ssv_temp%drlc = (ssv(co1)%drlc*t1 + ssv(co2)%drlc*t2)/t12
 ssv_temp%dsln = (ssv(co1)%dsln*t1 + ssv(co2)%dsln*t2)/t12
 ssv_temp%drln = (ssv(co1)%drln*t1 + ssv(co2)%drln*t2)/t12
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Set the combined cohort to the co1 slot and remove co2
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ssv(co1) = ssv_temp
 ssv(co1)%cov = t12
 call REMOVE_COHORT(co2)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 call SUM_CARBON(total_carbon,.false.)
 if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
@@ -880,7 +880,7 @@ subroutine SET_NEW_SOIL_RES(ft,x)
 !***********************************************************************
 integer ft,i
 real(dp) :: x,ans
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   ans = 0.0
   do i=1,8
     ssv(ft)%c(i) = ssp%new_c(i)*x/ssv(ft)%cov
@@ -912,7 +912,7 @@ subroutine SET_NEW_SOIL_RES2(cohort,ft,x)
 !***********************************************************************
 integer cohort,ft,i
 real(dp) :: x
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 !  print*,ssp%xnew_cov(1:10)
 !  print*,ssp%new_cov
@@ -944,7 +944,7 @@ end subroutine SET_NEW_SOIL_RES2
 !subroutine RESET_SOIL_RES()
 !!***********************************************************************
 !integer i
-!!----------------------------------------------------------------------*
+!!----------------------------------------------------------------------!
 !  do i=1,8
 !    ssp%new_c(i) = 0.0
 !    ssp%new_n(i) = 0.0
@@ -973,7 +973,7 @@ end subroutine SET_NEW_SOIL_RES2
 subroutine RESET_SOIL_RES()
 !***********************************************************************
 integer i,j
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   do i=1,8
     ssp%new_c(i) = 0.0
     ssp%new_n(i) = 0.0
@@ -1177,9 +1177,9 @@ if (.not.inp%run%read_in_state) then
   enddo
   ssp%cohorts = cohort
 
-!----------------------------------------------------------------------*
-! Ensure cover array sums to 1.                                        *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Ensure cover array sums to 1.                                        !
+!----------------------------------------------------------------------!
   sum = 0.0
   do ft=1,ssp%cohorts
     sum = sum + ssv(ft)%cov
@@ -1188,16 +1188,16 @@ if (.not.inp%run%read_in_state) then
     ssv(ft)%cov = ssv(ft)%cov/sum
   enddo
 
-!----------------------------------------------------------------------*
-! Make cohort to ft map array co2ftmap.                                *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Make cohort to ft map array co2ftmap.                                !
+!----------------------------------------------------------------------!
   do ft=1,max_pfts
     ssp%co2ftmap(ft,1) = 0
   enddo
 
   call MAKE_CO2FTMAP(.false.)
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 else
 !----------------------------------------------------------------------!
@@ -1319,25 +1319,25 @@ integer :: co
 
 co = ssp%cohort
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Leaf molecular weight.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (sla>0.0) then
   msv%mv_leafmol = 1.0/(sla*25.0)
 else
   msv%mv_leafmol =0.0
 endif
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 !Computation of soil moisture; total & density.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 msv%mv_soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
  ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
 msv%mv_soil2g = msv%mv_soilw/(ssp%soil_depth*10.0)
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Computation of respref.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (t>0) then
 !Sapwood respiration N.B. 8.3144 J/K/mol= Universal gas constant.
 !sapresp = exp(21.6 - 5.367e4/(8.3144*tk))

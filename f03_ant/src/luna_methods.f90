@@ -30,7 +30,7 @@ contains
 !&photosyns_inst, 
 !&surfalb_inst, solarabs_inst, waterstate_inst, frictionvel_inst)
      
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !Use the LUNA model to calculate the Nitrogen partioning 
 !subroutine NitrogenAllocation(FNCa,forc_pbot10, relh10, CO2a10,O2a10, PARi10,PARimx10,rb10, hourpd, tair10, tleafd10, tleafn10, &
 !     Jmaxb0, Jmaxb1, Wc2Wjb0, relhExp,&
@@ -87,7 +87,7 @@ real(dp), intent (inout):: jmx25_z                  !jmx25
 real(dp), intent (inout):: PNlc_z                   !optimal proportion of nitrogen for carboxylation  
 real(dp), intent (inout):: enzs_z                   !enzyme decay state
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !intermediate variables
 real(dp) :: FNCa                       !Area based functional nitrogen content (g N/m2 leaf)
 real(dp) :: SNCa                       !Area based structural nitrogen content (g N/m2 leaf)
@@ -172,18 +172,18 @@ integer :: KcKjFlag                                !flag to indicate whether to 
 integer :: jj                                      !index record fo the number of iterations
 integer :: increase_flag                           !whether to increase or decrease
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !pass thru variables
 real(dp), intent (in) :: ftg0                       !the intercept of the stomatal conductance equation
 real(dp), intent (in) :: ftg1                       !the slope of the stomatal conductance equation 
 integer, intent (in):: gs_func                    !flag to indicate which stomatal conductance function to use 
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 ! functions
 !real(dp) :: RespTBernacchi
 !real(dp) :: t_scalar                                !temperature scaling factor for Vcmax or Jmax 
 
-!------------------------------------------------------------------------------ 
+!----------------------------------------------------------------------! 
 !Constants  
 real(dp), parameter :: rhol = 0.075                     ! leaf reflectance: 1=vis, 2=nir  
 real(dp), parameter :: taul = 0.075                     ! leaf transmittance: 1=vis, 2=nir 
@@ -211,7 +211,7 @@ real(dp), parameter :: mp = 9.0                       ! slope of stomatal conduc
 real(dp), parameter :: PARLowLim = 200.0d-6             ! minimum photosynthetically active radiation for nitrogen optimization
 real(dp), parameter :: minrelh = 0.25                 ! minimum relative humdity for nitrogen optimization
      
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
    
 !print*, z,vcmx25_z,jmx25_z,PNlc_z,enzs_z,lnc,par240d
    
@@ -234,12 +234,12 @@ relh10      = relh10_in * 1.d-2
 ! PAR is already passed to this routine in umol m-2 s-1 (check not day)
 ! - therefore the intermediary steps to convert from wm-2 are not necessary
 
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !SNCa     =  1.0/slatop(ft) * SNC !(Eq A3)
 SNCa = 1.0/sla*0.48 * SNC     !(Eq A3)
 FNCa = lnc - SNCa                 !(Eq A4)
 
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 ! for SDGVM the distinction between sunlit and non-sunlit leaves is not made in the LUNA model
 ! - this is because during the day leaves experience both sunlit and non-sunlit states so  
 ! par240d/x_z is 10-day mean/maximum PAR for leaves in a canopy layer
@@ -249,7 +249,7 @@ radmax2mean = par240x_z / par240d_z
 PARi10      = par240d_z / rabsorb
 PARimx10    = PARi10 * radmax2mean
 
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !nitrogen allocation model-start          
 !PNlcold     = PNlc_z
 PNlcold     = 0.2 / lnc 
@@ -298,9 +298,9 @@ JmaxCoef      = Jmaxb1 * ((hourpd / 12.0)**2.0) * &
 chg_per_step  = 0.02* FNCa
 increase_flag = 0
 
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 jj = 1
-do while ( (PNlcoldi .NE. PNlc) .and. (jj .lt. 100) )      
+do while ( (PNlcoldi /= PNlc) .and. (jj < 100) )      
      
  ! Fc is the scaling factor to go from leaf N invested in RuBisCO to Vcmax  
  ! Fj is the scaling factor to go from leaf N invested in elec trans to Jmax  
@@ -331,7 +331,7 @@ do while ( (PNlcoldi .NE. PNlc) .and. (jj .lt. 100) )
   Nstore     = FNCa - Npsntarget - Nresp
  
 !test the increase of light capture nitrogen
-  if ( ((Nstore > 0.0) .and.(increase_flag .eq. 1)) .or. (jj .eq. 1) ) then
+  if ( ((Nstore > 0.0) .and.(increase_flag == 1)) .or. (jj == 1) ) then
     Nlc2 = Nlc + chg_per_step
     if (Nlc2 / FNCa > 0.95) Nlc2 = 0.95 * FNCa
   
@@ -360,7 +360,7 @@ do while ( (PNlcoldi .NE. PNlc) .and. (jj .lt. 100) )
     endif
   endif
  
- !------------------------------------------------------------------------------------
+ !----------------------------------------------------------------------!
  !test the decrease of light capture nitrogen
   if (increase_flag == 0) then  
  
@@ -398,7 +398,7 @@ do while ( (PNlcoldi .NE. PNlc) .and. (jj .lt. 100) )
  
   jj = jj + 1  
 enddo
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 ! record optimum proportions      
 PNlcopt    = Nlc    / FNCa
 PNstoreopt = Nstore / FNCa
@@ -416,7 +416,7 @@ jmx25_opt   = PNetopt * FNCa * Fj25
 chg         = vcmx25_opt-vcmx25_z
 chg_constrn = min(abs(chg),vcmx25_z*max_daily_pchg)
 vcmx25_z    = vcmx25_z+sign(1.0_dp,chg)*chg_constrn
-!if(z.eq.1) print*, vcmx25_opt,chg,vcmx25_z      
+!if(z==1) print*, vcmx25_opt,chg,vcmx25_z      
 !print*, vcmx25_opt,chg,vcmx25_z      
  
 chg         = jmx25_opt-jmx25_z
@@ -427,7 +427,7 @@ jmx25_z     = jmx25_z+sign(1.0_dp,chg)*chg_constrn
 if(enzs_z<1.0) enzs_z = enzs_z * (1.0 + max_daily_pchg)
 
 !nitrogen allocation subroutine end  
-!------------------------------------------------------------------
+!----------------------------------------------------------------------!
 
 if( isnan(vcmx25_z) .or. (vcmx25_z>1000.) .or. (vcmx25_z<0.) ) then
   !write(iulog, *) 'Error: Vc,mx25 become unrealistic (NaN,>1000,
@@ -454,11 +454,11 @@ endif
 !end brought in from above subroutine 
 
 end subroutine LUNA
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 
 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 subroutine LUNA_Ninvestments (KcKjFlag, FNCa, Nlc, forc_pbot10, &
  relh10,CO2a10,O2a10,PARi10,PARimx10,rb10,hourpd,tair10,tleafd10, &
  tleafn10,Kj2Kc, Wc2Wjb0, JmaxCoef, Fc, Fj, NUEc, NUEj, NUEcref, &
@@ -506,7 +506,7 @@ real(dp), intent (out)   :: Nresp                   !nitrogen content for respir
 real(dp), intent (out)   :: PSN                     !daily photosynthetic rate(g C/day/m2 leaf)
 real(dp), intent (out)   :: RESP                    !daily respiration rate(g C/day/m2 leaf)
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !intermediate variables
 real(dp) :: A                                       !Gross photosynthetic rate (umol CO2/m2/s)
 real(dp) :: Wc2Wj                                   !ratio: Wc/Wj  
@@ -525,13 +525,13 @@ real(dp) :: awc
 real(dp) :: gs        
 real(dp) :: NUECHG                                  !the nitrogen use efficiency change under current conidtions compared to reference climate conditions (25oC and 385 ppm )
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !pass thru variables
 real(dp), intent (in) :: ftg0                       !the intercept of the stomatal conductance equation
 real(dp), intent (in) :: ftg1                       !the slope of the stomatal conductance equation 
 integer,intent (in) :: gs_func                    !flag to indicate which stomatal conductance function to use 
 
-!-------------------------------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------!
 !parameters
 real(dp), parameter :: Cb = 1.78                      ! nitrogen use effiency for choloraphyll for light capture, see Evans 1989  
 real(dp), parameter :: Cv = 1.2d-5 * 3600.            ! conversion factor from umol CO2 to g carbon
@@ -539,7 +539,7 @@ real(dp), parameter :: Jmaxb0 = 0.0311                ! the baseline proportion 
 real(dp), parameter :: Kc25 = 40.49                   ! Mechalis constant of CO2 for rubisco(Pa), Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
 real(dp), parameter :: Ko25 = 27840.                  ! Mechalis constant of O2 for rubisco(Pa), Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
 real(dp), parameter :: Cp25 = 4.275                   ! CO2 compensation point at 25C (Pa), Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 theta_cj    = 0.95
 theta       = 0.292 / (1.0 + 0.076 / (Nlc * Cb))
@@ -563,7 +563,7 @@ Jmax        = max(1d-7,Jmax)
      
 JmeanL      = theta * PARi10 / ( sqrt(1.0 + (ELTRNabsorb / Jmax)**2.0) )
  
-if(KcKjFlag.eq.0) then      !update the Kc,Kj, anc ci information
+if(KcKjFlag==0) then      !update the Kc,Kj, anc ci information
  
 ! From SDGVM - for consistency
 ! in LUNA ko, kc, and tau are at the 10-day mean leaf temp
@@ -645,11 +645,11 @@ Nresp      = RESP  / NUEr
 !print*, A,RESP,Vcmax,Jmax
  
 end subroutine LUNA_Ninvestments
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 
 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !Calculate the Nitrogen use effieciency dependence on CO2 and leaf temperature
 subroutine NUE(o2a,ci,tgrow,tleaf,NUEj,NUEc,Kj2Kc, &
  ttype,ftToptV,ftHaV,ftHdV,ftToptJ,ftHaJ,ftHdJ)
@@ -674,7 +674,7 @@ integer:: ttype                      !temperature scaling method to use
 real(dp), intent (out):: NUEj                       !nitrogen use efficiency for electron transport under refernce environmental conditions (25oC and 385 ppm co2)
 real(dp), intent (out):: NUEc                       !nitrogen use efficiency for carboxylation under reference environmental conditions  (25oC and 385 ppm co2)
 real(dp), intent (out):: Kj2Kc                      !the ratio of Kj to Kc 
-!------------------------------------------------
+!----------------------------------------------------------------------!
 !intermediate variables
 real(dp) :: Fj                                      !the temperature adjusted factor for Jmax 
 real(dp) :: Fc                                      !the temperature adjusted factor for Vcmax 
@@ -693,7 +693,7 @@ real(dp), parameter :: Kc25 = 40.49               ! Mechanis constant of CO2 for
 real(dp), parameter :: Ko25 = 27840.              ! Mechanis constant of O2 for rubisco(Pa), Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
 real(dp), parameter :: Cp25 = 4.275               ! CO2 compensation point at 25C (Pa), Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
    
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !print*, 'LUNA NUE, ttype:', ttype
 !Fc  = VcmxTKattge(tgrow, tleaf) * Fc25
 !Fj  = JmxTKattge(tgrow, tleaf)  * Fj25
@@ -727,11 +727,11 @@ NUEc  = Kc * Fc
 Kj2Kc = Kj / Kc
      
 end subroutine NUE
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 
 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !Calculate the temperature response for respiration, following Bernacchi PCE 2001
 function RespTBernacchi(tleaf)
 
@@ -740,19 +740,17 @@ implicit none
 real(dp) RespTBernacchi
 real(dp), intent(in):: tleaf  !leaf temperature (oC)
 
-!RespTBernacchi= exp(18.72-46.39/(rgas*1.e-6 *
-!&(tleaf+tfrz)))
+!RespTBernacchi= exp(18.72-46.39/(rgas*1.e-6 *(tleaf+tfrz)))
 RespTBernacchi= exp( 18.72-46.39/(8.31d-3 * &
  (tleaf+273.15)) )
 
 end function RespTBernacchi
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
 
      
 
      
 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 subroutine LUNA_nogrowth(max_daily_pchg,vcmx25_z,jmx25_z,enzs_z) 
 
 real(dp), intent (in)    :: max_daily_pchg      ! maximum daily percentrage change for nitrogen allocation
@@ -764,7 +762,7 @@ real(dp)                 :: max_daily_decay     ! maximum daily percentrage chan
 !INTEGER                :: z                   ! canopy layer index
 
 ! need to determine if these really need to have each layer or are passed back to each layer in npp calc
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 !nrad            = 12
 
 !assume enzyme turnover under maintenance is 10 times lower than enzyme change under growth
@@ -785,7 +783,7 @@ max_daily_decay = min(0.5, 0.1 * max_daily_pchg)
 !print*, vcmx25_z(1)
 
 end subroutine LUNA_nogrowth 
-!-------------------------------------------------------------------------------------------------------------------------------------------------       
+!----------------------------------------------------------------------!       
 
 end module luna_methods
 

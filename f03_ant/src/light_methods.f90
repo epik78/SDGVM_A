@@ -9,7 +9,7 @@ contains
 !                     dayl :: light_methods                            !
 !                     ---------------------                            !
 !                                                                      !
-! real(dp) function dayl(lat,day)                                               !
+! real(dp) function dayl(lat,day)                                      !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Calculates daylength (h) for the gridcell lat and day of year
@@ -144,6 +144,8 @@ end subroutine pfd
 
 
 
+
+
 !**********************************************************************!
 !                                                                      !
 !                     pfd_ant :: light_methods                         !
@@ -172,7 +174,7 @@ real(dp) :: solar_const = 1370.0 ! solar constant (W/m2)
 logical :: read_par,subd_par,calc_zen
 !----------------------------------------------------------------------!
 
-if (hrs.GT.1E-6) then
+if (hrs>1E-6) then
 ! declination angle
   del  = -23.4*cos(conv*360.0*(day+10.0)/365.0)
   del  = del*conv
@@ -224,53 +226,53 @@ if (hrs.GT.1E-6) then
     toa_h   = solar_const * cos_zen 
 ! toa_h   = solar_const * ( sin(rlat)*sin(del) + 
 ! & cos(rlat)*cos(del)*cos(h) )
-!          if(day.eq.160) print*, h,toa,toa_h,toa_h/toa
+!          if(day==160) print*, h,toa,toa_h,toa_h/toa
 ! scale SWR (total) from daytime mean to instantaneous 
 ! - scale by the ratio of toa instantaneous insolation to daytime mean
-    if(toa.gt.0.0) then
+    if(toa>0.0) then
       total = total*toa_h/toa
     else
       total = 0.0
     endif
-! if(day.eq.160) print*, total 
+! if(day==160) print*, total 
 ! reset top of atmosphere to instantaneous value
     toa = toa_h
 
   endif
 
-  if (total.LT.0.0) total=0.0
-  if(toa.le.0.0) then
+  if (total<0.0) total=0.0
+  if(toa<=0.0) then
     clearness = 0.0
   else
     clearness = total/toa
   endif
 
 ! calculate diffuse irradiance (from Spitters etal 1986)
-  IF(subd_par) THEN
+  if(subd_par) THEN
 ! hourly data
     dJ_R = 0.847 - 1.61*cos_zen + 1.04*cos_zen**2
     dJ_K = (1.47-dJ_R)/1.66
-    IF(clearness.LT.0.22) THEN
+    if(clearness<0.22) THEN
       diffprop = 1.0
-    ELSE IF(clearness.LT.0.35) THEN
+    ELSE IF(clearness<0.35) THEN
       diffprop = 1.0-6.4*(clearness-0.22)**2
-    ELSE IF(clearness.LT.dJ_K) THEN
+    ELSE IF(clearness<dJ_K) THEN
       diffprop = 1.47-1.66*clearness
     ELSE
       diffprop = dJ_R
-    ENDIF
+    endIF
   ELSE
 ! daily data
-    IF(clearness.LT.0.07) THEN
+    if(clearness<0.07) THEN
       diffprop = 1.0
-    ELSE IF(clearness.LT.0.35) THEN
+    ELSE IF(clearness<0.35) THEN
       diffprop = 1.0-2.3*(clearness-0.07)**2
-    ELSE IF(clearness.LT.0.75) THEN
+    ELSE IF(clearness<0.75) THEN
       diffprop = 1.33-1.46*clearness
     ELSE
       diffprop = 0.23
-    ENDIF
-  ENDIF
+    endIF
+  endIF
 
   diffuse = total*diffprop
 
@@ -354,7 +356,7 @@ end function pfd_without_cloud
 !                     pfd2 :: light_methods                            !
 !                     ---------------------                            !
 !                                                                      !
-! real(dp) function pfd2(lat,day,hrs)                                           !
+! real(dp) function pfd2(lat,day,hrs)                                  !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Photon Flux Density
@@ -402,7 +404,7 @@ end function pfd2
 !                     pfds :: light_methods                            !
 !                     ---------------------                            !
 !                                                                      !
-! real(dp) function pfds(tdss,hrs)                                              !
+! real(dp) function pfds(tdss,hrs)                                     !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Photon Flux Density

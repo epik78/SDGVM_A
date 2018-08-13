@@ -36,44 +36,43 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!***********************************************************************
 subroutine COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
-!***********************************************************************
-real(dp) :: npp(max_cohorts),nps(max_cohorts),tmp(12,31),prc(12,31),firec,fprob, &
- ftprop(max_cohorts),fri,norm,ftprop0(max_cohorts),total_carbon,old_total_carbon, &
- mtmp,mprc
+!**********************************************************************!
+real(dp) :: npp(max_cohorts),nps(max_cohorts),tmp(12,31),prc(12,31)
+real(dp) :: firec,fprob,ftprop(max_cohorts),fri,norm
+real(dp) ::ftprop0(max_cohorts),total_carbon,old_total_carbon,mtmp,mprc
 integer nft,ft,fireres
 logical check_closure
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
-  if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
+!----------------------------------------------------------------------!
 
 do ft=1,ssp%cohorts
   npp(ft) = ssv(ft)%npp
   nps(ft) = ssv(ft)%nps
 enddo
 
-!----------------------------------------------------------------------*
-! Compute the likelyhood of fire in the current year 'fprob'.          *
-! 'find' is the fire index                                             *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Compute the likelyhood of fire in the current year 'fprob'.          !
+! 'find' is the fire index                                             !
+!----------------------------------------------------------------------!
 call FIRE(prc,tmp,fri,fprob)
 
-!----------------------------------------------------------------------*
-! Take off area burnt by fire together with plants past there sell by  *
-! date and put this as bare ground ready for new growth 'ngrowth'.     *
-! Also shift cover and biomass arrays one to the right.                *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Take off area burnt by fire together with plants past there sell by  !
+! date and put this as bare ground ready for new growth 'ngrowth'.     !
+! Also shift cover and biomass arrays one to the right.                !
+!----------------------------------------------------------------------!
 call NEWGROWTH(fprob,npp,nps,fireres,firec)
 
-!----------------------------------------------------------------------*
-! Set cover arrays to adjust to ftprop as best they can.               *
-! ftprop contains the total proportion of that cover, not the          *
-! proportion of bare land to assign. Calculate the new ftprop.         *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Set cover arrays to adjust to ftprop as best they can.               !
+! ftprop contains the total proportion of that cover, not the          !
+! proportion of bare land to assign. Calculate the new ftprop.         !
+!----------------------------------------------------------------------!
 norm = 0.0
 do ft=1,nft
   ftprop(ft) = ftprop(ft)/100.0
@@ -99,9 +98,9 @@ if (ssp%new_cov > 0.0) then
   enddo
 endif
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (check_closure) then
   call SUM_CARBON(total_carbon,.false.)
   if (abs(total_carbon+firec-old_total_carbon) > 1.0e-6) then
@@ -109,137 +108,10 @@ if (check_closure) then
   endif
 endif
 
-!***********************************************************************
 end subroutine COVER
-!***********************************************************************
 
 
 
-
-
-!!**********************************************************************!
-!!                                                                      !
-!!               INITIALISE_NEW_COHORTS :: veg_dynamics                 !
-!!                -----------------------------------                   !
-!!                                                                      !
-!!     subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)      !
-!!                                                                      !                                                            
-!!----------------------------------------------------------------------!
-!!> @brief INITIALISE_NEW_COHORTS
-!!! @details ! It gets ftprop(ft) which holds the cov it needs to add 
-!!! for each ft for this year from the COVER subroutine.One new cohort 
-!!! for each ft will carry this cover.It will be initialised relatively 
-!!! to its cover and depending on what was left in the pools from cohorts
-!!! that died.
-!!!
-!!! @author Mark Lomas
-!!! @date Feb 2006
-!!----------------------------------------------------------------------!
-!!***********************************************************************
-!subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
-!!***********************************************************************
-!real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
-!integer ft,nft,i,cohort,ierase
-!logical check_closure
-!!----------------------------------------------------------------------*
-!! Check carbon closure.
-!!----------------------------------------------------------------------*
-!  if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
-!!----------------------------------------------------------------------*
-!
-!sumftprop = 0.0
-!do ft=1,nft
-!  sumftprop = sumftprop + ftprop(ft)
-!enddo
-!
-!!----------------------------------------------------------------------*
-!! Set cover arrays for this years ft proportions, take carbon from     *
-!! litter to provide nppstore and canopy.                               *
-!!----------------------------------------------------------------------*
-!cohort = ssp%cohorts
-!
-!do ft=1,nft
-!  if (ftprop(ft)>0.0) then
-!  ierase=1
-!  IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
-!   IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
-!     ierase=0
-!     pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
-!   ENDIF
-!  ENDIF
-!  IF (ierase.EQ.1) THEN
-!    cohort = cohort + 1
-!    ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
-!    ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
-!!----------------------------------------------------------------------*
-!! Set plant functional type parameterisation for the new cohorts.
-!!----------------------------------------------------------------------*
-!    pft(cohort) = pft_tab(ft)
-!
-!!----------------------------------------------------------------------*
-!! Set initial values of the system state.
-!!----------------------------------------------------------------------*
-!    call INITIALISE_STATE_COHORT(cohort)
-!
-!    ssv(cohort)%stemfr = ssv(1)%stemfr
-!
-!    ssv(cohort)%nppstore(1) = pft(cohort)%stemx
-!    ssv(cohort)%nppstore(2) = pft(cohort)%stemx
-!    ssv(cohort)%nppstore(3) = pft(cohort)%stemx
-!    if ((pft(cohort)%mort < 5).and.(pft(cohort)%mort > 0)) then
-!      if (ssp%co2ftmap(ft,1) > 1) then
-!        ssv(cohort)%nppstore(1) = ssv(ssp%co2ftmap(ft,2))%nppstore(1)
-!        ssv(cohort)%nppstore(2) = ssv(ssp%co2ftmap(ft,2))%nppstore(2)
-!        ssv(cohort)%nppstore(3) = ssv(ssp%co2ftmap(ft,2))%nppstore(3)
-!      endif
-!    endif
-!
-!    ssv(cohort)%cov = ftprop(ft)
-!    ssv(cohort)%ppm = pft_tab(ft)%ppm0
-!    ssv(cohort)%hgt = 0.004
-!    ssv(cohort)%age = 1
-!    call SET_NEW_SOIL_RES(cohort,ftprop(ft)/sumftprop)
-!!----------------------------------------------------------------------*
-!! Take carbon from litter to balance the storage.
-!!----------------------------------------------------------------------*
-!    ssv(cohort)%slc = ssv(cohort)%slc - ssv(cohort)%nppstore(1)*ssv(cohort)%cov
-!
-!    if (ssv(cohort)%slc<0.0) then
-!!----------------------------------------------------------------------*
-!! Make up any shortfall with soil carbon.
-!!----------------------------------------------------------------------*
-!      sumc = 0.0
-!      do i=1,8
-!         sumc = sumc + ssv(cohort)%c(i)
-!      enddo
-!      do i=1,8
-!        ssv(cohort)%c(i) = ssv(cohort)%c(i)*(1.0+ssv(cohort)%slc/sumc/ssv(cohort)%cov)
-!      enddo
-!      ssv(cohort)%slc = 0.0
-!    endif
-!!----------------------------------------------------------------------*
-!ENDIF
-!  endif
-!enddo
-!ssp%cohorts = cohort
-!call RESET_SOIL_RES()
-!
-!!----------------------------------------------------------------------*
-!! Check carbon closure.
-!!----------------------------------------------------------------------*
-!if (check_closure) then
-!  call SUM_CARBON(total_carbon,.false.)
-!  if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
-!    write(*,*) 'Breach of carbon closure in INITIALISE_NEW_COHORTS:', &
-! total_carbon-old_total_carbon,' g/m^2.'
-!  endif
-!endif
-!
-!!***********************************************************************
-!end subroutine INITIALISE_NEW_COHORTS
-!!***********************************************************************
-!
-!
 
 
 !**********************************************************************!
@@ -260,9 +132,8 @@ end subroutine COVER
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!***********************************************************************
 subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
 integer ft,nft,i,cohort,ierase
 logical check_closure
@@ -274,21 +145,21 @@ real(dp) :: extras_snow,extras_l_snow,extras_slc,extras_rlc,extras_sln
 real(dp) :: extras_rln,sumslc
 integer :: loop_check(max_cohorts),adjust_check
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 sumftprop = 0.0
 do ft=1,nft
   sumftprop = sumftprop + ftprop(ft)
 enddo
 
-!----------------------------------------------------------------------*
-! Set cover arrays for this years ft proportions, take carbon from     *
-! litter to provide nppstore and canopy.                               *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Set cover arrays for this years ft proportions, take carbon from     !
+! litter to provide nppstore and canopy.                               !
+!----------------------------------------------------------------------!
 cohort = ssp%cohorts
 
 sumc = 0.0
@@ -298,10 +169,10 @@ do ft=1,nft
   sumslc = sumslc + ssp%xnew_slc(ft)
 enddo
 
-!----------------------------------------------------------------------*
-! Make the averaged extraC pool. This is made up from any pfts where the new  *
-! proportions (ftprop) are less than the old ssp%new_cov.              *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Make the averaged extraC pool. This is made up from any pfts where   !
+! the new proportions (ftprop) are less than the old ssp%new_cov.      !
+!----------------------------------------------------------------------!
 extras_c = 0.0
 extras_n = 0.0
 extras_minn = 0.0
@@ -318,7 +189,7 @@ adjust_check = 0
 sum_prop_taken = 0.0
 prop_taken = 0.0
 do ft=1,nft
-  if (ssp%xnew_cov(ft)-ftprop(ft).gt.1e-6) then
+  if (ssp%xnew_cov(ft)-ftprop(ft)>1e-6) then
     loop_check(ft) = 1
     adjust_check = 1
     prop_taken = (ssp%xnew_cov(ft) - ftprop(ft))/sumftprop
@@ -375,15 +246,15 @@ do ft=1,nft
   endif
 enddo
 
-!----------------------------------------------------------------------*
-! Spread the extraC pool amongst the pfts where the new proportions    *
-! (ftprop) the averaged pool.                                          *
-!----------------------------------------------------------------------*
-!if (adjust_check.eq.1) then
+!----------------------------------------------------------------------!
+! Spread the extraC pool amongst the pfts where the new proportions    !
+! (ftprop) the averaged pool.                                          !
+!----------------------------------------------------------------------!
+!if (adjust_check==1) then
 prop_needed = 0.0
 do ft=1,nft
-  if (ssp%xnew_cov(ft)-ftprop(ft).lt.-1.e-6) then
-!  if (loop_check(ft).eq.0) then
+  if (ssp%xnew_cov(ft)-ftprop(ft)<-1.e-6) then
+!  if (loop_check(ft)==0) then
 !    print*,'y ',ft,ssp%xnew_cov(ft)-ftprop(ft)
     prop_needed = (ftprop(ft) - ssp%xnew_cov(ft))/sumftprop/&
 sum_prop_taken
@@ -417,29 +288,29 @@ do ft=1,nft
   sumslc = sumslc + ssp%xnew_slc(ft)
 enddo
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 do ft=1,nft
   if (ftprop(ft)>0.0) then
 !    ierase=1
-!    IF (pft_tab(ft)%phen.EQ.3.AND.ssp%co2ftmap(ft,1).EQ.1) THEN
-!      IF (ssv(ssp%co2ftmap(ft,2))%sown.EQ.1) THEN
+!    IF (pft_tab(ft)%phen==3.and.ssp%co2ftmap(ft,1)==1) THEN
+!      IF (ssv(ssp%co2ftmap(ft,2))%sown==1) THEN
 !        ierase=0
 !        pft(ssp%co2ftmap(ft,2))=pft_tab(ft)
 !      ENDIF
 !    ENDIF
-!    IF (ierase.EQ.1) THEN
+!    IF (ierase==1) THEN
     cohort = cohort + 1
     ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
     ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Set plant functional type parameterisation for the new cohorts.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
     pft(cohort) = pft_tab(ft)
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Set initial values of the system state.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
     call INITIALISE_STATE_COHORT(cohort)
 
     ssv(cohort)%stemfr = ssv(1)%stemfr
@@ -463,15 +334,15 @@ do ft=1,nft
     call SET_NEW_SOIL_RES(cohort,ftprop(ft)/sumftprop)
 !    call SET_NEW_SOIL_RES2(cohort,ft,ftprop(ft)/sumftprop)
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Take carbon from litter to balance the storage.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
     ssv(cohort)%slc = ssv(cohort)%slc - ssv(cohort)%nppstore(1)*ssv(cohort)%cov
 
     if (ssv(cohort)%slc<0.0) then
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Make up any shortfall with soil carbon.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
       sumc = 0.0
       do i=1,8
          sumc = sumc + ssv(cohort)%c(i)
@@ -481,16 +352,16 @@ do ft=1,nft
       enddo
       ssv(cohort)%slc = 0.0
     endif
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 !ENDIF
   endif
 enddo
 ssp%cohorts = cohort
 call RESET_SOIL_RES()
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (check_closure) then
   call SUM_CARBON(total_carbon,.false.)
   if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
@@ -499,32 +370,31 @@ if (check_closure) then
   endif
 endif
 
-!***********************************************************************
 end subroutine INITIALISE_NEW_COHORTS
-!***********************************************************************
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                          SUBROUTINE GROWTH                           * 
-!                          *****************                           *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                          SUBROUTINE GROWTH                           ! 
+!                          *****************                           !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine GROWTH(nft,lai,stembio,rootbio,check_closure)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: npp(max_cohorts),lai(max_cohorts),nps(max_cohorts),npr(max_cohorts), &
  evp(max_cohorts),rootbio,slc(max_cohorts),rlc(max_cohorts), &
  sln(max_cohorts),rln(max_cohorts),stembio, &
  total_carbon,old_total_carbon,ans
 integer nft,ftmor(max_cohorts),ft,i
 logical check_closure
-!----------------------------------------------------------------------*
+
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 do ft=1,ssp%cohorts
   npp(ft) = ssv(ft)%npp
@@ -533,9 +403,9 @@ do ft=1,ssp%cohorts
   evp(ft) = ssv(ft)%evp
 enddo
 
-!----------------------------------------------------------------------*
-! Initialise litter arrays, and add on leaf litter computed in DOLY.   *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Initialise litter arrays, and add on leaf litter computed in DOLY.   !
+!----------------------------------------------------------------------!
 do ft=1,ssp%cohorts
   slc(ft) = 0.0
   rlc(ft) = 0.0
@@ -543,15 +413,15 @@ do ft=1,ssp%cohorts
   rln(ft) = 0.0
 enddo
 
-!----------------------------------------------------------------------*
-! Thin vegetation where npp is not sufficient to maintain sensible     *
-! growth rate.                                                         *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Thin vegetation where npp is not sufficient to maintain sensible     !
+! growth rate.                                                         !
+!----------------------------------------------------------------------!
 call THIN(nft,npp,lai,nps,evp,slc,check_closure)
 
-!----------------------------------------------------------------------*
-!Compute leaf root and stem biomasses.                                 *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+!Compute leaf root and stem biomasses.                                 !
+!----------------------------------------------------------------------!
 stembio = 0.0
 rootbio = 0.0
 do ft=1,ssp%cohorts
@@ -566,9 +436,9 @@ do ft=1,ssp%cohorts
   ssv(ft)%evp = evp(ft)
 enddo
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (check_closure) then
   call SUM_CARBON(total_carbon,.false.)
   if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
@@ -576,36 +446,36 @@ if (check_closure) then
   endif
 endif
 
-!***********************************************************************
 end subroutine GROWTH
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                          SUBROUTINE THIN                             *
-!                          ***************                             *
-!                                                                      *
-!*********************************************************************** 
+!**********************************************************************!
+!                                                                      !
+!                          SUBROUTINE THIN                             !
+!                          ***************                             !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine THIN(nft,npp,lai,nps,evp,slc,check_closure)
-!***********************************************************************
-real(dp) :: ftmat(max_cohorts),npp(max_cohorts), &
- lai(max_cohorts),nps(max_cohorts),evp(max_cohorts),storelit(max_cohorts), &
- slc(max_cohorts),pbionew,pbioold,no,pbio, &
- ftcov(max_cohorts),covnew(max_age,max_cohorts),ppmnew(max_age,max_cohorts),shv,lmv,nv,pi, &
- hwv(max_age),emv,totno,totcov,scale(max_age),oldbio(max_cohorts,2),dimold, &
- g0,gf,gm,grate(max_age),hgtnew(max_age),dimnew,maxhgt,minhgt,hc1,hc2, &
- tcov1,tcov2,sum,xxx,total_carbon,old_total_carbon
+!**********************************************************************!
+real(dp) :: ftmat(max_cohorts),npp(max_cohorts),lai(max_cohorts)
+real(dp) :: nps(max_cohorts),evp(max_cohorts),storelit(max_cohorts)
+real(dp) :: slc(max_cohorts),pbionew,pbioold,no,pbio,ftcov(max_cohorts)
+real(dp) :: covnew(max_age,max_cohorts),ppmnew(max_age,max_cohorts),shv
+real(dp) :: lmv,nv,pi,hwv(max_age),emv,totno,totcov,scale(max_age)
+real(dp) :: oldbio(max_cohorts,2),dimold,g0,gf,gm,grate(max_age)
+real(dp) :: hgtnew(max_age),dimnew,maxhgt,minhgt,hc1,hc2,tcov1,tcov2,sum
+real(dp) :: xxx,total_carbon,old_total_carbon
 integer nft,ft,i,year,coh,ift
 logical check_closure
-!----------------------------------------------------------------------*
+
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 pi = 3.1415926
 
@@ -623,15 +493,15 @@ do ft=1,ssp%cohorts
   ftmat(ft) = real(pft(ft)%mort)
 enddo
 
-!----------------------------------------------------------------------*
-! FT loop for thinning and height competition.                         *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! FT loop for thinning and height competition.                         !
+!----------------------------------------------------------------------!
 do ft=1,nft
   if ((pft_tab(ft)%gr0>0.0).and.(ssp%co2ftmap(ft,1)>0)) then
 
-!----------------------------------------------------------------------*
-! Height competition.                                                  *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Height competition.                                                  !
+!----------------------------------------------------------------------!
     minhgt = 10000.0
     maxhgt =-10000.0
     i = 0
@@ -676,7 +546,7 @@ do ft=1,nft
       enddo
 
     endif
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
     g0 = pft_tab(ft)%gr0
     gf = pft_tab(ft)%grf
@@ -695,10 +565,10 @@ do ft=1,nft
     enddo
     totno = totno/totcov
 
-!----------------------------------------------------------------------*
-! Compute cover and ppm to sustain a minimum growth rate, put these    *
-! values in covnew and ppmnew.                                         *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Compute cover and ppm to sustain a minimum growth rate, put these    !
+! values in covnew and ppmnew.                                         !
+!----------------------------------------------------------------------!
     do coh=2,ssp%co2ftmap(ft,1)+1
       ift = ssp%co2ftmap(ft,coh)
 
@@ -711,9 +581,9 @@ do ft=1,nft
       nv = 1.0
 
       if (ssv(ift)%ppm*ssv(ift)%cov>0.0) then
-!----------------------------------------------------------------------*
-! Calculate the increase in diameter produced by stem NPP 'nps'.       *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Calculate the increase in diameter produced by stem NPP 'nps'.       !
+!----------------------------------------------------------------------!
 
         if (emv>0.0) then
 ! hwv = theoretical maximum height (hydrolics)
@@ -722,9 +592,9 @@ do ft=1,nft
           hwv(year) = ssv(ift)%hgt*0.9
         endif
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Calculate new height.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
         if (hwv(year)>0.0) then
           hgtnew(year) = (hwv(year)-ssv(ift)%hgt)/hwv(year)*0.5
         else
@@ -733,16 +603,16 @@ do ft=1,nft
         if (hgtnew(year)<0.0)  hgtnew(year) = 0.0
         hgtnew(year) = hgtnew(year) + ssv(ift)%hgt
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! pbio = g/individual
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
         pbioold = ssv(ift)%bio(1)/ssv(ift)%ppm
         pbionew = (ssv(ift)%bio(1) + ssv(ift)%stem%tot(1)*(1.0 - &
  stlit(real(year,dp),ftmat(ift))))/ssv(ift)%ppm
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Old diameter
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
         if (ssv(ift)%hgt>0.0) then
 ! dimold = 2.0*(pbioold/1000000.0/ssv(ift)%hgt/
           dimold = 2.0*(pbioold/1000000.0/hgtnew(year)/pi/pft(ift)%wden)**0.5
@@ -750,9 +620,9 @@ do ft=1,nft
           dimold = 0.0
         endif
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! New diameter
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
         if (hgtnew(year)>0.0) then
           dimnew = 2.0*(pbionew/1000000.0/hgtnew(year)/pi/pft(ift)%wden)**0.5
         else
@@ -760,15 +630,15 @@ do ft=1,nft
         endif
 
         if ((dimnew-dimold)/2.0>grate(year)) then
-!----------------------------------------------------------------------*
-! No thinning required.                                                *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! No thinning required.                                                !
+!----------------------------------------------------------------------!
           ppmnew(year,ift) = ssv(ift)%ppm
           covnew(year,ift) = ssv(ift)%cov
         else
-!----------------------------------------------------------------------*
-! Thinning required.                                                   *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Thinning required.                                                   !
+!----------------------------------------------------------------------!
           xxx = (grate(year)+dimold/2.0)**2.0*1000000.0*hgtnew(year)*pi*pft(ift)%wden
           ppmnew(year,ift) = (ssv(ift)%bio(1) + ssv(ift)%stem%tot(1)* &
  (1.0 - stlit(real(year,dp),ftmat(ift)))/100.0)/xxx
@@ -784,9 +654,9 @@ do ft=1,nft
       endif
     enddo
 
-!----------------------------------------------------------------------*
-! Correct biomass array, and adjust litter for any thinned trees.      *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Correct biomass array, and adjust litter for any thinned trees.      !
+!----------------------------------------------------------------------!
     do coh=2,ssp%co2ftmap(ft,1)+1
       ift = ssp%co2ftmap(ft,coh)
       year = int(ssv(ift)%age+0.5)
@@ -813,7 +683,7 @@ do ft=1,nft
       endif
 
     enddo
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
   else
     do coh=2,ssp%co2ftmap(ft,1)+1
       ift = ssp%co2ftmap(ft,coh)
@@ -821,9 +691,9 @@ do ft=1,nft
       ssv(ift)%hgt = 0.0
     enddo
   endif
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! End of ft loop.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 enddo
 
 do ft=1,nft
@@ -834,9 +704,9 @@ do ft=1,ssp%cohorts
   ftcov(pft(ft)%itag) = ftcov(pft(ft)%itag) + ssv(ft)%cov
 enddo
 
-!----------------------------------------------------------------------*
-! Correct nppstore to account for thinning.                            *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Correct nppstore to account for thinning.                            !
+!----------------------------------------------------------------------!
 do ft=1,ssp%cohorts
   if ((pft(ft)%gr0>0.0).and.(ssv(ft)%nppstore(1)>0.0).and.(ssv(ft)%cov>0.0)) then
     slc(ft) = slc(ft) +  storelit(ft)
@@ -848,9 +718,9 @@ do ft=1,ssp%cohorts
   ssv(ft)%slc = slc(ft)
 enddo
 
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 ! Check carbon closure.
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 if (check_closure) then
   call SUM_CARBON(total_carbon,.false.)
   if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
@@ -859,26 +729,24 @@ if (check_closure) then
   endif
 endif
 
-!***********************************************************************
 end subroutine THIN
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                             FUNCTION find                            *
-!                             *************                            *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                             FUNCTION find                            !
+!                             *************                            !
+!                                                                      !
+!----------------------------------------------------------------------!
 function find(tmp,prc)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: find,tmp(12),prc(12)
 real(dp) :: tmplim,prclim
 integer i
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 tmplim = -5.0
 prclim = 50.0
@@ -896,22 +764,20 @@ do i=1,12
   endif
 enddo
 
-!***********************************************************************
 end function find
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                             SUBROUTINE c3c4                          *
-!                             ***************                          *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                             SUBROUTINE c3c4                          !
+!                             ***************                          !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine c3c42(ftprop,npp,range)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftprop(max_cohorts),npp(max_cohorts),range
 real(dp) :: grass,nd
 
@@ -922,22 +788,20 @@ if (ftprop(2)>grass)  ftprop(2) = grass
 if (ftprop(2)<0.0)  ftprop(2) = 0.0
 ftprop(3) = grass - ftprop(2)
 
-!***********************************************************************
 end subroutine c3c42
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                             SUBROUTINE c3c4                          *
-!                             ***************                          *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                             SUBROUTINE c3c4                          !
+!                             ***************                          !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine c3c4(ftprop,c3old,c4old,npp,nps)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftprop(max_cohorts),npp(max_cohorts),nps(max_cohorts),c3old,c4old
 real(dp) :: grass,c3p,c4p,adj
 
@@ -973,25 +837,23 @@ grass = ftprop(2) + ftprop(3)
 ftprop(2) = grass*c3p
 ftprop(3) = grass*c4p
 
-!***********************************************************************
 end subroutine c3c4
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                             SUBROUTINE GRASSREC                      *
-!                             *******************                      *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                             SUBROUTINE GRASSREC                      !
+!                             *******************                      !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine GRASSREC(nft,ftprop,gold,x,nat_map)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftprop(max_cohorts),gold,x,ntcov,ftt,ftpropo(max_cohorts)
 integer nft,ft,nat_map(8)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 ntcov = 0.0
 ftt = 0.0
@@ -1015,25 +877,23 @@ if (ntcov>gold*x) then
  write(fun%get_id('diag.dat'),'(''Treerec subroutine error'')')
 endif
 
-!***********************************************************************
 end subroutine GRASSREC
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                             SUBROUTINE BAREREC                       *
-!                             ******************                       *
-!                                                                      *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                             SUBROUTINE BAREREC                       !
+!                             ******************                       !
+!                                                                      !
+!----------------------------------------------------------------------!
 subroutine BAREREC(ftprop,bpaold,x)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftprop(max_cohorts),bpaold,x
 real(dp) :: nbp,cgcov
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 ! Current growth 'cgcov'
 cgcov = 1.0 - ssp%new_cov
@@ -1048,25 +908,23 @@ else
   ssp%new_cov = ssp%new_cov*(1.0 - ftprop(1)/100.0)
 endif
 
-!***********************************************************************
 end subroutine BAREREC
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE ADDBIO                         *
-!                            *****************                         *
-! Add on biomass to bio array.                                         *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                            SUBROUTINE ADDBIO                         !
+!                            *****************                         !
+! Add on biomass to bio array.                                         !
+!----------------------------------------------------------------------!
 subroutine ADDBIO(npp,nps,npr)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: npp(max_cohorts),nps(max_cohorts),npr(max_cohorts),npps,nppr
 integer ft
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 do ft=1,ssp%cohorts
   npps = nps(ft)*npp(ft)/100.0
@@ -1075,134 +933,24 @@ do ft=1,ssp%cohorts
   ssv(ft)%bio(2) = ssv(ft)%bio(2) + nppr
 enddo
 
-!***********************************************************************
 end subroutine ADDBIO
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE PERC                           *
-!                            ***************                           *
-!                                                                      *
-!***********************************************************************
-subroutine PERC(fttags,dof,tmin,ftprop,nft)
-!***********************************************************************
-real(dp) :: dof(max_cohorts),tmin,ftprop(max_cohorts),dec1
-real(dp) :: evbl,evnl,dec,dcnl,drdc,sum
-real(dp) :: t1eb,t2eb,t3eb,d1eb,d2eb,d3eb
-real(dp) :: t1en,t2en,t3en,d1en,d2en,d3en
-real(dp) :: t1d,t2d,t3d,d1d,d2d,d3d
-real(dp) :: t1dd,t2dd,t3dd,d1dd,d2dd,d3dd
-real(dp) :: t1dn,t2dn,t3dn,d1dn,d2dn,d3dn
-real(dp) :: t1d1,t2d1,t3d1,d1d1,d2d1,d3d1,ndof
-integer i,ft,nft
-character(len=str_len), dimension(max_outputs) :: fttags
-character(len=str_len) :: st1
-!----------------------------------------------------------------------*
-
-t1eb = 100.0   ! 0
-t2eb = -10.0   ! 1
-t3eb = -25.0   ! 0
-d1eb =  -1.0   ! 0
-d2eb =   0.0   ! 1
-d3eb = 150.0   ! 0
-
-t1en = -20.0   ! 0
-t2en = -40.0   ! 1
-t3en = -60.0   ! 0
-d1en = 100.0   ! 0
-d2en = 180.0   ! 1
-d3en = 260.0   ! 0
-
-t1d =  10.0    ! 0
-t2d = -15.0    ! 1  broadleaf
-t3d = -50.0    ! 0
-d1d =-999.0    ! 0
-d2d = 100.0    ! 1
-d3d = 140.0    ! 0
-
-t1d1 = 100.0   ! 0
-t2d1 =  20.0   ! 1  broadleaf
-t3d1 =  10.0   ! 0
-d1d1 = 150.0   ! 0
-d2d1 = 200.0   ! 1
-d3d1 = 400.0   ! 0
-
-t1dd =  12.0   ! 0
-t2dd = -15.0   ! 1  broadleaf
-t3dd = -30.0   ! 0
-d1dd =  75.0   ! 0
-d2dd = 200.0   ! 1
-d3dd = 400.0   ! 0
-
-t1dn = -60.0   ! 0
-t2dn = -70.0   ! 1
-t3dn = -80.0   ! 0
-d1dn = 180.0   ! 0
-d2dn = 240.0   ! 1
-d3dn = 300.0   ! 0
-
-nft = 1
-st1='Dc_Nl'
-ndof = dof(ntags(fttags,st1))
-evbl = triscale2(tmin,ndof,t1eb,t2eb,t3eb,d1eb,d2eb,d3eb)
-evnl = triscale2(tmin,ndof,t1en,t2en,t3en,d1en,d2en,d3en)
-dec  = triscale2(tmin,ndof,t1d ,t2d ,t3d ,d1d ,d2d ,d3d )
-drdc = triscale2(tmin,ndof,t1dd,t2dd,t3dd,d1dd,d2dd,d3dd)
-dcnl = triscale2(tmin,ndof,t1dn,t2dn,t3dn,d1dn,d2dn,d3dn)
-dec1 = triscale2(tmin,ndof,t1d1,t2d1,t3d1,d1d1,d2d1,d3d1)
-
-!IF (tex-1.LT.0.01)  dcnl = 0.0
-
-sum = evbl + evnl + dec + drdc + dcnl + dec1
-if (sum>0.001) then
-  ftprop(1) = 0.0
-  ftprop(2) = 0.0
-  ftprop(3) = 0.0
-  st1='Ev_Bl'
-  ftprop(ntags(fttags,st1)) = 100.0*evbl/sum
-  st1='Ev_Nl'
-  ftprop(ntags(fttags,st1)) = 100.0*evnl/sum
-  st1='Dc_Bl'
-  ftprop(ntags(fttags,st1)) = 100.0*(dec + drdc + dec1)/sum
-  st1='Dc_Nl'
-  ftprop(ntags(fttags,st1)) = 100.0*dcnl/sum
-else
-  do i=1,nft
-    ftprop(i) = 0.0
-  enddo
-  ftprop(2) = 100.0
-endif
-
-ftprop(1) = 100.0
-do ft=2,nft
-  ftprop(1) = ftprop(1) - ftprop(ft)
-enddo
-
-!***********************************************************************
-end subroutine PERC
-!***********************************************************************
-
-
-
-
-
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE MKLIT                          *
-!                            ****************                          *
-! Make litter.                                                         *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                            SUBROUTINE MKLIT                          !
+!                            ****************                          !
+! Make litter.                                                         !
+!----------------------------------------------------------------------!
 subroutine MKLIT(ftmat,slc,rlc,sln,rln,npp,nps,npr)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: ftmat(max_cohorts),slc(max_cohorts),rlc(max_cohorts),sln(max_cohorts), &
  rln(max_cohorts),npp(max_cohorts),nps(max_cohorts),npr(max_cohorts),npps,nppr,sl,rl
 integer ft
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 do ft=1,ssp%cohorts
   if ((pft(ft)%gr0>0.0).and.(ssv(ft)%age>1)) then
@@ -1222,20 +970,17 @@ do ft=1,ssp%cohorts
   rln(ft) = 0.0
 enddo
 
-!***********************************************************************
 end subroutine MKLIT
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!***********************************************************************
+!**********************************************************************!
 function stlit(age,mat)
-!***********************************************************************
+!----------------------------------------------------------------------!
 real(dp) :: stlit,mat,temp,age
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 stlit = 0.9*real(age)/mat + 0.1
 if (stlit>1.0)  stlit = 1.0
@@ -1253,27 +998,25 @@ stlit = temp**0.5
 stlit = stlit*0.6
 !stlit = 0.0
 
-!***********************************************************************
 end function stlit
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE VEGMAT                         *
-!                            *****************                         *
-! Compute the years to reach maturity for each of the fts.             *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                            SUBROUTINE VEGMAT                         !
+!                            *****************                         !
+! Compute the years to reach maturity for each of the fts.             !
+!----------------------------------------------------------------------!
 subroutine VEGMAT(nft,ftmor,ftwd,ftxyl,ftpd,evp,lai,npp,nps,ftmat)
-!----------------------------------------------------------------------*
+!**********************************************************************!
 real(dp) :: ftwd(max_cohorts),ftxyl(max_cohorts),ftpd(max_cohorts),lai(max_cohorts)
 real(dp) :: npp(max_cohorts),nps(max_cohorts),evp(max_cohorts),ftmat(max_cohorts),emxv,wd
 real(dp) :: pd,lv,fs,shv,pi,lmvt,nvt,hwvt,dvt,massvt,minvt,ppvt
 integer ft,nft,ftmor(max_cohorts)
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 pi = 3.14159
 do ft=2,nft
@@ -1303,27 +1046,25 @@ do ft=2,nft
   if (ftmor(ft)<ftmat(ft)) ftmat(ft) = ftmor(ft)
 enddo
 
-!***********************************************************************
 end subroutine VEGMAT
-!***********************************************************************
 
 
 
 
 
-!***********************************************************************
-!                                                                      *
-!                            SUBROUTINE FIRE                           *
-!                            ***************                           *
-! Compute the fire return interval 'fri' and the probability of a fire *
-! in the current year 'fprob'.                                         *
-!***********************************************************************
+!**********************************************************************!
+!                                                                      !
+!                            SUBROUTINE FIRE                           !
+!                            ***************                           !
+! Compute the fire return interval 'fri' and the probability of a fire !
+! in the current year 'fprob'.                                         !
+!----------------------------------------------------------------------!
 subroutine FIRE(dprc,dtmp,fri,fprob)
-!***********************************************************************
+!**********************************************************************!
 real(dp) :: fri,fprob,dtmp(12,31),dprc(12,31),prct(12),prco,lim1,lim2,maxfri
 real(dp) :: pow,tlim1,tlim2,totp,indexx,tadj,weight,tmp(12),prc(12)
 integer k,no,ind,i,j
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 
 do i=1,12
   tmp(i) = 0.0
@@ -1335,9 +1076,9 @@ do i=1,12
   tmp(i) = tmp(i)/30
 enddo
 
-!----------------------------------------------------------------------*
-! Fire model parameters.                                               *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Fire model parameters.                                               !
+!----------------------------------------------------------------------!
 no = 3
 lim1 = 150.0
 lim2 = 50.0
@@ -1347,9 +1088,9 @@ weight = 0.5
 maxfri = 800.0
 pow = 3.0
 
-!----------------------------------------------------------------------*
-! Adjust for temperature.                                             *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Adjust for temperature.                                              !
+!----------------------------------------------------------------------!
 do i=1,12
   if (tmp(i)>tlim1) then
     tadj = 0.0
@@ -1361,17 +1102,17 @@ do i=1,12
   prct(i) = min(lim1,prc(i) + tadj)
 enddo
 
-!----------------------------------------------------------------------*
-! Calculate yearly componet of index.                                  *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Calculate yearly componet of index.                                  !
+!----------------------------------------------------------------------!
 totp = 0.0
 do k=1,12
   totp = totp + prct(k)/lim1/12.0
 enddo
 
-!----------------------------------------------------------------------*
-! Calculate monthly component of index.                                *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Calculate monthly component of index.                                !
+!----------------------------------------------------------------------!
 prco = 0.0
 do k=1,no
   ind = minx(prct)
@@ -1379,9 +1120,9 @@ do k=1,no
   prct(ind) = lim2
 enddo
 
-!----------------------------------------------------------------------*
-! Compute fire return interval, and convert to probability.            *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Compute fire return interval, and convert to probability.            !
+!----------------------------------------------------------------------!
 indexx = weight*(prco) + (1.0 - weight)*totp
 
 fri = indexx**pow*maxfri
@@ -1389,9 +1130,9 @@ fri = indexx**pow*maxfri
 if (fri<2.0)  fri = 2.0
 fprob = (1.0 - exp(-1.0/fri))*tgp%p_fprob
 
-!***********************************************************************
 end subroutine FIRE
-!***********************************************************************
+
+
 
 
 
@@ -1414,51 +1155,50 @@ end subroutine FIRE
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-!***********************************************************************
 subroutine NEWGROWTH(fprob,npp,nps,fireres,firec)
-!***********************************************************************
+!**********************************************************************!
 real(dp) ::  fprob,npp(max_cohorts),nps(max_cohorts),tmor,tmor0,npp0,firec,xfprob
 integer ft,fireres
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
 xfprob = fprob
 
 firec = 0.0
-!----------------------------------------------------------------------*
-! Take away veg that has died of old age ie > than pft%mort, and       *
-! age the veg by one year.                                             *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Take away veg that has died of old age ie > than pft%mort, and       !
+! age the veg by one year.                                             !
+!----------------------------------------------------------------------!
 do ft=1,max_pfts
   ssp%co2ftmap(ft,1) = 0
 enddo
 
 do ft=1,ssp%cohorts
-!  IF (ssv(ft)%sown.NE.1) THEN 
+!  IF (ssv(ft)%sown/=1) THEN 
     if (ssv(ft)%age > real(pft(ft)%mort)-0.1) then
       call ACCUMULATE_DIST_SOIL_RES(ft,1.0_dp)
     else
-!----------------------------------------------------------------------*
-! Age the state structure.                                             *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Age the state structure.                                             !
+!----------------------------------------------------------------------!
 !      print*,'age ',ssv(ft)%age
       ssv(ft)%age = ssv(ft)%age + 1.0
     endif
 !  ENDIF
 enddo
 
-!----------------------------------------------------------------------*
-! Remove dead cohorts: cover = 0.                                      *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Remove dead cohorts: cover = 0.                                      !
+!----------------------------------------------------------------------!
 call COMPRESS_STATE()
 
-!----------------------------------------------------------------------*
-! Take away veg that is burnt or has died through a hard year ie small *
-! LAI.                                                                 *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! Take away veg that is burnt or has died through a hard year ie small !
+! LAI.                                                                 !
+!----------------------------------------------------------------------!
 do ft=1,ssp%cohorts
 
-!----------------------------------------------------------------------*
-! 'tmor' is the mortality rate of the forrest based on 'npp'.          *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! 'tmor' is the mortality rate of the forrest based on 'npp'.          !
+!----------------------------------------------------------------------!
   npp0 = 0.2
   tmor0 = 6.0
   if (npp(ft)/100.0<0.1) then
@@ -1473,7 +1213,7 @@ do ft=1,ssp%cohorts
   endif
   if (tmor<0.01)  tmor = 0.01
 
-!IF (npp(ft)*nps(ft)/100.0.GT.10.0) THEN
+!IF (npp(ft)*nps(ft)/100.0>10.0) THEN
     tmor = 0.002
 !ELSE
 !  tmor = 1.0 - npp(ft)*nps(ft)/1000.0
@@ -1485,14 +1225,12 @@ do ft=1,ssp%cohorts
   endif
 !  tmor = 0.0
   
-!----------------------------------------------------------------------*
-! kill off trees with no storage left.                                 *
-!----------------------------------------------------------------------*
+!----------------------------------------------------------------------!
+! kill off trees with no storage left.                                 !
+!----------------------------------------------------------------------!
   if (.not.(ssv(ft)%nppstore(1))>0.1) then
     tmor = 1.0
   endif
-!----------------------------------------------------------------------*
-!  IF (ssp%iyear == 1)  tmor = 1.0
   
   if (ssv(ft)%age<real(fireres)) then
     fprob = xfprob
@@ -1504,152 +1242,16 @@ do ft=1,ssp%cohorts
   call ACCUMULATE_DIST_SOIL_RES(ft,tmor)
   
   ! No fire for crop phenology  
-  IF (pft(ft)%phen.EQ.3) fprob=0.0
+  if (pft(ft)%phen==3) fprob=0.0
   call ACCUMULATE_BURNT_SOIL_RES(ft,fprob,firec)
 
 enddo
 
 call COMPRESS_STATE()
 
-!***********************************************************************
 end subroutine NEWGROWTH
-!***********************************************************************
 
 
-
-
-
-!***********************************************************************
-!                                                                      *
-!                          NATURAL_VEG                                 *
-!                          ***********                                 *
-!                                                                      *
-!***********************************************************************
-subroutine NATURAL_VEG(tmp,prc,ftprop,nat_map)
-!***********************************************************************
-real(dp) :: tmp(12,31),prc(12,31),ftprop(max_cohorts),min_tmp,av_mnth(12)
-real(dp) :: x(6,6),evap,tran,bucket,prc_ind
-real(dp) :: sum,prop(6)
-integer day,mnth,ft,nat_map(8),vdaysoff(5),i,year,daysoff
-logical leaves
-!----------------------------------------------------------------------*
-
-data (x(1,i),i=1,6)/ -15.0, -10.0, 100.0,   -1.0,   0.0, 150.0/!EB
-data (x(2,i),i=1,6)/ -70.0, -45.0, -20.0,  -10.0,   0.0, 350.0/!EN
-data (x(3,i),i=1,6)/ -50.0, -15.0,  10.0, -999.0, 100.0, 140.0/!DB
-data (x(4,i),i=1,6)/  10.0,  20.0, 100.0,  150.0, 200.0, 400.0/!DB
-data (x(5,i),i=1,6)/ -30.0, -15.0,  12.0,  75.0,  200.0, 400.0/!DB
-data (x(6,i),i=1,6)/ -80.0, -70.0, -60.0, 200.0,  280.0, 300.0/!DN
-
-!----------------------------------------------------------------------*
-! Find average monthly min, and convert to an absolute min.            *
-!----------------------------------------------------------------------*
-min_tmp = 1000.0
-do mnth=1,12
-  av_mnth(mnth) = 0.0
-  do day=1,30
-    if (min_tmp>tmp(mnth,day)) min_tmp = tmp(mnth,day)
-    av_mnth(mnth) = av_mnth(mnth) + tmp(mnth,day)     
-  enddo
-  av_mnth(mnth) = av_mnth(mnth)/30.0     
-enddo
-min_tmp = minx(av_mnth)*1.29772 - 19.5362
-
-!----------------------------------------------------------------------*
-! Find days off index. Based on an imaginary bucket.                   *
-!----------------------------------------------------------------------*
-evap = 0.5
-tran = 0.5
-
-do i=1,5
-  vdaysoff(i) = 0
-enddo
-leaves = .false.
-
-bucket = 0.0
-
-do year=1,10
-  daysoff = 0
-  do mnth=1,12
-    do day=1,30
-      bucket = bucket + prc(mnth,day)
-      if (leaves) then
-        bucket = bucket - evap - tran
-      else
-        bucket = bucket - evap
-      endif
-      if (bucket<0.0) then
-        leaves = .false.
-        bucket = 0.0
-      endif 
-      if (bucket>ssp%soil_depth/2.0) leaves = .true.
-      if (.not.(leaves)) daysoff = daysoff + 1
-      if (bucket>ssp%soil_depth) bucket = ssp%soil_depth
-    enddo
-  enddo
-  do i=1,4
-    vdaysoff(6-i) = vdaysoff(5-i)
-  enddo
-  vdaysoff(1) = daysoff
-enddo
-prc_ind = real(vdaysoff(1)+vdaysoff(2)+vdaysoff(3)+vdaysoff(4))/4.0
-
-!----------------------------------------------------------------------*
-! Compute fractions of natural vegetation appropriate to seed new      *
-! ground.                                                              *
-!----------------------------------------------------------------------*
-do i=1,6
-  prop(i) =  triscale(min_tmp,x(i,1),x(i,2),x(i,3))*triscale(prc_ind,x(i,4),x(i,5),x(i,6))
-enddo
-
-!----------------------------------------------------------------------*
-! Map the natural functional types to the list given in the input file.*
-!----------------------------------------------------------------------*
-ftprop(nat_map(1)) = 0.0
-ftprop(nat_map(2)) = 0.0
-ftprop(nat_map(3)) = 0.0
-ftprop(nat_map(4)) = 0.0
-ftprop(nat_map(5)) = prop(1)
-ftprop(nat_map(6)) = prop(2)
-ftprop(nat_map(7)) = prop(3) + prop(4) + prop(5)
-ftprop(nat_map(8)) = prop(6)
-
-!----------------------------------------------------------------------*
-! Normalise the fractions.                                             *
-!----------------------------------------------------------------------*
-sum = 0.0
-do ft=1,8
-  sum = sum + ftprop(nat_map(ft))
-enddo
-if (sum>0.0) then
-  do ft=1,8
-    ftprop(nat_map(ft)) = 100.0*ftprop(nat_map(ft))/sum
-  enddo
-else
-  ftprop(nat_map(3)) = 100.0
-endif
-
-!----------------------------------------------------------------------*
-
-!----------------------------------------------------------------------*
-!      DO k=-80,100
-!        DO j=0,360
-!        min_tmp =  (real(k) + 19.5632)/1.29772
-!        prc_ind = real(j)
-!      DO i=1,6
-!        ftprop(i) =  triscale(min_tmp,x(i,1),x(i,2),x(i,3))*
-!     &               triscale(prc_ind,x(i,4),x(i,5),x(i,6))
-!      ENDDO
-!      sum=ftprop(1)+ftprop(2)+ftprop(3)+ftprop(4)+ftprop(5)+ftprop(6)
-!        ENDDO
-!      ENDDO
-!      STOP
-!----------------------------------------------------------------------*
-
-
-!***********************************************************************
-end subroutine NATURAL_VEG
-!***********************************************************************
 
 end module veg_dynamics
 

@@ -35,6 +35,7 @@ module file_class
 !**********************************************************************!
     character(len=*) :: st1,st2
     integer :: ii
+!----------------------------------------------------------------------!
 
     ii = index(st1,'/',.true.)
     if (ii>0) then
@@ -42,6 +43,7 @@ module file_class
     else
       st2 = st1
     endif
+
     end subroutine filename_base
 
 
@@ -55,6 +57,7 @@ module file_class
     integer :: get_id,kode,i
     character(len=*) :: filename
     character(len=200) :: st1,st2
+!----------------------------------------------------------------------!
 
     call filename_base(filename,st2)
 
@@ -74,6 +77,7 @@ module file_class
         endif
       endif
     enddo
+
     end function get_id
 
 
@@ -85,6 +89,7 @@ module file_class
 !**********************************************************************!
     class(NoIds) :: this
     integer :: get_id_n,n
+!----------------------------------------------------------------------!
 
     get_id_n = this%ids(n)
 
@@ -100,6 +105,7 @@ module file_class
     class(NoIds) :: this
     integer :: fid,kode
     character(len=*) :: filename
+!----------------------------------------------------------------------!
 
     this%n = this%n + 1
     if (this%n>max_files) then
@@ -117,6 +123,7 @@ module file_class
     this%ids(this%n) = fid
     this%names(this%n) = trim(filename)
     this%opened(this%n) = .true.
+
     end subroutine open_old
 
 
@@ -129,6 +136,7 @@ module file_class
     class(NoIds) :: this
     integer :: fid,kode
     character(len=*) :: filename
+!----------------------------------------------------------------------!
 
     this%n = this%n + 1
     if (this%n>max_files) then
@@ -147,6 +155,7 @@ module file_class
     this%ids(this%n) = fid
     this%names(this%n) = trim(filename)
     this%opened(this%n) = .true.
+
     end subroutine openu_old
 
 
@@ -159,6 +168,7 @@ module file_class
     class(NoIds) :: this
     integer :: kode,fid
     character(len=*) :: filename
+!----------------------------------------------------------------------!
 
     this%n = this%n + 1
     if (this%n>max_files) then
@@ -176,6 +186,7 @@ module file_class
     this%ids(this%n) = fid
     this%names(this%n) = trim(filename)
     this%opened(this%n) = .true.
+
     end subroutine open
 
 
@@ -188,6 +199,7 @@ module file_class
     class(NoIds) :: this
     integer :: kode,fid
     character(len=*) :: filename
+!----------------------------------------------------------------------!
 
     this%n = this%n + 1
     if (this%n>max_files) then
@@ -206,6 +218,7 @@ module file_class
     this%ids(this%n) = fid
     this%names(this%n) = trim(filename)
     this%opened(this%n) = .true.
+
     end subroutine openu
 
 
@@ -218,6 +231,7 @@ module file_class
     class(NoIds) :: this
     integer :: i,kode
     character(len=*) :: filename
+!----------------------------------------------------------------------!
 
     i = 0
     do
@@ -240,6 +254,7 @@ module file_class
         endif
       endif
     enddo
+
     end subroutine close_name
 
 
@@ -252,6 +267,7 @@ module file_class
     class(NoIds) :: this
     integer :: n_id,kode
     character(len=str_len) :: filename
+!----------------------------------------------------------------------!
 
     close(this%ids(n_id),iostat=kode)
     if (kode/=0) then
@@ -260,6 +276,7 @@ module file_class
       stop
     endif
     this%opened(n_id) = .false.
+
     end subroutine close_n
 
 
@@ -271,6 +288,7 @@ module file_class
 !**********************************************************************!
     class(NoIds) :: this
     integer :: id,kode,i
+!----------------------------------------------------------------------!
 
     i = 0
     do
@@ -293,6 +311,7 @@ module file_class
         exit
       endif
     enddo
+
     end subroutine close
 
 
@@ -304,6 +323,8 @@ module file_class
 !**********************************************************************!
     class(NoIds) :: this
     integer :: i
+!----------------------------------------------------------------------!
+
     do i=1,this%n
       if (this%opened(i)) then
         write(*,'(i5,''  open   '',i6,''  '',a)') i,this%ids(i),trim(this%names(i))
@@ -311,26 +332,19 @@ module file_class
         write(*,'(i5,''  closed '',i6,''  '',a)') i,this%ids(i),trim(this%names(i))
       endif
     enddo
+
     end subroutine print
+
+
 
 end module file_class
 
 
 
 module file_object
-use file_class
-!
-!type Units
-!
-!  type(NoIds) :: default_outputs
-!  type(NoIds) :: daily_outputs
-!  type(NoIds) :: monthly_outputs
-!  type(NoIds) :: yearly_outputs
-!  type(NoIds) :: snapshots
-!  type(NoIds) :: misc
-!  integer :: next
-!
-!end type Units
-!
-type(Noids) :: fun, funMisc
+
+  use file_class
+  type(Noids) :: fun, funMisc
+
 end module file_object
+

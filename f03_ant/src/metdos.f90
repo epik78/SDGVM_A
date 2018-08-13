@@ -949,8 +949,8 @@ ALPHA = 18.0-64.884*(1-1.3614*COS(LATITUDE_RAD))
 SIGMA = 0.03259
 Alpha = alpha*4.1842*100*100  ! convert from cal/cm to w/m2
 !      another fudge to try and transmit less light on heavy cloud days
-!      if(cloud_cover.gt.1.0) alpha = alpha*2
-!       if(cloud_cover.lt.0.15) then
+!      if(cloud_cover>1.0) alpha = alpha*2
+!       if(cloud_cover<0.15) then
 !         cloud_cover = cloud_cover/1.4
 !         alpha = 0.0
 !       endif
@@ -1462,19 +1462,19 @@ do 20 IDAY = 1, DAYS_IN_MONTH
 
 
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
-!         IF(RAND01 - TR1 .LE. 0) THEN
+!         IF(RAND01 - TR1 <= 0) THEN
 !           S1 = 0
 !         ELSE
 !           S1 = RAND01*EXP(1/MU)
 !         ENDIF
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
-!         IF(RAND01 - TR2 .LE. 0) THEN
+!         IF(RAND01 - TR2 <= 0) THEN
 !           S2 = 0
 !         ELSE
 !           S2 = RAND01*EXP(1/(1-MU))
 !         ENDIF
-!         IF(S1+S2-1 .LE. 0) THEN
-!           IF( (S1+S2).EQ.0 )THEN
+!         IF(S1+S2-1 <= 0) THEN
+!           IF( (S1+S2)==0 )THEN
 !             Z = 0.0
 !           ELSE
 !             Z = S1/(S1+S2)
@@ -1482,7 +1482,7 @@ do 20 IDAY = 1, DAYS_IN_MONTH
 !         ELSE
 !           FLAG = 1
 !         ENDIF
-!         IF(FLAG.EQ.1) GOTO  30
+!         IF(FLAG==1) GOTO  30
 !
 !         RAND01 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
 !         RAIN(IDAY) = -Z*LOG(RAND01)*GAMMA
@@ -2690,7 +2690,7 @@ end function WIND_DAY_MEAN_FN
 !cc      CLOUD_COVER_FN = 10-1.155*SQRT(VP_SAT/MAX(RAINFALL_DAY,0.1))
 !ccc      CLOUD_COVER_FN = 10-2.5*SQRT(VP_SAT/MAX(RAINFALL_DAY,0.1))
 !cc      CLOUD_COVER_FN = MAX(CLOUD_COVER_FN, 0.0)/10.0
-!cc      if(RAINFALL_DAY.le.0.001) then
+!cc      if(RAINFALL_DAY<=0.001) then
 !cc        mu = rh  ! average rain on a wet day
 !cc        gamma = 1.0
 !cc        zero = 0.0
@@ -3718,7 +3718,7 @@ integer :: Seed1, Seed2, Seed3, NormSwitch
 !
 if(NormSwitch==1) then
    NormVal = NORMDIST_FN(SEED1,SEED2,SEED3)
-!         IF((MEAN.NE.Zero).and.(SD.NE.1)) THEN
+!         IF((MEAN/=Zero).and.(SD/=1)) THEN
    if ((abs(MEAN)>0.0).and.(abs(SD-1.0)>0.0)) then
 !          transform the distribution
      NormVal = TRANSNORM_FN(Mean, SD, NormVal)
@@ -3851,8 +3851,8 @@ end function NORMDIST2_FN
 !
 !      retval = COS(Incl_rad)*SIN(Lat_rad)+
 !     1   SIN(Incl_rad)*COS(Lat_rad)*COS(Aspect_rad) 
-!      if(retval.lt.-1) retval = -1.0
-!      if(retval.gt.1) retval = 1.0 
+!      if(retval<-1) retval = -1.0
+!      if(retval>1) retval = 1.0 
 !      retval=ASIN(retval)
 !
 !//! Equation 76

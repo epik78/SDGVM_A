@@ -40,9 +40,6 @@ real(dp) :: fav,ev,ss,sums,evbs,pet3,ans1,tfscale,prc
 integer :: lai,iter,ft,i
 !----------------------------------------------------------------------!
 
-!print*,'start ',ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
-
-
 iter = 30
 
 dp2 = prc
@@ -407,8 +404,8 @@ evbs = ev*tgp%p_bs*0.33*pet3*1.3*bst
 
 if (evbs>pet2)  evbs = pet2
 pet2 = pet2 - evbs
-!      IF (evbs.GT.ssv(ft)%soil_h2o(1)) THEN
-!        IF (evbs.GT.(ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2))) &
+!      IF (evbs>ssv(ft)%soil_h2o(1)) THEN
+!        IF (evbs>(ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2))) &
 ! evbs = ssv(ft)%soil_h2o(1) + ssv(ft)%soil_h2o(2)
 !        ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2) - &
 ! evbs + ssv(ft)%soil_h2o(1)
@@ -433,12 +430,9 @@ ssv(ssp%cohort)%sm_trig(1) = (s1in - 0.0*evbs)
 !print*,'evap,sl,evbs ',evap,sl,evbs
 !print*,'end   ',ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
 
-!----------------------------------------------------------------------!
 end subroutine hydrology
-!----------------------------------------------------------------------!
 
 
 
-!**********************************************************************!
 end module hydrology_methods
-!**********************************************************************!
+

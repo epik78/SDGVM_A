@@ -5,7 +5,9 @@ implicit none
 
 contains
 
+!**********************************************************************!
 subroutine SET_GOUD_PARAMS()
+!**********************************************************************!
 real(dp) :: soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo
 common /GOUD_PARAMS/soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo
 
@@ -23,10 +25,13 @@ end subroutine SET_GOUD_PARAMS
 
 
 
+!**********************************************************************!
 subroutine GOUDRIAANSLAW2(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade, &
+!**********************************************************************!
  soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo,albedobeam,albedodiff)
 real(dp) :: lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade
 real(dp) :: soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo,albedobeam,albedodiff
+!----------------------------------------------------------------------!
 
 ! soilalbedo: value from Wang
 ! leafalbedo: leaf transmittance and reflectance are equal. Then albedo is the double
@@ -51,13 +56,15 @@ end subroutine GOUDRIAANSLAW2
 
 
 
+!**********************************************************************!
 subroutine goudriaanslaw_ant(lyr,lai,beamrad,diffrad,fsunlit,qsunlit, &
  fshade,qshade,can_clump,cos_zen,s070607)
-      
+!**********************************************************************!
 real(dp) :: lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade
 real(dp) :: rhosoil,leafscattering,rhoh,rhobeam,rhodiff,rhobeam_can,rhodiff_can
 real(dp) :: m,can_clump,cos_zen,Gbeam,canopyalbedo,kbeam,kdiff,kbeamprime,kdiffprime
 logical :: s070607
+!----------------------------------------------------------------------!
 
 if (.not.(s070607)) then
 
@@ -91,7 +98,7 @@ if (.not.(s070607)) then
  + (1.0-rhobeam)*beamrad*kbeamprime*exp(-kbeamprime*lyr) &
  - (1.0-leafscattering)*beamrad*kbeam*exp(-kbeam*lyr)
 
-  if (qshade.LT.0.0) qshade = 0
+  if (qshade<0.0) qshade = 0
   qsunlit = (1.0-leafscattering)*kbeam*beamrad + qshade
 
 ! calculate fraction sunlit vs shaded leaves
@@ -122,7 +129,7 @@ else
   qshade = (1.0 - rhodiff)*diffrad*kdiffprime*exp(-kdiffprime*lyr) &
  +(1.0 - rhobeam)*beamrad*kbeam*exp(-kbeam*lyr) &
  -(1.0 - leafscattering)*beamrad*kbeamprime*exp(-kbeamprime*lyr)
-  if (qshade.LT.0.0) qshade = 0.0
+  if (qshade<0.0) qshade = 0.0
 
   qsunlit = (1.0 - leafscattering)*kbeamprime*beamrad + qshade
   fsunlit = exp(-kbeam*lyr)
@@ -135,15 +142,16 @@ end subroutine goudriaanslaw_ant
 
 
 
+!**********************************************************************!
 subroutine GOUDRIAANSLAW(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
-
+!**********************************************************************!
 real(dp) :: lyr,lai,beamrad,diffrad
 real(dp) :: fsunlit,qsunlit,fshade,qshade
-
 real(dp) :: soilalbedo,leafalbedo,canopyalbedo
 real(dp) :: albedobeam,albedodiff
 real(dp) :: m
 real(dp) :: kbeam,kdiff,kbeamstar
+!----------------------------------------------------------------------!
 
 !value from Wang
 soilalbedo = 0.15
@@ -181,11 +189,14 @@ end subroutine GOUDRIAANSLAW
 
 
 
+!**********************************************************************!
 subroutine BEERSLAW(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
+!**********************************************************************!
 implicit none
 real(dp) :: lyr,beamrad,diffrad
 real(dp) :: fsunlit,qsunlit,fshade,qshade
 real(dp) :: kbeam,kdiff
+!----------------------------------------------------------------------!
 
 !extinction coefficent of the direct beam
 kbeam=0.5
@@ -204,10 +215,13 @@ end subroutine BEERSLAW
 
 
 
+!**********************************************************************!
 subroutine SUNFLECT(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
+!**********************************************************************!
 real(dp) :: lyr,beamrad,diffrad
 real(dp) :: fsunlit,qsunlit,fshade,qshade
 real(dp) :: kbeam,kdiff
+!----------------------------------------------------------------------!
 
 !extinction coefficent of the direct beam
 kbeam=0.5
