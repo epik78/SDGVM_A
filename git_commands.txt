@@ -1,4 +1,6 @@
+====================================
 GENERAL
+====================================
 Set up a new git directory
   git init
 Make a new branch
@@ -7,13 +9,17 @@ Switch Branch
   git checkout [branch_name]
 
 
+====================================
 INFO
+====================================
 Look at the history of commits
   git log
 See branches
-  got branch -a
+  git branch -a
 
+====================================
 MERGING
+====================================
 To merge a branch with the master, 
 move to the master and type
   git merge [branch_name]
@@ -29,14 +35,20 @@ Use default mergetool
   git mergetool
 
 
+====================================
 CONFIG
+====================================
 See settings
   git config --list
   git config --global user.name [markus]
   git config --global user.email [markus@gmail.com]
 
 
-
-
-
+====================================
+DELETE a BRANCH
+====================================
+Locally
+  git branch -d [branch_name]
+Remote
+  git push origin :[branch_name]
 
