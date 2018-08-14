@@ -1,11 +1,17 @@
+GENERAL
 Set up a new git directory
   git init
 Make a new branch
   git checkout -b [branch_name]
 Switch Branch
   git checkout [branch_name]
+
+
+INFO
 Look at the history of commits
   git log
+See branches
+  got branch -a
 
 MERGING
 To merge a branch with the master, 
