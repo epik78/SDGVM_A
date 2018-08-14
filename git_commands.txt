@@ -5,7 +5,7 @@ Make a new branch
 Switch Branch
   git checkout [branch_name]
 Look at the history of commits
-  got log
+  git log
 
 MERGING
 To merge a branch with the master, 
