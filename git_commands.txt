@@ -52,3 +52,18 @@ Locally
 Remote
   git push origin :[branch_name]
 
+
+====================================
+CREDENTIALS
+====================================
+To store username and password in plain text locally.
+  git config credential.helper store
+The credentials are stored in a file called .git-credentials which
+can be found in ~/.git-credentials by default.
+
+
+
+
+
+
+
