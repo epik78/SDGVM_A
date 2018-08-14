@@ -20,7 +20,7 @@ move to the master and type
 See whats available
   git mergetool --tool-help
 Install one that currently unavailable in linux
-  sudo apt-get kdiff3
+  sudo apt-get install kdiff3
 Use a particular mergetool
   git mergetool -t [kdiff3]
 Set up default mergetool
