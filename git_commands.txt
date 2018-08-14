@@ -1,0 +1,39 @@
+GENERAL
+Set up a new git directory
+  git init
+Make a new branch
+  git checkout -b [branch_name]
+Switch Branch
+  git checkout [branch_name]
+
+
+INFO
+Look at the history of commits
+  git log
+See branches
+  got branch -a
+
+MERGING
+To merge a branch with the master, 
+move to the master and type
+  git merge [branch_name]
+See whats available
+  git mergetool --tool-help
+Install one that currently unavailable in linux
+  sudo apt-get kdiff3
+Use a particular mergetool
+  git mergetool -t [kdiff3]
+Set up default mergetool
+  git config --global merge.tool [kdiff3]
+Use default mergetool
+  git mergetool
+
+
+CONFIG
+  git config --global user.name [markus]
+
+
+
+
+
+
