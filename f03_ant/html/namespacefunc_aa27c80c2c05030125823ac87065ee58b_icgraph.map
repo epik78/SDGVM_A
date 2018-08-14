@@ -1,0 +1,12 @@
+<map id="func::stripbn" name="func::stripbn">
+<area shape="rect" id="node2" href="$namespacesdgvm1.html#a1125d6d86eb71802fb405ace36781134" title="Read internal parameters from &quot;param.dat&quot; file, and io parameters from &quot;misc_params.dat&quot;. " alt="" coords="157,13,308,39"/>
+<area shape="rect" id="node5" href="$namespacesdgvm1.html#ae5d4f4ab9e00fed57158fa92e5e31fed" title="Read internal parameters from &quot;param.dat&quot; file, and io parameters from &quot;misc_params.dat&quot;. " alt="" coords="147,63,319,90"/>
+<area shape="rect" id="node6" href="$namespacefunc.html#abacfb3d89c23cff8011641eda4245691" title="func::st2arr" alt="" coords="189,122,276,149"/>
+<area shape="rect" id="node3" href="$namespaceread__input.html#aa874bfa06499e1e5780fc7864bc137a8" title="read_input::process\l_input_file" alt="" coords="367,5,503,47"/>
+<area shape="rect" id="node4" href="$sdgvm_8f90.html#a8622b607d8be793fa44e2984139d5bf5" title="sdgvm" alt="" coords="749,147,808,174"/>
+<area shape="rect" id="node7" href="$namespacedata.html#ae3230d0e6d297dadc73adf55fb23142f" title="data::ex_clu" alt="" coords="388,71,481,98"/>
+<area shape="rect" id="node9" href="$namespacedata.html#a62e103f5c2b697a58fb2a46502d1efce" title="Extract land use. " alt="" coords="391,122,478,149"/>
+<area shape="rect" id="node10" href="$namespacecrops.html#aa04103a2eec00e8fd02e7087063ac24b" title="crops::read_fertilizers" alt="" coords="553,173,699,199"/>
+<area shape="rect" id="node11" href="$namespacecrops.html#a426b27f46e7bad2d8626e42b9bbb9700" title="crops::read_irrigation" alt="" coords="555,223,697,250"/>
+<area shape="rect" id="node8" href="$namespacesdgvm1.html#acbfbafcaca9aba7d459a0d85bc38c014" title="sdgvm1::read_landuse" alt="" coords="551,122,701,149"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="state_methods::reset_soil_res" name="state_methods::reset_soil_res">
+<area shape="rect" id="node2" href="$namespaceveg__dynamics.html#ab622b9b913d9e18341142613c3d32891" title="INITIALISE_NEW_COHORTS. " alt="" coords="201,5,359,47"/>
+<area shape="rect" id="node3" href="$namespacestate__methods.html#a09795e91f0ce963f249a504cd55da44d" title="Initialise cohorts for the gridcell prior to year loop. " alt="" coords="199,71,361,112"/>
+<area shape="rect" id="node4" href="$sdgvm_8f90.html#a8622b607d8be793fa44e2984139d5bf5" title="sdgvm" alt="" coords="409,78,468,105"/>
+</map>

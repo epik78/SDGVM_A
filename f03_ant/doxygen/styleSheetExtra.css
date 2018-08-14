@@ -1,0 +1,124 @@
+#side-nav {
+  padding:0 6px 0 0;
+  width: 150px;
+}
+
+.projectname {
+	font: 140% Tahoma, Arial,sans-serif;
+    font-weight: bold;
+    color: rgb(32,74,135);
+    color: rgb(255,255,255);
+    text-shadow: 2px 2px rgb(0,0,0);
+	margin: 0px;
+	padding: 2px 0px;
+}
+
+.projectname span {
+  font-size: 180%;
+  font-weight: bold;
+  color: rgb(80,180,134);
+  color: rgb(200,220,200);
+  color: rgb(180,220,180);
+  color: rgb(200,240,200);
+//  color: rgb(255,255,255);
+   text-shadow: 4px 4px rgb(0,0,0);
+}
+
+#projectLC3m {
+  text-align: left;
+  padding-left: 0px;
+}
+
+#projectLC3M img {
+  height : 60px;
+  padding: 0px 0px 0px 20px;
+}
+
+#projectSU {
+  text-align: right;
+  padding-right: 0px;
+}
+
+#projectSU img {
+  height : 60px;
+  padding: 0px 20px 0px 0px;
+}
+
+//#titlearea table, th, td {
+//    border: 3px solid red;
+//    border-collapse: collapse;
+//}
+
+#titlearea {
+  background-size: 100%;
+  background-image: url('images/background.PNG');
+  background-repeat: repeat-y;
+}
+
+.input_file h1, h2, h3, h4, h5, h6 {
+  color: rgb(32,74,135);
+}
+
+.input_file_table {
+  font-family: arial, sans-serif; 
+  border-collapse: collapse;
+  width: 96%;
+  margin-left: 2%;
+}
+
+.input_file .input_file_table tr th {
+  border: 1px solid rgb(200,200,200);
+  color: rgb(255,255,255);
+  background-color: rgb(32,74,135);
+  text-align: left;
+  padding-left: 10px;
+  font-weight: bold;
+}
+
+/* Needed to stop the last column of a table 
+ having style from the default sheet. */
+.input_file th p.starttd {
+  font-weight: bold;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.input_file th p.endtd {
+  font-weight: bold;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.input_file td p.starttd {
+  font-weight: normal;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.input_file td p.endtd {
+  font-weight: normal;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+
+
+.input_file_table tr.tag th {
+  color: rgb(255,255,255);
+  background-color: rgb(100,100,100);
+  text-align: left;
+}
+
+.input_file_table tr {
+  color: black;
+}
+
+.input_file_table tr:nth-child(even) {
+  background-color: rgb(220,220,220);
+}
+
+.input_file_table td {
+  border: 1px solid rgb(200,200,200);
+  padding-left: 10px;
+  padding-right: 10px;
+}

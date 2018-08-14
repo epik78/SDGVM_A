@@ -1,0 +1,4 @@
+<map id="sdgvm1::read_soil" name="sdgvm1::read_soil">
+<area shape="rect" id="node2" href="$namespacedata.html#a052430b3bd5eacbd2c2c56f90f0ac186" title="Extract % sand % silt bulk density and depth from soils database. " alt="" coords="180,5,276,32"/>
+<area shape="rect" id="node3" href="$namespacedata.html#a7f237cdc24b1a6135d9cf3165167e634" title="Performs bilinear interpolation between four points. " alt="" coords="324,5,409,32"/>
+</map>

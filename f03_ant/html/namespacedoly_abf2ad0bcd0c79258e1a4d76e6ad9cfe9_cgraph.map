@@ -1,0 +1,29 @@
+<map id="doly::dolyday" name="doly::dolyday">
+<area shape="rect" id="node2" href="$namespaceproductivity__methods.html#a4822588b3b2dbac0a368e237ca7b863d" title="productivity_methods\l::nppcalc" alt="" coords="153,392,297,433"/>
+<area shape="rect" id="node28" href="$namespacephenology__methods.html#ac51152cd1815f500396acf618ebcfbce" title="Update suma by adding daily increase and removing via mortality. " alt="" coords="152,457,299,499"/>
+<area shape="rect" id="node3" href="$namespaceproductivity__luna__methods.html#a58505743be7e3a392e3d2304dba5672f" title="productivity_luna_methods\l::max_daily_pchg" alt="" coords="356,57,531,99"/>
+<area shape="rect" id="node4" href="$namespaceproductivity__methods.html#a5cc703d85757ec7de031f7b16347fe97" title="productivity_methods\l::brent_solver" alt="" coords="371,123,515,164"/>
+<area shape="rect" id="node6" href="$namespaceproductivity__luna__methods.html#a84f8154a56c2ec0e23c62040167fe919" title="productivity_luna_methods\l::t_scalar" alt="" coords="832,207,1007,248"/>
+<area shape="rect" id="node8" href="$namespaceluna__methods.html#a1a163aa95715ebde3696a4337b9b8d84" title="luna_methods::luna" alt="" coords="376,290,511,317"/>
+<area shape="rect" id="node12" href="$namespacesunshade.html#abcfbef92e0fc94a475289b315e8e3fc9" title="sunshade::goudriaanslaw2" alt="" coords="356,341,531,367"/>
+<area shape="rect" id="node13" href="$namespaceproductivity__methods.html#aefc4c28a922c06162b429ff9750e4e0a" title="productivity_methods\l::jcalc" alt="" coords="371,392,515,433"/>
+<area shape="rect" id="node14" href="$namespacesunshade.html#aa1cc403682a6d8f46762a6c9d1e814d6" title="sunshade::goudriaanslaw_ant" alt="" coords="347,458,540,485"/>
+<area shape="rect" id="node15" href="$namespaceluna__methods.html#a80bd42c2c40927eb8372521ae1ab8957" title="luna_methods::luna\l_nogrowth" alt="" coords="376,509,511,551"/>
+<area shape="rect" id="node16" href="$namespaceproductivity__luna__methods.html#a5a8f58c2388a8e86786b106f7aca065d" title="productivity_luna_methods\l::assimilation_calc" alt="" coords="356,575,531,616"/>
+<area shape="rect" id="node25" href="$namespacelight__methods.html#a5913175ca4d806ae75174149eb8a53cf" title="Calculates total,direct and diffuse radiation for the day. " alt="" coords="367,641,520,667"/>
+<area shape="rect" id="node26" href="$namespacefunc.html#a41521195b84ed0d720d6ff5be9775d19" title="func::no_day" alt="" coords="395,738,491,765"/>
+<area shape="rect" id="node5" href="$namespaceproductivity__methods.html#ad06cdd23739848ab3f1446c69639e62c" title="productivity_methods\l::farq_pars" alt="" coords="614,5,758,47"/>
+<area shape="rect" id="node7" href="$namespaceproductivity__methods.html#a0da0c859ef9be62986f450a5c1c58aba" title="productivity_methods\l::vcmax_maire" alt="" coords="614,123,758,164"/>
+<area shape="rect" id="node9" href="$namespaceluna__methods.html#a74255d31dcbe80a6d972c7c6dcadf9f2" title="luna_methods::nue" alt="" coords="620,290,752,317"/>
+<area shape="rect" id="node10" href="$namespaceluna__methods.html#a858f535bce43b4efd5058b8f78a60f42" title="luna_methods::resptbernacchi" alt="" coords="588,341,784,367"/>
+<area shape="rect" id="node11" href="$namespaceluna__methods.html#aea6124b0932a79f49ddaf7872db92fd5" title="luna_methods::luna\l_ninvestments" alt="" coords="619,392,753,433"/>
+<area shape="rect" id="node17" href="$namespaceproductivity__luna__methods.html#ade2cce0eeacbcde14ebf1a2fc0bf91a9" title="productivity_luna_methods\l::assvmax3" alt="" coords="599,457,773,499"/>
+<area shape="rect" id="node20" href="$namespaceproductivity__luna__methods.html#a537d72eed20bb4bab672e25b980c2886" title="productivity_luna_methods\l::assj3" alt="" coords="599,523,773,564"/>
+<area shape="rect" id="node22" href="$namespaceproductivity__luna__methods.html#a603e91e2bd9d8ee18d308ac52eeb0cf8" title="productivity_luna_methods\l::limitationprocess" alt="" coords="599,588,773,629"/>
+<area shape="rect" id="node23" href="$namespaceproductivity__luna__methods.html#a5ccf5c1397086a98c635252f62770821" title="productivity_luna_methods\l::assj4" alt="" coords="599,653,773,695"/>
+<area shape="rect" id="node24" href="$namespaceproductivity__luna__methods.html#afe950e4c7c9064f7e43867c5a59c521e" title="productivity_luna_methods\l::assc4" alt="" coords="599,719,773,760"/>
+<area shape="rect" id="node18" href="$namespaceproductivity__luna__methods.html#a6c0880a2eb82a4c258a816636921d562" title="productivity_luna_methods\l::gs_calc" alt="" coords="1055,529,1229,571"/>
+<area shape="rect" id="node19" href="$namespaceproductivity__luna__methods.html#ae2415e3b347ec3405938ab7b08cb0146" title="productivity_luna_methods\l::assvmax" alt="" coords="832,471,1007,512"/>
+<area shape="rect" id="node21" href="$namespaceproductivity__luna__methods.html#a8415e56317ab6d2bf54d92bf5763c332" title="productivity_luna_methods\l::assj" alt="" coords="832,588,1007,629"/>
+<area shape="rect" id="node27" href="$namespacefunc.html#ac36931ffa366eff3f57fb99c2ea5f53f" title="func::no_days" alt="" coords="635,785,737,811"/>
+</map>

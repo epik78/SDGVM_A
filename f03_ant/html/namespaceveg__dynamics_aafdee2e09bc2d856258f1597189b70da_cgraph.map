@@ -1,0 +1,11 @@
+<map id="veg_dynamics::cover" name="veg_dynamics::cover">
+<area shape="rect" id="node2" href="$namespaceveg__dynamics.html#aa05817ae7ca7dacc9a258b9d1f0bf505" title="veg_dynamics::fire" alt="" coords="218,24,347,51"/>
+<area shape="rect" id="node4" href="$namespaceveg__dynamics.html#ad6d5fb0db18577ca60743ce3a99d2aed" title="NEWGROWTH. " alt="" coords="196,111,369,137"/>
+<area shape="rect" id="node10" href="$namespacestate__methods.html#aba8b583fc33e9fb2092d83b272a08c4a" title="state_methods::sum\l_carbon" alt="" coords="212,162,353,203"/>
+<area shape="rect" id="node3" href="$namespacefunc.html#a638b6ee9d8bd29aa3088ea53ec45232d" title="func::minx" alt="" coords="467,5,550,32"/>
+<area shape="rect" id="node5" href="$namespacestate__methods.html#a9bcb1707267bb0c440ce0b83c8f54645" title="accumulate_dist_soil_res ! " alt="" coords="417,57,600,98"/>
+<area shape="rect" id="node7" href="$namespacestate__methods.html#aceacb5079eab83cab2b32564348de362" title="Remove cohorts with zero cover. " alt="" coords="422,122,595,163"/>
+<area shape="rect" id="node9" href="$namespacestate__methods.html#a5e5149595c01a76762db5ad69690498a" title="state_methods::accumulate\l_burnt_soil_res" alt="" coords="417,187,600,229"/>
+<area shape="rect" id="node6" href="$namespacestate__methods.html#a9bed73cee8c7e915f4a3f1f208b639f5" title="state_methods::initialise\l_state_cohort" alt="" coords="648,57,811,98"/>
+<area shape="rect" id="node8" href="$namespacestate__methods.html#a2e3ca2ad58fde7d0ba486c6a649f0b59" title="state_methods::make\l_co2ftmap" alt="" coords="655,122,803,163"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="state_methods::make_co2ftmap" name="state_methods::make_co2ftmap">
+<area shape="rect" id="node2" href="$namespacestate__methods.html#aceacb5079eab83cab2b32564348de362" title="Remove cohorts with zero cover. " alt="" coords="201,5,375,47"/>
+<area shape="rect" id="node5" href="$namespacestate__methods.html#a09795e91f0ce963f249a504cd55da44d" title="Initialise cohorts for the gridcell prior to year loop. " alt="" coords="428,63,591,104"/>
+<area shape="rect" id="node7" href="$namespacestate__methods.html#a6c5bf29c8bb1670231d900569876f45e" title="state_methods::remove\l_cohort" alt="" coords="209,125,367,167"/>
+<area shape="rect" id="node9" href="$namespacestate__methods.html#a192523ee1825a5e587a45eff8977c563" title="state_methods::restrict\l_cohort_numbers" alt="" coords="644,128,800,169"/>
+<area shape="rect" id="node3" href="$namespaceveg__dynamics.html#ad6d5fb0db18577ca60743ce3a99d2aed" title="NEWGROWTH. " alt="" coords="423,11,596,38"/>
+<area shape="rect" id="node4" href="$namespaceveg__dynamics.html#aafdee2e09bc2d856258f1597189b70da" title="cover " alt="" coords="651,11,793,38"/>
+<area shape="rect" id="node6" href="$sdgvm_8f90.html#a8622b607d8be793fa44e2984139d5bf5" title="sdgvm" alt="" coords="848,105,907,131"/>
+<area shape="rect" id="node8" href="$namespacestate__methods.html#a491fb1bc6f0eac09402ab8c57887f516" title="state_methods::combine\l_cohorts" alt="" coords="427,128,592,169"/>
+</map>

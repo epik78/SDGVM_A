@@ -1,0 +1,7 @@
+<map id="veg_dynamics::newgrowth" name="veg_dynamics::newgrowth">
+<area shape="rect" id="node2" href="$namespacestate__methods.html#a5e5149595c01a76762db5ad69690498a" title="state_methods::accumulate\l_burnt_soil_res" alt="" coords="227,5,409,47"/>
+<area shape="rect" id="node3" href="$namespacestate__methods.html#a9bcb1707267bb0c440ce0b83c8f54645" title="accumulate_dist_soil_res ! " alt="" coords="227,71,409,112"/>
+<area shape="rect" id="node5" href="$namespacestate__methods.html#aceacb5079eab83cab2b32564348de362" title="Remove cohorts with zero cover. " alt="" coords="231,136,405,177"/>
+<area shape="rect" id="node4" href="$namespacestate__methods.html#a9bed73cee8c7e915f4a3f1f208b639f5" title="state_methods::initialise\l_state_cohort" alt="" coords="457,71,620,112"/>
+<area shape="rect" id="node6" href="$namespacestate__methods.html#a2e3ca2ad58fde7d0ba486c6a649f0b59" title="state_methods::make\l_co2ftmap" alt="" coords="465,136,613,177"/>
+</map>
