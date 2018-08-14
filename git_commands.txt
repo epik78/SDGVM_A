@@ -30,7 +30,10 @@ Use default mergetool
 
 
 CONFIG
+See settings
+  git config --list
   git config --global user.name [markus]
+  git config --global user.email [markus@gmail.com]
 
 
 
