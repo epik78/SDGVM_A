@@ -20,7 +20,11 @@ move to the master and type
 See whats available
   git mergetool --tool-help
 Install one that currently unavailable in linux
+<<<<<<< HEAD
+  sudo apt-get kdiff3
+=======
   sudo apt-get install kdiff3
+>>>>>>> SDGVM_w
 Use a particular mergetool
   git mergetool -t [kdiff3]
 Set up default mergetool
@@ -29,6 +33,8 @@ Use default mergetool
   git mergetool
 
 
+<<<<<<< HEAD
+=======
 CONFIG
 See settings
   git config --list
@@ -39,4 +45,5 @@ See settings
 
 
 
+>>>>>>> SDGVM_w
 
