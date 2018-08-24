@@ -26,23 +26,29 @@ module fnames_class
 
   contains
 
-
+!**********************************************************************!
     subroutine set_outputs(this,st1)
+!**********************************************************************!
     class(Fnames) :: this
     character(len=str_len) :: st1
     integer :: i
+!----------------------------------------------------------------------!
 
     do i=1,max_outputs
 !      print*,trim(otags(i))
     enddo
-    print*,'in set outputs'
-
 
     end subroutine set_outputs
 
 
-    subroutine set_names(this)
+
+
+
+!**********************************************************************!
+   subroutine set_names(this)
+!**********************************************************************!
     class(Fnames) :: this
+!----------------------------------------------------------------------!
 
     this%n = 25
 
@@ -85,10 +91,11 @@ module fnames_class
     this%fmt(25)%name = 'fpr'
     this%fmt(25)%averaged = .true.
 
-
     end subroutine set_names
 
 end module fnames_class
+
+
 
 module fnames_object
   use fnames_class

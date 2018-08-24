@@ -5,7 +5,7 @@ use system_state
 use site_parameters
 use tuning_parameters
 use pft_parameters
-use input_methods
+use input_file
 
 implicit none
 

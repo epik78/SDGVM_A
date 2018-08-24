@@ -7,7 +7,7 @@ use system_state
 use pft_parameters
 use site_parameters
 use tuning_parameters
-use input_methods
+use input_file
 use luna_methods
 use productivity_luna_methods
 use func

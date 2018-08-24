@@ -1368,5 +1368,166 @@ end subroutine wsparam
 
 
 
+
+
+!**********************************************************************!
+!                                                                      !
+!                          mkdlit :: soil_methods                      !
+!                          ----------------------                      !
+!                                                                      !
+! subroutine mkdlit()                                                  !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine mkdlit()
+!**********************************************************************!
+integer :: ft
+!----------------------------------------------------------------------!
+
+do ft=1,ssp%cohorts
+ ssv(ft)%dslc = 0.0
+ ssv(ft)%drlc = 0.0
+ ssv(ft)%dsln = 0.0
+ ssv(ft)%drln = 0.0
+enddo
+
+do ft=1,ssp%cohorts
+  ssv(ft)%dslc = ssv(ft)%dslc + ssv(ft)%slc
+  ssv(ft)%drlc = ssv(ft)%drlc + ssv(ft)%rlc
+  ssv(ft)%dsln = ssv(ft)%dsln + ssv(ft)%sln
+  ssv(ft)%drln = ssv(ft)%drln + ssv(ft)%rln
+enddo
+
+end subroutine mkdlit
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          sum_soilcn :: soil_methods                  !
+!                          --------------------------                  !
+!                                                                      !
+!               subroutine sum_soilcn(soilc,soiln,minn)                !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief sum_soilcn
+!! @details ! Adds up carbon and nitrogen in the soil for each cohorts
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine sum_soilcn(soilc,soiln,minn)
+!**********************************************************************!
+real(dp) :: soilc(max_cohorts),soiln(max_cohorts),minn(max_cohorts)
+integer :: i,ft
+!----------------------------------------------------------------------!
+
+do ft=1,ssp%cohorts
+  soilc(ft) = 0.0
+  soiln(ft) = 0.0
+  minn(ft) = 0.0
+  do i=1,8
+    soilc(ft) = soilc(ft) + ssv(ft)%c(i)
+    soiln(ft) = soiln(ft) + ssv(ft)%n(i)
+  enddo
+  minn(ft) = ssv(ft)%minn(1) + ssv(ft)%minn(2)
+  soiln(ft) = soiln(ft) + minn(ft)
+enddo
+
+end subroutine sum_soilcn
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          mix_water :: sdgvm1                         !
+!                          -------------------                         !
+!                                                                      !
+! subroutine mix_water(ftcov,nft)                                      !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief 
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine mix_water(ftcov,nft)
+!**********************************************************************!
+real(dp) :: ftcov(max_cohorts) !< Holds total cover for each ft
+real(dp) :: mix(max_cohorts)
+real(dp) :: share1,share2,share3,share4,share5,share6,sum
+integer :: nft,ft,mapft
+!----------------------------------------------------------------------!
+
+do ft=1,nft
+  ftcov(ft) = 0.0
+enddo
+
+do ft=1,ssp%cohorts
+  ftcov(pft(ft)%itag) = ftcov(pft(ft)%itag) + ssv(ft)%cov
+enddo
+
+do ft=1,ssp%cohorts
+  mix(ft) = 1.0 - (1.0 - pft(ft)%mix)**(20.0/360.0)
+enddo
+
+share1 = 0.0
+share2 = 0.0
+share3 = 0.0
+share4 = 0.0
+share5 = 0.0
+share6 = 0.0
+sum = 0.0
+do ft=1,ssp%cohorts
+  mapft = pft(ft)%itag
+  share1 = share1 + ssv(ft)%soil_h2o(1)*ssv(ft)%cov*mix(ft)
+  share2 = share2 + ssv(ft)%soil_h2o(2)*ssv(ft)%cov*mix(ft)
+  share3 = share3 + ssv(ft)%soil_h2o(3)*ssv(ft)%cov*mix(ft)
+  share4 = share4 + ssv(ft)%soil_h2o(4)*ssv(ft)%cov*mix(ft)
+  share5 = share5 + ssv(ft)%snow       *ssv(ft)%cov*mix(ft)
+  share6 = share6 + ssv(ft)%l_snow     *ssv(ft)%cov*mix(ft)
+  ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1)*ssv(ft)%cov*(1.0 - mix(ft))
+  ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2)*ssv(ft)%cov*(1.0 - mix(ft))
+  ssv(ft)%soil_h2o(3) = ssv(ft)%soil_h2o(3)*ssv(ft)%cov*(1.0 - mix(ft))
+  ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4)*ssv(ft)%cov*(1.0 - mix(ft))
+  ssv(ft)%snow        = ssv(ft)%snow       *ssv(ft)%cov*(1.0 - mix(ft))
+  ssv(ft)%l_snow      = ssv(ft)%l_snow     *ssv(ft)%cov*(1.0 - mix(ft))
+  sum = sum + ssv(ft)%cov*mix(ft)
+enddo
+
+do ft=1,ssp%cohorts
+  mapft = pft(ft)%itag
+  if (ftcov(mapft)>0.0) then
+    if (sum>0.0) then
+      ssv(ft)%soil_h2o(1) = (ssv(ft)%soil_h2o(1) + share1*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+      ssv(ft)%soil_h2o(2) = (ssv(ft)%soil_h2o(2) + share2*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+      ssv(ft)%soil_h2o(3) = (ssv(ft)%soil_h2o(3) + share3*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+      ssv(ft)%soil_h2o(4) = (ssv(ft)%soil_h2o(4) + share4*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+      ssv(ft)%snow        = (ssv(ft)%snow        + share5*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+      ssv(ft)%l_snow      = (ssv(ft)%l_snow      + share6*ftcov(mapft)*mix(ft)/sum)/ftcov(mapft)
+    else
+      ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1)/ftcov(mapft)
+      ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2)/ftcov(mapft)
+      ssv(ft)%soil_h2o(3) = ssv(ft)%soil_h2o(3)/ftcov(mapft)
+      ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4)/ftcov(mapft)
+      ssv(ft)%snow        = ssv(ft)%snow       /ftcov(mapft)
+      ssv(ft)%l_snow      = ssv(ft)%l_snow     /ftcov(mapft)
+    endif
+  endif
+enddo
+
+end subroutine mix_water
+
+
+
 end module soil_methods
 

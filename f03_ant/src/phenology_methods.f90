@@ -18,14 +18,13 @@
 module phenology_methods
 
 
+use dims
 use real_precision
 use misc_values
 use system_state
 use pft_parameters
 use site_parameters
-use dims
 use tuning_parameters
-use misc_parameters
 use crops
 use light_methods
 implicit none

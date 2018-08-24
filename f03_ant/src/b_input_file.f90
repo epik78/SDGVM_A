@@ -1,4 +1,4 @@
-module input_methods
+module input_file
 ! To add a new section/tag add a new tag_list() string containing the name of 
 ! the new section in the read_input_file subroutine, and increase nTags by 1.
 ! Add a new type definition here using the section name as the type name
@@ -177,9 +177,9 @@ type, private :: Sites
   logical :: n_range_argument = .false.
   logical :: filename_argument = .false.
   character(len=str_len) :: style
-  integer :: n = 0
   integer :: site0 = 1
   integer :: sitef = 100000
+  integer :: nlist = 0 ! not set in input file
   real(dp), dimension(max_sites,2) :: lat_lon
   real(dp), dimension(max_sites,2) :: list
   real(dp), dimension(4) :: box
@@ -295,7 +295,7 @@ contains
         case default    
           write(*,*) 'Error in case land_use!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
     case ('sites')
@@ -304,14 +304,24 @@ contains
           read(param_values,*) this%sites%create_land_sites_only
         case('style')
           read(param_values,*) this%sites%style
-        case('n')
-          read(param_values,*) this%sites%n
         case('n_range')
           if (nfields(param_values)==2) then
             read(param_values,*) this%sites%site0,this%sites%sitef
+            if (this%sites%site0<1) then
+              write(*,*) 'Error in case sites!!!'
+              write(*,*) 'First site number of range must be >0.'
+              write(*,*) this%sites%site0
+              stop
+            endif
+            if (this%sites%sitef<this%sites%site0) then
+              write(*,*) 'Error in case sites!!!'
+              write(*,*) 'Second site number of range must be greater or equal to the first.'
+              write(*,*) this%sites%site0,this%sites%sitef
+              stop
+            endif
           elseif (trim(param_values)=='ARGUMENT') then
             this%sites%n_range_argument = .true.
-          else
+          elseif (nfields(param_values)/=0) then
             write(*,*) 'Error in case sites!!!'
             write(*,*) 'Need either 2 integers or ''ARGUMENT'' for n_range.'
             write(*,*) trim(param_values)
@@ -319,6 +329,7 @@ contains
           endif
         case('list')
           nlist = nlist + 1
+          this%sites%nlist = nlist
           read(param_values,*) this%sites%list(nlist,1),this%sites%list(nlist,2)
         case('box')
           if (nfields(param_values)==4) then
@@ -340,7 +351,7 @@ contains
         case default    
           write(*,*) 'Error in case sites!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
     case ('soil')
@@ -367,7 +378,7 @@ contains
         case default    
           write(*,*) 'Error in case soil!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
 
@@ -1103,7 +1114,7 @@ contains
         case default    
           write(*,*) 'Error in case pft!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
     
@@ -1173,7 +1184,7 @@ contains
         case default    
           write(*,*) 'Error in case output!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
 
@@ -1240,7 +1251,7 @@ contains
         case default    
           write(*,*) 'Error in case run!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
       
@@ -1278,7 +1289,7 @@ contains
         case default
           write(*,*) 'Error in case dirs!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
           stop
       end select
 
@@ -1302,10 +1313,10 @@ contains
         case default
           write(*,*) 'Error in case pft-mapping!!!'
           write(*,*) 'Need to define read method for parameter ''',trim(param_name),'''!!!'
-          write(*,*) 'This is done in the ''input_methods'' module in the subroutine ''set_input_parameters''!!!'
+          write(*,*) 'This is done in the ''input_file'' module in the subroutine ''set_input_parameters''!!!'
       end select
     case default
-      write(*,*) 'Stuck in a case statement in ''input_methods'''
+      write(*,*) 'Stuck in a case statement in ''input_file'''
       write(*,*) trim(tag),' ',trim(param_name),' ',trim(param_values)
       stop
   end select
@@ -1462,4 +1473,4 @@ contains
         
   end subroutine find_next_open_tag
 
-end module input_methods
+end module input_file

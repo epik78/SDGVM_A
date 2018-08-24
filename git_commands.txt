@@ -34,6 +34,16 @@ Set up default mergetool
 Use default mergetool
   git mergetool
 
+To merge a branch with master.
+  1. Switch branch to master
+  2. Merge branch
+       git merge branch
+     If confilicts then use the mergetool to resolve
+       git mergetool 
+  3. Add and commit then push.
+       git add -a
+       git commit -m 'New stuff'
+       git push
 
 ====================================
 CONFIG

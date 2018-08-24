@@ -1,9 +1,8 @@
 module weather_generator
 
 use real_precision
-use data
-use metdos
-use input_methods
+use input_file
+use func
 
 implicit none
 
@@ -14,7 +13,7 @@ contains
 !     Written by Ghislain Picard 30/06/03
 !
 !----------------------------------------------------------------------!
-subroutine EX_CLIM_WEATHER_GENERATOR(lat,lon,xlatf,xlatres,xlatresn, &
+subroutine ex_clim_weather_generator(lat,lon,xlatf,xlatres,xlatresn, &
  xlon0,xlonres,xlonresn,yr0,yrf,tmpv,humv,prcv,mcldv,swrv,isite,year0, &
  yearf,du,seed1,seed2,seed3,l_clim,l_stats,read_par)
 !**********************************************************************!
@@ -40,6 +39,7 @@ character(len=str_len) :: fname5,fname6,fname7,fname8
 logical :: l_clim,l_stats
 logical :: read_par
 real(dp) :: mswrvcheck(12)
+!----------------------------------------------------------------------!
 
 l_stats = .true.
 cld_default = 57
@@ -125,33 +125,33 @@ if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or. &
   open(fno+1,file=fname1,access='direct',recl=recl1,form='formatted',status='old',iostat=kode)
   if (kode/=0) then
     write(*,*) 'Climate data file does not exist.'
-    write(*,'(''"'',A,''"'')') fname1(1:blank(fname1))
+    write(*,'(''"'',A,''"'')') trim(fname1)
     stop
   endif
   open(fno+2,file=fname2,access='direct',recl=recl1,form='formatted',status='old',iostat=kode)
   if (kode/=0) then
     write(*,*) 'Climate data file does not exist.'
-    write(*,'(''"'',A,''"'')') fname2(1:blank(fname2))
+    write(*,'(''"'',A,''"'')') trim(fname2)
     stop
   endif
   open(fno+3,file=fname3,access='direct',recl=recl1,form='formatted',status='old',iostat=kode)
   if (kode/=0) then
     write(*,*) 'Climate data file does not exist.'
-    write(*,'(''"'',A,''"'')') fname3(1:blank(fname3))
+    write(*,'(''"'',A,''"'')') trim(fname3)
     stop
   endif
   if (read_par) then
     open(fno+8,file=fname8,access='direct',recl=recl3,form='formatted',status='old',iostat=kode)
     if (kode/=0) then
       write(*,*) 'Climate data file does not exist.'
-      write(*,'(''"'',A,''"'')') fname8(1:blank(fname8))
+      write(*,'(''"'',A,''"'')') trim(fname8)
       stop
     endif
   endif
   open(fno+7,file=fname7,access='direct',recl=recl1,form='formatted',status='old',iostat=kode)
   if (kode/=0) then
 !    write(*,*) 'No cloud file found using default value ',cld_default
-!    write(*,'(''"'',A,''"'')') fname7(1:blank(fname7))
+!    write(*,'(''"'',A,''"'')') trim(fname7)
   endif
 
   do ii=1,4
@@ -370,13 +370,13 @@ else
   l_clim = .false.
 endif
 
-end subroutine EX_CLIM_WEATHER_GENERATOR
+end subroutine ex_clim_weather_generator
 
 
 
 
 !**********************************************************************!
-subroutine READ_WG_FILE(du,filename,values,lon,lat,l_stats)
+subroutine read_wg_file(du,filename,values,lon,lat,l_stats)
 !**********************************************************************!
 character(len=str_len) :: filename,st1,st2,st3
 real(dp) :: lon,lat,latr,lonr,values(12),statsv(4,4,12),xx(4,4),latf
@@ -384,6 +384,7 @@ real(dp) :: lon0,xnorm,ynorm,ans,rrow,rcol
 integer :: recl1,du,mnth,ii,jj,i,indx(4,4),latn,lonn
 integer :: recn,row,col,kode
 logical :: l_stats
+!----------------------------------------------------------------------!
 
 if (du==1) then
 !  This wordek for ftn95
@@ -467,23 +468,24 @@ elseif (stcmp(st1,st3)==1) then
 
 else
   write(*,*) 'First line of stats files must be UNIFORM or LONLAT'
-  write(*,*)  filename(1:blank(filename))
+  write(*,*)  trim(filename)
   stop
 endif
 
 
-end subroutine READ_WG_FILE
+end subroutine read_wg_file
 
 
 
 
 
 !**********************************************************************!
-real(dp) function FLOATINGMEAN(day,mnth,year,lastyear,array)
+real(dp) function floatingmean(day,mnth,year,lastyear,array)
 !**********************************************************************!
 integer :: day,mnth,year,lastyear,y,m
 integer :: array(500,12)
 real(dp) :: mean
+!----------------------------------------------------------------------!
 
 if (day<=15) then
   if (mnth>1) then
@@ -517,14 +519,14 @@ else
 endif
 floatingmean=mean
 
-end function FLOATINGMEAN
+end function floatingmean
 
 
 
 
 
 !**********************************************************************!
-real(dp) function FLOATINGMEAN2(day,mnth,year,lastyear,array)
+real(dp) function floatingmean2(day,mnth,year,lastyear,array)
 !**********************************************************************!
 integer :: day,mnth,year,lastyear
 real(dp) :: array(500,12)
@@ -571,7 +573,7 @@ end function floatingmean2
 
 
 !**********************************************************************!
-subroutine RAIN_DAY_SUB_FULLY_NORMALISED(NO_RAIN_DAYS, &
+subroutine rain_day_sub_fully_normalised(NO_RAIN_DAYS, &
  RAIN_IN_MONTH,DAYS_IN_MONTH,SEED1,SEED2,SEED3,RAIN)
 !**********************************************************************!
 implicit none
@@ -621,7 +623,7 @@ PROB_WET_WET = 0.25+PROB_WET_DRY
   XLO = 0.0
   XHI=1.0
 
-  RAND01 = RNDF(XLO,XHI, SEED1, SEED2, SEED3)
+  RAND01 = rndf(XLO,XHI, SEED1, SEED2, SEED3)
   GAMMA = 1.0
 !
 !**     Mu paramaters (Geng et al 1986)
@@ -673,7 +675,7 @@ ZERO = 0.0
 
 ! Changed GAMMA to GAMMA2 14/12/01 Paul Henshall.
  
-  RAIN(IDAY)=GAMMADIST_FN(zero,MU,GAMMA2,SEED1,SEED2,SEED3)
+  RAIN(IDAY) = gammadist_fn(zero,MU,GAMMA2,SEED1,SEED2,SEED3)
   CLOOP = CLOOP + 1
   if (CLOOP>10) then
      write(*,*) 'Problem in RAIN_DAY_SUB_FULLY_NORMALISED'
@@ -698,7 +700,7 @@ else
    RAIN(IDAY)=RAIN_IN_MONTH
 endif
 
-end subroutine RAIN_DAY_SUB_FULLY_NORMALISED
+end subroutine rain_day_sub_fully_normalised
 
 
 
@@ -716,7 +718,7 @@ end subroutine RAIN_DAY_SUB_FULLY_NORMALISED
 
 
 !**********************************************************************!
-subroutine RAIN_DAY_SUB_NORMALISED(NO_RAIN_DAYS, RAIN_IN_MONTH, &
+subroutine rain_day_sub_normalised(NO_RAIN_DAYS, RAIN_IN_MONTH, &
  DAYS_IN_MONTH,SEED1,SEED2,SEED3,RAIN)
 !**********************************************************************!
 implicit none
@@ -941,7 +943,7 @@ do 120 IDAY = 1, DAYS_IN_MONTH
 !//! Units: none
 !//! Type: integer
 !
-end subroutine RAIN_DAY_SUB_NORMALISED
+end subroutine rain_day_sub_normalised
 
 
 
@@ -957,7 +959,7 @@ end subroutine RAIN_DAY_SUB_NORMALISED
 !     2  IS2, IS3, NORMSWITCH)
 !** calculates mean daily temperature  from monthly values   
 !----------------------------------------------------------------------!
-real(dp) function HUM_DAY_MEAN2_FN(HUM_MEAN_MONTH, &
+real(dp) function hum_day_mean2_fn(HUM_MEAN_MONTH, &
  HUM_SD_MONTH, HUM_AUTOCORR_MONTH, HUM_YESTERDAY, IS1, &
  IS2, IS3, NORMSWITCH)
 !**********************************************************************!
@@ -1027,7 +1029,7 @@ HUM_DAY_MEAN2_FN = HUM_MEAN_MONTH + HUM_AUTOCORR_MONTH* &
 !//! Units: none
 !//! Type: Double precsion
 !
-end function HUM_DAY_MEAN2_FN
+end function hum_day_mean2_fn
 
 
 
@@ -1101,6 +1103,459 @@ enddo
 !        ENDDO
 
 end subroutine mean_pres
+
+
+
+
+
+!======================================================================!
+!                                                                      !
+!                 Functions from Forest Research                       !
+!                 ------------------------------                       !
+!                                                                      !
+!======================================================================!
+
+!**********************************************************************!
+real(dp) function norm_from_rand_fn(MEAN, SD, SEED1,SEED2, SEED3, NORMSWITCH)
+!**********************************************************************!
+real(dp) :: Mean, SD, NormVal
+integer :: Seed1, Seed2, Seed3, NormSwitch
+!----------------------------------------------------------------------!
+!//! Equation: 86
+!//! Description: Generates a value from a pseudo normal distribution \\
+!//!   is a shell for calling different methods. \\
+!//!   INPUTS: Mean; Sd; 3 Seeds for random number generation; Method id
+!//! Bibliography: None
+!
+if(NormSwitch==1) then
+   NormVal = NORMDIST_FN(SEED1,SEED2,SEED3)
+!         IF((MEAN/=Zero).and.(SD/=1)) THEN
+   if ((abs(MEAN)>0.0).and.(abs(SD-1.0)>0.0)) then
+!          transform the distribution
+     NormVal = TRANSNORM_FN(Mean, SD, NormVal)
+   endif
+elseif (NormSwitch==2) then
+   NormVal = NORMDIST2_FN(MEAN,SD,SEED1,SEED2,SEED3)
+endif
+NORM_FROM_RAND_FN = NormVal
+
+end function norm_from_rand_fn
+
+
+
+
+
+!**********************************************************************!
+real(dp) function normdist_fn(SEED1,SEED2,SEED3)
+!**********************************************************************!
+real(dp) :: xlo, xhi, R1, retval
+integer ::seed1, seed2, seed3
+!----------------------------------------------------------------------!
+ 
+Xlo = 0.0
+xhi = 1.0
+R1 = rndf(XLO, XHI, SEED1, SEED2, SEED3)
+
+Retval = ( R1**0.135 - (1-R1)**0.135 )/0.1975
+
+NORMDIST_FN = Retval
+!//! Equation: 74
+!//! Description: Derives a value from standard normal distribution\
+!//!  (mean 0, sd 1), at random. Reputed to have accuracy of 0.5% in\
+!//!  The range 0<=p<=0.9975 (NB random numbers are between 0 and 1) \\
+!//!   INPUTS: 3 Seeds for random number generation
+!//! Bibliography: S Evans, SWELTER; Haith, DA, Tubbs, LJ and \
+!//!  Pickering, NB(1984) Simulation of Pollution by soil erosion and \
+!//!  soil nutrient loss; Pudoc, Wageningen.
+!
+!//! E: N = { R1^{0.135} - (1-R1)^{0.135)} } \over {0.1975}
+! 
+!//! Variable: SEED1, SEED2, SEED3
+!//! Description: integer ::seeds for random number generation
+!//! Units: none  
+!//! Type: integer
+!
+!//! Variable: R1
+!//! Description: Random number between 0 and 1
+!//! Units: none  
+!//! Type: REAL
+!
+!//! Variable: NORMDIST_FN
+!//! Description: Simulated value from a normal distribution N(0,1)
+!//! Units: none
+!//! Type: REAL
+!//! SET
+!
+
+end function normdist_fn
+
+
+
+!**********************************************************************!
+real(dp) function rndf(XLO, XHI,J1, J2, J3)
+!**********************************************************************!
+!** This random number routine w is from Brian Wichman and David Hill
+!** (BYTE, March 1987, page 127-128). Apparently the cycle length is
+!** about 6.95E12. Original reference: Wichmann & Hill, App stats (1982)        
+!** 31(2) pp 188-190 with modification: A Mcleod, App stats (1985)            
+!** 34(2) pp 198-200                                             
+!
+integer :: J1, J2, J3
+real(dp) :: R,XLO,XHI
+!----------------------------------------------------------------------!
+                                                                   
+if(XLO<XHI)then                                            
+	J1=171*MOD(J1,177)-2*(J1/177)                                  
+	if(J1<0) J1 = J1+30269                                         
+!                                                                   
+	J2=172*MOD(J2,176)-35*(J2/176)                                 
+	if(J2<0)J2=J2+30307                                           
+!                                                                     
+	J3=170*MOD(J3,178)-63*(J3/178)  
+  if(J3<0) J3 = J3+30323                                           
+!                                                                     
+	R=real(J1)/30269.0+real(J2)/30307.0+real(J3)/30323.0       
+!** modification re: A McLeod (1985) app. stats 34(2) 198-200     
+!** returns out of loops for efficiency - otherwise it was just   
+!**  a question of scaling.                                        
+	if(R>0) then                                               
+	  RNDF=(R-INT(R))*(XHI-XLO)+XLO                               
+	  return                                                      
+	endif                                                         
+	R=MOD(real(FLOAT(J1))/30269.0 + real(FLOAT(J2))/30307.0 +  real(FLOAT(J3))/30323.0, 1.0)                           
+	if(R>=1.0) R=0.999999                                       
+	RNDF=(R-INT(R))*(XHI-XLO)+XLO                                 
+	return                                                        
+endif                                                           
+!                                                                     
+RNDF=XLO                                                        
+!
+!//! Equation: 34
+!//! Description: Random number generator: uses 3 seeds and returns \
+!//!  changed seeds and a random number between Xlo and Xhi\\
+!//!   INPUTS: Lowest value of random number; highest value of random \
+!//!    number; 3 seeds
+!//! Bibliography: Wichmann & Hill (1882), App stats 31(2) pp188-190; \
+!//!  A McLeod (1985) app. stats 34(2) pp98-200
+!
+!//! Case: R > 0
+!//!  E: Rnd_{j1,j2,j3}=(R-INT(R))*(X_{hi}-X_{lo})+X_{lo}
+!//! Case: R<= 0
+!//!  E: RNDF=(R1-INT(R1))*(X_{hi}-X_{lo})+X_{lo}  \\
+!//! \\
+!//! E: R = j1/30269 + j2/30307 + j3/30323  \\
+!//!   \\
+!//! E: R1 = MAX(0.999999, MOD(S_{1}/30269 + S_{2}/30307 + \
+!//!     S_{3}/30323.0, 1.0)                           \\
+!//! \\
+!//!   E:  j1 = 171 MOD(j1,177)-2(j}/177)  \\
+!//!     IF(j1 < 0  ; j1 = j1 + 30269   \\
+!//!  \\
+!//!   E:  j2 = 172 MOD(j2,176)-35(j2/176)  \\
+!//!     IF(j2 < 0  ; j2 = j2 + 30307   \\
+!//!  \\
+!//!   E:  j3 = 170 MOD(j3,178)-63(j3/178)  \\
+!//!     IF(j3 < 0  ; j3 = j3 + 30323   
+!  
+!//! Variable: Rnd_{j1,j2,j3}
+!//! Description: Returned random number
+!//! Units: none
+!//! Type: REAL
+!//! SET
+!
+!//! Variable: j1
+!//! Description:  Seed for random number generation changed on exit
+!//! Units: none
+!//! Type: integer
+!//! SET
+!
+!//! Variable: j2
+!//! Description:  Seed for random number generation changed on exit
+!//! Units: none
+!//! Type: integer
+!//! SET
+!
+!//! Variable: j3
+!//! Description:  Seed for random number generation changed on exit
+!//! Units: none
+!//! Type: integer
+!//! SET
+!
+!//! Variable:  X_{lo}
+!//! Description:  lowest possible value of random number
+!//! Units: none
+!//! Type: REAL
+!
+!//! Variable:  X_{hi}
+!//! Description:  highest possible value of random number
+!//! Units: none
+!//! Type: REAL
+
+end function rndf
+
+
+
+
+
+!**********************************************************************!
+real(dp) function transnorm_fn(MU, SD, Xval)
+!**********************************************************************!
+real(dp) :: MU, SD, Xval
+!----------------------------------------------------------------------!
+!     Transforms a standard normal distribution, N(0,1))
+!     to N(Mu, SD)
+!
+!//! Equation: 81
+!//! Description: Transforms a value from a Standard Normal distribution N(0,1) to\
+!//!   a 'generic' normal N(mu, sd)\\
+!//!   INPUTS: Mean of Distribution; Sd of distribution; Standard Normal value
+!//! Bibliography: None (T Houston Pers Comm)
+TRANSNORM_FN = Xval*SD+Mu
+!
+!//! E: N(\mu, \sigma) = N(0,1)*\sigma + \mu
+!
+!//! variable: \mu
+!//! Type: REAL
+!//! Description: Mean of the desired normal distribution
+!//! Units: Any
+!
+!//! Variable: \sigma
+!//! Type: REAL
+!//! Description: Standard deviation of the desired normal distribution
+!//! Units: Any
+!
+!//! Variable: N(0,1)
+!//! Type: Double Precsion
+!//! Description: Value from the standard normal distribution
+!//! Units: Any
+!
+!//! Variable: N(\mu, \sigma)
+!//! Type: REAL
+!//! Description: Transformed Normal Value - from the shifted norma distribution
+!//! Units: Any
+!//! SET
+
+end function transnorm_fn
+
+
+
+
+
+!**********************************************************************!
+real(dp) function normdist2_fn(MEAN,SD,SEED1,SEED2,SEED3)
+!**********************************************************************!
+real(dp) :: MEAN, SD
+real(dp) :: xlo, xhi, R1, R2, P, retval
+integer ::seed1, seed2, seed3
+!----------------------------------------------------------------------!
+
+Xlo = -1.0
+xhi = 1.0
+P = 2.0
+!  
+10    if (P>=1.0) then 
+	R1 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	R2 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	P = R1*R1 + R2*R2
+goto 10
+endif
+
+!
+Retval = MEAN + SD*R1*SQRT(-2.0*LOG(P)/P)
+!     NB . . Natural Log!
+!
+NORMDIST2_FN = Retval
+!
+!//! Equation: 75
+!//! Description: Derives a random value from the Normal distribution\\
+!//!   INPUTS: 2 parameters describing the distribution shape;- Mean \
+!//!     And Standard deviation; 3 Seeds for random number generation
+!//! Bibliography: R Saucier (2000), Computer generation of statistical\
+!//!   Distributions; (US) Army Research Laboratory, ARL-TR-2168; \
+!//!   (http://ftp.arl.mil/random/  (17/5/2001) )
+!
+!//! E: N(\mu, \sigma) = \mu + \sigma R1 \root{(-2 Ln(P)/P)}  \
+!//!     Where P = R1^2 + R2^2
+! 
+!//! Variable: SEED1, SEED2, SEED3
+!//! Description: integer ::seeds for random number generation
+!//! Units: none  
+!//! Type: integer
+!
+!//! Variable: R1, R2
+!//! Description: Random number between -1 and +1
+!//! Units: none  
+!//! Type: REAL
+!
+!//! Variable: NORMDIST2_FN
+!//! Description: Simulated value from a normal distribution \
+!//!    N(\mu,\sigma)
+!//! Units: none
+!//! Type: REAL
+!//! SET
+
+end function normdist2_fn
+
+
+
+
+
+!**********************************************************************!
+real(dp) function gammadist_fn(A,B,C, SEED1, SEED2, SEED3)
+!**********************************************************************!
+real(dp) :: Aconst, Bconst, Cconst, Qconst, Tconst
+real(dp) :: Dconst, a, b, c, xlo, xhi, R1, R2, P, Y
+real(dp) :: retval, p1, p2, v, z, w, R3
+integer :: Flag
+integer ::seed1, seed2, seed3
+!----------------------------------------------------------------------!
+
+Bconst = c-log(4.0)
+Tconst = 4.5
+Dconst = 1+log(Tconst)
+Cconst = 1+c/exp(1.0)
+flag = 1
+Xlo = 0.0
+xhi = 1.0
+
+if(c<1) then
+	  flag =0
+100     R1 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	  p = Cconst*R1
+	  if(P>1) goto 300
+  y=p**(1/c)
+	  R2 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	  if(R2<=exp(-y)) then
+	    retval = a+b*y
+	    flag = 2
+	  endif
+	  if(flag==0) goto 100
+
+300     y = -log((Cconst-p)/c)
+	  r2 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	  if((y>0).and.(R2<=y**(c-1))) then
+	    retval = a+b*y
+	    flag = 3
+  endif        
+  if(flag==0) goto 100
+
+elseif(c>1) then
+  Aconst = 1/SQRT(2*c-1.0)  
+  Qconst = c+ 1/(Aconst)
+	  flag=0 
+20      p1 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	  p2 = RNDF(XLO, XHI, SEED1, SEED2, SEED3)
+	  v = Aconst*log(p1/(1-p1))
+	  y = c*exp(v)
+	  z = p1*p1*p2
+	  w = Bconst+Qconst*v - y
+	  if(w+Dconst-Tconst*z>=0) then
+	    retval =a+b*y
+	    flag = 3
+	  else
+	    if(w>=log(z)) then
+	      retval = a+b*y
+	      flag = 4
+	    endif
+	  endif
+	  if(flag==0) goto 20
+else
+  r3 = RNDF(XLO,XHI, SEED1, SEED2, SEED3)
+  if(b>0) then
+    retval = a-b*log(r3)
+  else
+    write(*,*) 'problem with gamma dist when c=1'
+    stop
+  endif
+endif
+
+gammadist_fn = retval 
+!//! Equation: 73
+!//! Description: Derives a random value from the gamma distribution \\
+!//!   INPUTS: 3 parameters describing the gamma distribution shape; 3\
+!//!    Seeds for random number generation
+!//! Bibliography: R Saucier (2000), Computer generation of statistical\ 
+!//!  Distributions; (US) Army Research Laboratory, ARL-TR-2168.\
+!//!  (http://ftp.arl.mil/random/  (17/5/2001) )
+
+end function gammadist_fn
+
+
+
+
+
+!**********************************************************************!
+real(dp) function temp_day_mean2_fn(TEMP_MEAN_MONTH,TEMP_SD_MONTH,TEMP_AUTOCORR_MONTH,TEMP_YESTERDAY,IS1, &
+ IS2, IS3, NORMSWITCH)
+!**********************************************************************!
+!** calculates mean daily temperature  from monthly values   
+real(dp) :: TEMP_MEAN_MONTH
+real(dp) :: TEMP_SD_MONTH, TEMP_AUTOCORR_MONTH
+real(dp) :: TEMP_YESTERDAY
+real(dp) :: NORM, NORMMN, NORMSD
+integer ::IS1, IS2, IS3, NORMSWITCH
+!----------------------------------------------------------------------!
+
+!** approximate a function to get a normal distribution, mean=0, sd=1
+NORMMN=0.0
+NORMSD = 1.0
+NORM=NORM_FROM_RAND_FN(NORMMN, NORMSD, IS1, IS2, IS3, NORMSWITCH)
+!
+TEMP_DAY_MEAN2_FN=TEMP_MEAN_MONTH+TEMP_AUTOCORR_MONTH*(TEMP_YESTERDAY-TEMP_MEAN_MONTH)+TEMP_SD_MONTH* &
+ NORM*( (1-(TEMP_AUTOCORR_MONTH)**2)**0.5)
+!
+!//! Equation: 47
+!//! Description: Calculates Average daily temperature from monthly \
+!//!  means and standard-deviations. Autocorrelation of 0.65 seems \
+!//!  to work if one isn't available. \\
+!//!   INPUTS: Mean temperature of the month; Standard deviation \
+!//!    around the mean on a daily basis; Temperature \
+!//!     auto-correlation for each month; Mean temperature of the \
+!//!     previous day; 3 random number seeds.
+!//! Bibliography: S Evans (SWELTER); Haith, Tubbs & Pickering (1984) \
+!//!  Simulation of Pollution by soil erosion & soil nutirnt loss, \
+!//!   PUDOC, Wageningen
+!
+!//! E: Temp_{mean} = Temp_{mean,month} + \rho_{T} (Temp_{day-1} - \
+!//!     Temp_{mean,month}) + \sigma_{mT} N (1-\sigma_{mT}^{2})^0.5) \\
+!//!  \\
+!//!   E: N = { Random, N(0,1) }
+!
+!//! Variable: Temp_{mean}
+!//! Description: Daily mean temperature
+!//! Units: Degrees C   (usually)
+!//! Type: Double precsion
+!//! SET
+!
+!//! Variable: Temp_{mean,month}
+!//! Description: Mean daily temperature (monthly basis)
+!//! Units: Degrees C   (usually)
+!//! Type: Double precsion
+!
+!//! Variable: Temp_{day-1}     
+!//! Description: Mean daily temperature of the previous day
+!//! Units: Degrees C   (usually)
+!//! Type: Double precsion
+!
+!//! Variable: \rho_{T}
+!//! Description: Observed first-order auto-correlation of mean \
+!//!  daily air temperature for each month
+!//! Units: none  (day/day^{-1})
+!//! Type: Double precsion
+!
+!//! Variable: \sigma_{mT}
+!//! Description: Standard deviation of daily air temperature about \
+!//!  the mean (monthly basis).
+!//! Units: Degrees C             
+!//! Type: Double precsion
+!
+!//! Variable: R
+!//! Description: Random number between 0,1
+!//! Units: none
+!//! Type: Double precsion
+
+end function temp_day_mean2_fn
+
 
 
 end module weather_generator
