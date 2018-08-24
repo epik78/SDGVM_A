@@ -313,38 +313,6 @@ end subroutine stripbs
 
 !**********************************************************************!
 !                                                                      !
-!                     stripb :: func                                   !
-!                     --------------                                   !
-!                                                                      !
-! Strips leading blanks of its argument.                               !
-!                                                                      !
-! subroutine stripb(st1)                                               !
-!                                                                      !
-!----------------------------------------------------------------------!
-subroutine stripb(st1)
-!**********************************************************************!
-character(len=str_len) :: st1
-integer :: nb,i
-!----------------------------------------------------------------------!
-
-nb = blanks(st1)
-if (nb>0) then
-  do i=1,str_len-nb
-    st1(i:i) = st1(i+nb:i+nb)
-  enddo
-  do i=str_len-nb+1,str_len
-    st1(i:i) = ' '
-  enddo
-endif
-
-end subroutine stripb
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
 !                     blank :: func                                    !
 !                     -------------                                    !
 !                                                                      !
@@ -367,34 +335,6 @@ if ((blank<=str_len).and.(ichar(st1(blank:blank))/=32).and.(ichar(st1(blank:blan
 blank = blank - 1
 
 end function blank
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     last_blank :: func                               !
-!                     ------------------                               !
-!                                                                      !
-! 'last_blank' returns the number of characters in st1.                !
-!                                                                      !
-! integer function last_blank(st1)                                     !
-!                                                                      !
-!----------------------------------------------------------------------!
-integer function last_blank(st1)
-!**********************************************************************!
-character(len=str_len) :: st1
-!----------------------------------------------------------------------!
-
-last_blank = str_len
-10    continue
-last_blank = last_blank - 1
-if (last_blank>=1) then
-  if ((ichar(st1(last_blank:last_blank))==32).or.(ichar(st1(last_blank:last_blank))==9))  goto 10
-endif
-
-end function last_blank
 
 
 
@@ -569,10 +509,10 @@ end function stcmp
 !                     randomv :: func                                  !
 !                     ---------------                                  !
 !                                                                      !
-! subroutine RANDOMV(years,yr0,yrf,idum)                               !
+! subroutine randomv(years,yr0,yrf,idum)                               !
 !                                                                      !
 !----------------------------------------------------------------------!
-subroutine RANDOMV(years,yr0,yrf,idum)
+subroutine randomv(years,yr0,yrf,idum)
 !**********************************************************************!
 integer :: yr0,yrf,years(yrf-yr0+1),idum,ind(max_years),i,i1,j
 !----------------------------------------------------------------------!
@@ -589,7 +529,7 @@ do i=1,yrf-yr0+1
   enddo
 enddo
 
-end subroutine RANDOMV
+end subroutine randomv
 
 
 
@@ -610,6 +550,95 @@ integer :: i,j,idum
 ranv = int(ran1(idum)*(j-i+1))+i
 
 end function ranv
+
+
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          bi_lin :: data                              !
+!                          --------------                              !
+!                                                                      !
+!                                                                      !
+!  subroutine bi_lin(xx,indx,xnorm,ynorm,ans)                          !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Performs bilinear interpolation between four points.
+!! @details Performs bilinear interpolation between four points, the
+!! normalised
+!! distances from the point (1,1) are given by 'xnorm' and 'ynorm'.
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine bi_lin(xx,indx,xnorm,ynorm,ans)
+!----------------------------------------------------------------------!
+real(dp) :: xx(4,4),xnorm,ynorm,ans,av
+integer :: indx(4,4),iav,ii,jj
+!**********************************************************************!
+
+!----------------------------------------------------------------------!
+! Fill in averages if necessary.                                       !
+!----------------------------------------------------------------------!
+do ii=2,3
+  do jj=2,3
+    if (indx(ii,jj)/=1) then
+      av = 0.0
+      iav = 0
+      if (indx(ii+1,jj)==1) then
+        av = av + xx(ii+1,jj)
+        iav = iav + 1
+      endif
+      if (indx(ii-1,jj)==1) then
+        av = av + xx(ii-1,jj)
+        iav = iav + 1
+      endif
+      if (indx(ii,jj+1)==1) then
+        av = av + xx(ii,jj+1)
+        iav = iav + 1
+      endif
+      if (indx(ii,jj-1)==1) then
+        av = av + xx(ii,jj-1)
+        iav = iav + 1
+      endif
+      if (indx(ii+1,jj+1)==1) then
+        av = av + xx(ii+1,jj+1)
+        iav = iav + 1
+      endif
+      if (indx(ii-1,jj-1)==1) then
+        av = av + xx(ii-1,jj-1)
+        iav = iav + 1
+      endif
+      if (indx(ii+1,jj-1)==1) then
+        av = av + xx(ii+1,jj-1)
+        iav = iav + 1
+      endif
+      if (indx(ii-1,jj+1)==1) then
+        av = av + xx(ii-1,jj+1)
+        iav = iav + 1
+      endif
+      if (iav>0) then
+        xx(ii,jj) = av/real(iav)
+      endif
+    endif
+  enddo
+enddo
+
+!----------------------------------------------------------------------!
+! Bilinear interpolation.                                              !
+!----------------------------------------------------------------------!
+ans = xx(2,2)*(1.0-xnorm)*(1.0-ynorm) + xx(3,2)*xnorm*(1.0-ynorm) + &
+ xx(2,3)*(1.0-xnorm)*ynorm + xx(3,3)*xnorm*ynorm
+
+!----------------------------------------------------------------------!
+! nearest pixel.                                                       !
+!----------------------------------------------------------------------!
+! ans = xx(int(xnorm+2.5),int(ynorm+2.5))
+!----------------------------------------------------------------------!
+
+end subroutine bi_lin
 
 
 
@@ -652,137 +681,6 @@ iv(j) = idum
 ran1 = min(AM*iy,RNMX)
 
 end function ran1
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     round :: func                                    !
-!                     -------------                                    !
-!                                                                      !
-! 'round' calculates the nearest integer value to the argument.        !
-!                                                                      !
-! integer function round(x)                                            !
-!                                                                      !
-!----------------------------------------------------------------------!
-integer function round(x)
-!**********************************************************************!
-real(dp) :: x,rem
-!----------------------------------------------------------------------!
-
-rem = abs(x - real(int(x)))
-
-if (x>0.0) then
-  if (rem>0.5) then
-    round = int(x) + 1
-  else
-    round = int(x)
-  endif
-else
-  if (rem<0.5) then
-    round = int(x)
-  else
-    round = int(x) - 1
-  endif
-endif
-
-end function round
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     matcheck :: func                                 !
-!                     ----------------                                 !
-!                                                                      !
-! MATCHECK computes the Euclidean distance between the vector          !
-! [a,b,c,d] and the 'n' rows of 'x'. The minimum distance is stored in !
-! 'check' and the row index is stored in 'ind'.                        !
-!                                                                      !
-! subroutine matcheck(x,a,b,c,d,check,ind,n)                           !
-!                                                                      !
-!----------------------------------------------------------------------!
-subroutine matcheck(x,a,b,c,d,check,ind,n)
-!**********************************************************************!
-real(dp) :: x(n,4),a,b,c,d,check,temp
-integer :: ind,n,i
-!----------------------------------------------------------------------!
-
-check = 100.0
-do i=1,n
-  temp = max(abs(x(i,1) - a),abs(x(i,2) - b),abs(x(i,3) - c),abs(x(i,4) - d))
-  if (temp<check) then
-    check = temp
-    ind = i
-  endif
-enddo
-
-end subroutine matcheck
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     pile4 :: func                                    !
-!                     -------------                                    !
-!                                                                      !
-! PILE4 puts the row vector [a,b,c,d] at the top of the n*4 matrix 'x' !
-! and shifts the other rows down one, dumping the last.                !
-!                                                                      !
-! subroutine pile4(x,a,b,c,d,n)                                        !
-!                                                                      !
-!----------------------------------------------------------------------!
-subroutine pile4(x,a,b,c,d,n)
-!**********************************************************************!
-real(dp) :: x(n,4),a,b,c,d
-integer :: n,i,j
-!----------------------------------------------------------------------!
-
-do i=1,n-1
-  do j=1,4
-    x(n-i+1,j) = x(n-i,j)
-  enddo
-enddo
-x(1,1) = a
-x(1,2) = b
-x(1,3) = c
-x(1,4) = d
-
-end subroutine pile4
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     pile1 :: func                                    !
-!                     -------------                                    !
-!                                                                      !
-! PILE1 puts the scalar 'a' at the head of the 'n' dimensional vector  !
-! 'x' and shifts the other elements down one, loosing the last.        !
-!                                                                      !
-! subroutine pile1(x,a,n)                                              !
-!                                                                      !
-!----------------------------------------------------------------------!
-subroutine pile1(x,a,n)
-!----------------------------------------------------------------------!
-real(dp) :: x(n),a
-integer :: n,i
-!----------------------------------------------------------------------!
-
-do i=1,n-1
-  x(n-i+1) = x(n-i)
-enddo
-x(1) = a
-
-end subroutine pile1
 
 
 

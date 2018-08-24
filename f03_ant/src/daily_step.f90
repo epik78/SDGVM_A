@@ -3,7 +3,7 @@
 !! @author Mark Lomas
 !! @date July 2016
 
-module doly
+module daily_step
 
 use real_precision
 use phenology_methods
@@ -35,7 +35,7 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine dolyday(tmp,prc,hum,cld,ca,soilc,soiln,minn,adp,sfc,sw,sswc, &
+subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn,adp,sfc,sw,sswc, &
  awl,kd,kx,daygpp,resp_l,rlai,evap,tran,roff,interc,evbs,flow1,flow2, &
  pet,ht,ft,lmor_sc,nleaf,leaflitter,hrs,q, &
  qdirect,qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn,ce_light,ce_ci,ce_t, &
@@ -346,7 +346,7 @@ if ((check_closure).and.(pft(co)%sla > 0.0)) then
   endif
 endif
 
-end subroutine dolyday
+end subroutine dailyStep
 
 
 
@@ -417,7 +417,7 @@ end subroutine evapotranspiration
 
 
 
-end module doly
+end module daily_step
 
 
 

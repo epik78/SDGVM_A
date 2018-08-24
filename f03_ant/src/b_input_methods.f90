@@ -1,13 +1,12 @@
-module read_input
+module input_methods
 
 use real_precision
 use dims
 use pft_parameters
 use site_parameters
-use sdgvm1
-use input_methods
+use output_methods
 use func
-use misc_parameters
+use screen_output_parameters
 use tuning_parameters
 use open_files
 use file_class
@@ -16,6 +15,99 @@ use file_object
 implicit none
 
 contains
+
+subroutine command_line_argument_check()
+logical :: arg_input_not_set,arg_output_not_set,arg_n_range_1_not_set
+logical :: arg_n_range_2_not_set,arg_filename_not_set
+integer :: additional_arguments,i
+character(len=200) :: arg
+!----------------------------------------------------------------------!
+! Check additional command line arguemnts are consistent with input    !
+! and set.                                                             !
+!----------------------------------------------------------------------!
+arg_input_not_set     = .true.
+arg_output_not_set    = .true.
+arg_filename_not_set  = .true.
+arg_n_range_1_not_set = .true.
+arg_n_range_2_not_set = .true.
+
+additional_arguments = 0
+if (inp%dirs%input_argument) additional_arguments = &
+ additional_arguments + 1
+if (inp%dirs%output_argument) additional_arguments = &
+ additional_arguments + 1
+if (inp%sites%filename_argument) additional_arguments = &
+ additional_arguments + 1
+if (inp%sites%n_range_argument) additional_arguments = &
+ additional_arguments + 2
+
+i = 0
+do
+call get_command_argument(i,arg)
+  if (len_trim(arg) == 0) exit
+  i = i + 1
+enddo
+
+! check number of additoinal args is as required by the input file.
+if (additional_arguments/=i-2) then
+  write(*,'(''There are'',i2,'' arguments to sdgvm,'',i2 &
+ ,'' were expected.'')') i-1,additional_arguments+1
+  write(*,'(''Expected'')')
+  i = 1
+  write(*,'(i2,''. input file'')') i
+  if (inp%dirs%input_argument) then
+    i = i + 1
+    write(*,'(i2''. input directory'')') i
+  endif
+  if (inp%dirs%output_argument) then
+    i = i + 1
+    write(*,'(i2''. output directory'')') i
+  endif
+  if (inp%sites%filename_argument) then
+    i = i + 1
+    write(*,'(i2''. land sites file directory'')') i
+  endif
+  if (inp%sites%n_range_argument) then
+    i = i + 1
+    write(*,'(i2,''. site0'')') i
+  endif
+  if (inp%sites%n_range_argument) then
+    i = i + 1
+    write(*,'(i2''. sitef'')') i
+  endif
+  stop
+endif
+
+i = 0
+do
+call get_command_argument(i,arg)
+  if (len_trim(arg) == 0) exit
+  if (i>1) then
+    if ((inp%dirs%input_argument).and.(arg_input_not_set)) then
+      read(arg,'(A)') inp%dirs%input
+      arg_input_not_set = .false.
+    elseif ((inp%dirs%output_argument).and.(arg_output_not_set)) then
+      read(arg,'(A)') inp%dirs%output
+      arg_output_not_set = .false.
+    elseif ((inp%sites%filename_argument).and.(arg_filename_not_set)) then
+      read(arg,'(A)') inp%sites%filename
+      arg_filename_not_set = .false.
+    elseif ((inp%sites%n_range_argument).and.(arg_n_range_1_not_set)) then
+      read(arg,*) inp%sites%site0
+      arg_n_range_1_not_set = .false.
+    elseif ((inp%sites%n_range_argument).and.(arg_n_range_2_not_set)) then
+      read(arg,*) inp%sites%sitef
+      arg_n_range_2_not_set = .false.
+    endif
+  endif
+  i = i + 1
+enddo
+
+end subroutine command_line_argument_check
+
+
+
+
 
 !**********************************************************************!
 !                                                                      !
@@ -79,11 +171,10 @@ logical :: logic
 
 integer :: nlat,nlon
 !----------------------------------------------------------------------!
-
       met_seq = .FALSE.
       if(ii>1) THEN
         st3 = 'seq'
-        CALL STRIPBS(st1,st2)
+        CALL stripbs(st1,st2)
         if (stcmp(st2,st3)==1) then
           met_seq = .TRUE.
         ELSE
@@ -203,8 +294,8 @@ close(fid)
         write(*,'('' SDGVM running with '',i3, &
  '' sub-daily photosynthesis time-points'')') par_loops
       else
-        write(*,*) ''
-        write(*,*) 'SDGVM running with 1 sub-daily photosynthesis time-points'
+!        write(*,*) ''
+!        write(*,*) 'SDGVM running with 1 sub-daily photosynthesis time-points'
       endif
 
       !read next line of input switches. ln 11 in input.dat
@@ -550,54 +641,20 @@ enddo
 !----------------------------------------------------------------------!
 ! Open monthly/daily PIXEL output files if required.                   !
 !----------------------------------------------------------------------!
-call OUTPUT_OPTIONS(nomdos,otags,omav,ofmt_daily,ofmt_monthly,ofmt_yearly)
+call output_options(nomdos,otags,omav,ofmt_daily,ofmt_monthly,ofmt_yearly)
 
-!read(fid_input,*)
-!call STRIPB(st1)
-!st2 = 'PIXEL'
-!if (stcmp(st1,st2)==0) then
-!  write(*,'('' PROGRAM TERMINATED'')')
-!  write(*,*) &
-! 'The first field of line 15 of the input file must read ''PIXEL''.'
-!  write(*,*) st1(1:30)
-!  write(*,*) 'Output variable options:'
-!  write(*,'(1x,20a4)') (otags(i),i=1,15)
-!  write(*,'(1x,20a4)') (otags(i),i=16,nomdos)
-!  stop
-!endif
-
-
-call SET_PIXEL_OUT(st1,st2,outyears1,nomdos,otagsn,otags,oymd)
+call set_pixel_out(st1,st2,outyears1,nomdos,otagsn,otags,oymd)
 outyears1 = min(outyears1,nyears)
 
 st1 = inp%dirs%output
-
 
 !----------------------------------------------------------------------!
 ! Determine whether daily or monthly subpixel outputs are required.    !
 !----------------------------------------------------------------------!
 
-!read(fid_input,*)
-
-call SET_SUBPIXEL_OUT(st1,st2,outyears2,nomdos,otagsnft,otags,oymdft,&
+call set_subpixel_out(st1,st2,outyears2,nomdos,otagsnft,otags,oymdft,&
  out_cov,out_bio,out_bud,out_sen)
 outyears2 = min(outyears2,nyears)
-
-!----------------------------------------------------------------------!
-! Read in snapshot years.                                              !
-!----------------------------------------------------------------------!
-!read(fid_input,*)
-!call STRIPB(st1)
-!st2 = 'SNAPSHOTS'
-!if (stcmp(st1,st2)==0) then
-!  write(*,'('' PROGRAM TERMINATED'')')
-!  write(*,*) 'First field of line 17 must read SNAPSHOTS'
-!  stop
-!endif
-!call STRIPBS(st1,st2)
-!call STRIPB(st1)
-!call ST2ARR(st1,snpshts,100,snp_no)
-!read (fid_input,*)
 
 !----------------------------------------------------------------------!
 ! Read in compulsory functional types.                                 !
@@ -606,27 +663,6 @@ pft_tab(1)%tag = 'BARE'
 pft_tab(2)%tag = 'CITY'
 pft_tab(1)%itag = 1
 pft_tab(2)%itag = 2
-!read(fid_input,*)
-!call STRIPB(st1)
-!st2 = 'BARE'
-!if ((stcmp(st2,st1)==0).or.(n_fields(st1)/=2)) then
-!  write(*,'('' PROGRAM TERMINATED'')')
-!  write(*,*) 'Line 19 must read "BARE" forllowed by a number (0-1).'
-!  stop
-!endif
-!call STRIPBS(st1,st2)
-!read(st1,*) pft_tab(1)%mix
-!read(fid_input,*)
-!call STRIPB(st1)
-!st2 = 'CITY'
-!if ((stcmp(st2,st1)==0).or.(n_fields(st1)/=2)) then
-!  write(*,'('' PROGRAM TERMINATED'')')
-!  write(*,*) 'Line 19 must read "BARE" forllowed by a number (0-1).'
-!  stop
-!endif
-!call STRIPBS(st1,st2)
-!read(st1,*) pft_tab(2)%mix
-!read (fid_input,*)
 
 ! Initialise redundant parameterisation
 ft = 1
@@ -901,11 +937,6 @@ enddo
 nft = inp%npft
 
 !----------------------------------------------------------------------!
-! Open optional tile and pft output files.                             !
-!----------------------------------------------------------------------!
-!call open_tile_pft(nft)
-
-!----------------------------------------------------------------------!
 ! Change the units of xylem and water potential difference.            !
 !----------------------------------------------------------------------!
 do ft=1,inp%npft
@@ -958,6 +989,7 @@ enddo
 
 !----------------------------------------------------------------------!
 ! Grass reclimation, Bare reclimation and fire resistance (age in years)
+!----------------------------------------------------------------------!
 grassrc = 0.05
 barerc = 0.5
 fireres = 1000
@@ -969,11 +1001,13 @@ latdel = 0.0
 londel = 0.0
 
 if (trim(inp%sites%style)=='list') then
-  sites = inp%sites%n
-  do i=1,inp%sites%n
-    lat_lon(i,1) = inp%sites%list(i,1)
-    lat_lon(i,2) = inp%sites%list(i,2)
+  if (inp%sites%sitef>inp%sites%nlist)  inp%sites%sitef = inp%sites%nlist
+  sites = inp%sites%sitef - inp%sites%site0 + 1
+  do i=1,sites
+    lat_lon(i,1) = inp%sites%list(i+inp%sites%site0-1,1)
+    lat_lon(i,2) = inp%sites%list(i+inp%sites%site0-1,2)
   enddo
+
 elseif (trim(inp%sites%style)=='box') then
   lat0 = inp%sites%box(1)
   latf = inp%sites%box(2)
@@ -991,15 +1025,16 @@ elseif (trim(inp%sites%style)=='box') then
       lat_lon(sites,2) = lon0 + (j-0.5)*londel
     enddo
   enddo
+  inp%sites%site0 = 1
+  inp%sites%sitef = sites
 
 elseif (trim(inp%sites%style)=='file') then
-
   site0 = inp%sites%site0
   sitef = inp%sites%sitef
 
   recl1 = 17
 
-  open(99,FILE=trim(inp%sites%filename),STATUS='OLD',FORM='FORMATTED', &
+  open(99,file=trim(inp%sites%filename),STATUS='OLD',FORM='FORMATTED', &
  ACCESS='DIRECT',RECL=recl1,iostat=kode)
   if (kode/=0) then
     write(*,'('' PROGRAM TERMINATED'')')
@@ -1008,7 +1043,7 @@ elseif (trim(inp%sites%style)=='file') then
     stop
   endIF
   do site=site0,sitef
-    READ(99,'(F7.3,F9.3)',REC=site,iostat=kode) &
+    read(99,'(F7.3,F9.3)',rec=site,iostat=kode) &
  lat_lon(site-site0+1,1),lat_lon(site-site0+1,2)
     if (kode/=0) then
       exit
@@ -1051,12 +1086,12 @@ endif
 !----------------------------------------------------------------------!
 ! Open diagnostics file.                                               !
 !----------------------------------------------------------------------!
-call OPEN_DIAG()
+call open_diag()
 
 !----------------------------------------------------------------------!
 ! Check sites against land mask and disregard when no land.            !
 !----------------------------------------------------------------------!
-call LAND_SITE_CHECK(st1,sites,lat_lon,latdel,londel,du)
+call land_site_check(st1,sites,lat_lon,latdel,londel,du)
 
 !----------------------------------------------------------------------!
 ! Read in type of landuse: 0 = defined by map; 1 = defined explicitly  !
@@ -1069,11 +1104,11 @@ else
   ilanduse = 1
 endif
 
-fire_ant(:)    = .FALSE.
-harvest_ant(:) = .FALSE.
+fire_ant(:)    = .false.
+harvest_ant(:) = .false.
 if (ilanduse==1) then
 ! Use landuse defined in input file.
-  call LANDUSE1(luse,yr0,yrf,fire_ant,harvest_ant)
+  call landuse1(luse,yr0,yrf,fire_ant,harvest_ant)
 endif
 if ((ilanduse<0).or.(ilanduse>2)) then
   write(*,'('' PROGRAM TERMINATED'')')
@@ -1083,7 +1118,7 @@ if ((ilanduse<0).or.(ilanduse>2)) then
   write(*,*) '2:= Natural vegetation.'
   stop
 endif
-call OPEN_SNAPSHOTS(snp_no,snpshts)
+call open_snapshots(snp_no,snpshts)
 
 ssp%nft = nft
 
@@ -1102,11 +1137,11 @@ end subroutine process_input_file
 ! subroutine read_param(l_regional,site_out,year_out,stver)            !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
-!! @details First reads misc_params.dat file in /f03 with input on year
-!! step to output on screen and whether run is regional or country.Saved
-!! in msp structure defined in misc_parameters.f90.
+!> @brief Read internal parameters from "inc/param.dat" file, and io
+!! parameters from "inc/screen_output.dat.dat".
+!! @details First reads screen output parameters with input on year
+!! step to output on screen and whether run is regional or country.
+!! Saved in sop structure defined in screen_output_parameters.f90.
 !! It then reads the param.dat file in /inc with the tuning parameters
 !! and saves in structure tgp defined in tuning_parameters.f90.
 !! @author Mark Lomas
@@ -1119,22 +1154,21 @@ character(len=str_len) :: st1,st2,st3,stver
 logical :: l_regional
 
 !----------------------------------------------------------------------!
-! Read 'misc_params.dat'.                                              !
+! Read 'inc/screen_output.dat'.                                        !
 !----------------------------------------------------------------------!
-open(newunit=fid,file='misc_params.dat',status='OLD',iostat=kode)
-
+open(newunit=fid,file='inc/screen_output.dat',status='OLD',iostat=kode)
 if (kode/=0) then
-  write(*,*) ' File does not exist: "misc_params.dat"'
+  write(*,*) ' File does not exist: "screen_output.dat"'
   write(*,*) ' Using screen output options: 1 0. '
   write(*,*) ' Using countries, not regions. '
-  msp%site_out = 1
-  msp%year_out = 0
-  msp%l_regional = .false.
+  sop%site_out = 1
+  sop%year_out = 0
+  sop%l_regional = .false.
 else
   read(fid,*)
-  read(fid,*) msp%site_out,msp%year_out
+  read(fid,*) sop%site_out,sop%year_out
   read(fid,*)
-  read(fid,*) msp%l_regional
+  read(fid,*) sop%l_regional
 endif
 close(fid)
 
@@ -1150,12 +1184,12 @@ endif
 
 read(fid,*)
 read(fid,*) st1
-call STRIPB(st1)
+st1 = adjustl(st1)
 st2 = stver
-call STRIPBS(st2,st3)
-call STRIPB(st2)
-st1=st1(1:blank(st1))
-st2=st2(1:blank(st2))
+call stripbs(st2,st3)
+st2 = adjustl(st2)
+st1 = trim(st1)
+st2 = trim(st2)
 if (stcmp(st1,st2)/=1) then
   write(*,'('' PROGRAM TERMINATED'')')
   write(*,*) &
@@ -1213,4 +1247,343 @@ end subroutine read_param
 
 
 
-end module read_input
+
+
+!**********************************************************************!
+!                                                                      !
+!                       land_site_check :: read_input                  !
+!                       -----------------------------                  !
+!                                                                      !
+! subroutine land_site_check(st1,st2,sites,lat_lon,latdel,londel,du,   !
+! stmask)                                                              !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine land_site_check(st1,sites,lat_lon,latdel,londel,du)
+!**********************************************************************!
+character(len=str_len) :: st1
+integer :: sites,du,i,site,fid
+real(dp) :: lat_lon(max_sites,2),latdel,londel,lat,lon
+logical :: lc
+!----------------------------------------------------------------------!
+
+call fun%open(trim(inp%dirs%output)//'/land_sites.dat',fid)
+i = 0
+write(*,'(''Number of potential sites = '',i0)') sites
+write(*,'(''Land sites'')')
+do site=1,sites
+  lat = lat_lon(site,1)
+  lon = lat_lon(site,2)
+  call lorc(du,lat,lon,latdel,londel,lc)
+  if (lc) then
+  if (mod(site,1)==0)  write(*,'(i6,f8.3,f9.3)') site,lat,lon
+    write(fid,'(f7.3,f9.3)') lat,lon
+    i = i + 1
+    lat_lon(i,1) = lat_lon(site,1)
+    lat_lon(i,2) = lat_lon(site,2)
+  endif
+enddo
+call fun%close(fid)
+
+sites = i
+
+write(*,'(''Number of land sites = '',i0)') sites
+if (inp%sites%create_land_sites_only) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Created land sites file only.'
+  stop
+endif
+
+end subroutine land_site_check
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                     lorc :: data                                     !
+!                     ------------                                     !
+!                                                                      !
+! subroutine lorc(du,lat,lon,latdel,londel,xx)                  !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Determine if the site is a land site
+!! @details Using a half an arc-second land sea mask. Determine whether
+!! the site is land or sea based on the majority of the mask within
+!! the limits of the gridcell.
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine lorc(du,lat,lon,latdel,londel,xx)
+!**********************************************************************!
+logical :: xx
+real(dp) :: lat,lon,latdel,londel,del,latf,lon0
+character :: outc(6200)
+integer :: i,j,k,x(7),ians(43300),sum1,n,col,row,check,nrecl,du,kode
+!----------------------------------------------------------------------!
+
+if (du==1) then
+!  This works for ftn95
+!  nrecl = 6172
+  nrecl = 6172 + 2
+else
+  nrecl = 6172 + 1
+endif
+
+open(99,file=trim(inp%dirs%land_mask)//'/land_mask.dat', &
+ form='formatted',recl=nrecl,access='direct',status='old',iostat=kode)
+if (kode/=0) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Land sea mask.'
+  write(*,*) 'Either the file doesn''t exist or there is a record length miss match.'
+  write(*,*) 'Check that the correct DOS|UNIX switch is being used in the input file.'
+  write(*,*) 'Land sea file :',trim(inp%dirs%land_mask)
+  stop
+endif
+
+del = 1.0d0/60.0d0/2.0d0
+latf = 90.0d0 - del/2.0d0
+lon0 =-180.0d0 + del/2.0d0
+
+col = int((lon - lon0)/del + 0.5d0)
+row = int((latf - lat)/del + 0.5d0)
+
+n = min((latdel/del-1.0d0)/2.0d0,(londel/del-1.0d0)/2.0d0)
+
+!----------------------------------------------------------------------!
+! Check nearest pixel for land.                                        !
+!----------------------------------------------------------------------!
+sum1 = 0
+read(99,'(6172a)',rec=row) (outc(j),j=1,6172)
+
+do j=1,6172
+  call base72i(outc(j),x)
+  do k=1,7
+    ians(7*(j-1)+k) = x(k)
+  enddo
+enddo
+if (ians(col)>0) sum1 = sum1 + 1
+check = 1
+
+!----------------------------------------------------------------------!
+if (n>0) then
+!----------------------------------------------------------------------!
+! Check outward diagonals for land.                                    !
+!----------------------------------------------------------------------!
+  do i=1,n
+    read(99,'(6172a)',rec=row+i) (outc(j),j=1,6172)
+    do j=1,6172
+      call base72i(outc(j),x)
+      do k=1,7
+        ians(7*(j-1)+k) = x(k)
+      enddo
+    enddo
+    if (ians(col+i)>0) sum1 = sum1 + 1
+    if (ians(col-i)>0) sum1 = sum1 + 1
+
+    read(99,'(6172a)',rec=row-i) (outc(j),j=1,6172)
+    do j=1,6172
+      call base72i(outc(j),x)
+      do k=1,7
+        ians(7*(j-1)+k) = x(k)
+      enddo
+    enddo
+    if (ians(col+i)>0) sum1 = sum1 + 1
+    if (ians(col-i)>0) sum1 = sum1 + 1
+    check = check + 4
+  enddo
+!----------------------------------------------------------------------!
+endif
+
+close(99)
+
+if (real(sum1)>=(check+1)/2) then
+  xx = .true.
+else
+  xx = .false.
+endif
+
+end subroutine lorc
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          base72I :: data                             !
+!                          ---------------                             !
+!                                                                      !
+! subroutine base72i(c,x)                                              !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine base72i(c,x)
+!**********************************************************************!
+character :: c
+integer :: x(7),i
+!----------------------------------------------------------------------!
+
+i=ichar(c)-100
+x(1)=i/64
+i=i-x(1)*64
+x(2)=i/32
+i=i-x(2)*32
+x(3)=i/16
+i=i-x(3)*16
+x(4)=i/8
+i=i-x(4)*8
+x(5)=i/4
+i=i-x(5)*4
+x(6)=i/2
+i=i-x(6)*2
+x(7)=i
+
+end subroutine base72i
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          n7 :: data                                  !
+!                          ----------                                  !
+!                                                                      !
+! Returns the value of a seven digit binary number given as a seven    !
+! dimensional array of 0's and 1's                                     !
+!                                                                      !
+!    integer function n7(x)                                            !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+integer function n7(x)
+!----------------------------------------------------------------------!
+integer :: x(7)
+!----------------------------------------------------------------------!
+
+n7 = 64*x(1)+32*x(2)+16*x(3)+8*x(4)+4*x(5)+2*x(6)+x(7)
+ 
+!**********************************************************************!
+end function n7
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                     get_input_filename :: sdgvm1                     !
+!                     ----------------------------                     !
+!                                                                      !
+! subroutine get_input_filename(st1)                                   !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine get_input_filename(st1)
+!**********************************************************************!
+character :: st1*80
+integer :: iargc
+!----------------------------------------------------------------------!
+
+if (IARGC()>0) then
+  call getarg(1,st1)
+else
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) ' Input file must be given as an argument.'
+  stop
+endif
+
+end subroutine get_input_filename
+
+
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                       read_climate :: sdgvm1                         !
+!                       ----------------------                         !
+!                                                                      !
+! subroutine read_climate(ststats,lat,lon,xlatf,                       !
+! xlatres,xlatresn,xlon0,xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,   !
+! xcldv,isite,xyear0,xyearf,du,seed1,seed2,seed3,l_clim,l_stats,siteno,!
+! day_mnth,thty_dys,sit_grd,withcloudcover))                           !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine read_climate(lat,lon,xlatf,xlatres,xlatresn,xlon0,xlonres, &
+ xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,xcldv,xswrv,isite,xyear0,xyearf, &
+ du,seed1,seed2,seed3,l_clim,l_stats,siteno,day_mnth,thty_dys,sit_grd, &
+ withcloudcover)
+!**********************************************************************!
+real(dp) :: lat,lon,xlatf,xlatres,xlon0,xlonres
+integer :: xlatresn,xlonresn,yr0,yrf,isite,xyear0,xyearf,du
+integer :: seed1,seed2,seed3,siteno,day_mnth,thty_dys,sit_grd
+real(dp), dimension(500,12,31) :: xtmpv,xprcv,xhumv,xswrv
+real(dp), dimension(500,12) :: xcldv
+integer :: read_par
+logical :: l_clim,l_stats,withcloudcover
+!----------------------------------------------------------------------!
+
+if ((day_mnth==1).and.(thty_dys==1)) then
+  call EX_CLIM(lat,lon,xlatf,xlatres,xlatresn,xlon0,xlonres, &
+ xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,isite,xyear0,xyearf,siteno,du, &
+ read_par)
+  withcloudcover=.false.
+  ssp%latres = xlatres
+  ssp%lonres = xlonres
+elseif ((day_mnth==0).and.(thty_dys==1).and.(sit_grd==0)) then
+  call EX_CLIM_WEATHER_GENERATOR(lat,lon,xlatf,xlatres,xlatresn,xlon0, &
+ xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,xcldv,xswrv,isite,xyear0, &
+ xyearf,du,seed1,seed2,seed3,l_clim,l_stats,inp%run%read_par)
+  withcloudcover=.true.
+  ssp%latres = xlatres
+  ssp%lonres = xlonres
+elseif ((day_mnth==1).and.(thty_dys==0)) then
+  call EX_CLIM_SITE(yr0,yrf,xtmpv,xhumv,xprcv,xyear0,xyearf)
+  withcloudcover=.false.
+  siteno = 1
+else
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Error defining climate to read'
+  stop
+endif
+
+end subroutine read_climate
+
+
+
+
+
+
+
+
+
+end module input_methods

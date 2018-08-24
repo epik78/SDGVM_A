@@ -8,7 +8,9 @@ module data
 use real_precision
 use dims
 use func
-use input_methods
+use input_file
+use site_parameters
+use system_state
 
 implicit none
 
@@ -89,7 +91,6 @@ close(fno+1)
 siteno = ans2(ncol)
 
 isite = 0
-print*,siteno
 if (siteno>0) then
 
   isite = 1
@@ -218,6 +219,511 @@ close(91)
 end subroutine ex_clim_site
 
 
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          ex_clu :: data                              !
+!                          --------------                              !
+!                                                                      !
+!  subroutine EX_CLU(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)   !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief
+!! @details  Extract land use from land use database for the
+!! nearest site to lat,lon, replace lat,lon with the nearest cell from
+!! the database. The data contains the percent (in byte format) for
+!! each pft from 2 to nft.
+!! First reads the readme.dat from the land use dataset with info such 
+!! as resolution,years available and number of classes.Description of
+!! classes and proportion assigned to model ft are ignored.
+!! Land use must be written per class per year in vector format (i3)
+!! 0-100 with 255 for water.Direction is West to East,North to South.
+!! lutab(landcover classes,nft) is read from setup file.
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine ex_clu(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)
+!**********************************************************************!
+real(dp) :: lat,lon,lon0,latf,latr,lonr,classprop(255)
+real(dp) :: cluse(max_cohorts,max_years),lutab(255,100),ans
+real(dp) :: ftprop(max_cohorts),rrow,rcol,xx(4,4),xnorm,ynorm
+integer :: i,n,j,du,latn,lonn,row,col,recn,k,x,nft,ift
+integer :: ii,jj,indx(4,4),yr0,yrf,years(1000),nrecl
+integer :: classes(1000),nclasses,kode
+character(len=str_len) :: st1,st2,st3
+logical :: l_lu
+!----------------------------------------------------------------------!
+
+!----------------------------------------------------------------------!
+! read in the readme file 'readme.dat'.                                !
+!----------------------------------------------------------------------!
+open(99,file=trim(inp%dirs%land_use)//'/readme.dat',&
+ status='old',iostat=kode)
+if (kode/=0) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Land use file does not exist.'
+  write(*,'('' "'',A,''/readme.dat"'')') trim(inp%dirs%land_use)
+  stop
+endif
+
+read(99,*) st1
+st2='CONTINUOUS'
+if (stcmp(st1,st2)==0) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'landuse is not a continuous field ?'
+  write(*,*) 'readme.dat should begin with CONTINUOUS'
+  stop
+endif
+read(99,*)
+read(99,*) latf,lon0
+read(99,*)
+read(99,*) latr,lonr
+read(99,*)
+read(99,*) latn,lonn
+read(99,*)
+read(99,'(A)') st1
+n = n_fields(st1)
+call ST2ARR(st1,years,1000,n)
+read(99,*)
+read(99,'(A)') st1
+close(99)
+nclasses = n_fields(st1)
+call ST2ARR(st1,classes,1000,nclasses)
+
+!----------------------------------------------------------------------!
+if (du==1) then
+!  This works for ftn95
+!  nrecl = 3
+  nrecl = 5
+else
+  nrecl = 4
+endif
+
+if ((n>1).and.(yr0<years(1))) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Can''t start running in ',yr0,&
+ ' since landuse map begin in ',years(1)
+  stop
+endif
+
+!     look for the first year
+j=1
+
+ 10   continue
+if ((j<n).and.(years(j)<yr0)) then
+   j = j + 1
+   goto 10
+endif
+
+!----------------------------------------------------------------------!
+! Find the real(dp) :: row col corresponding to lat and lon.                  !
+!----------------------------------------------------------------------!
+rrow = (latf - lat)/latr
+rcol = (lon - lon0)/lonr
+
+ynorm = rrow - real(int(rrow))
+xnorm = rcol - real(int(rcol))
+!----------------------------------------------------------------------!
+
+j=1
+do i=1,yrf-yr0+1
+  if ((i==1).or.((i+yr0-1)==years(j))) then
+    st2 = in2st(years(j))
+    st2 = adjustl(st2)
+    j = j + 1
+
+    do k=1,nclasses
+      classprop(classes(k)) = 0
+
+      st3 = in2st(classes(k))
+      st3 = adjustl(st3)
+      open(99,file= &
+ trim(inp%dirs%land_use)//'/cont_lu-'//trim(st3)//'-'//st2(1:4)//'.dat', & 
+ status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
+      if (kode/=0) then
+        write(*,'('' PROGRAM TERMINATED'')')
+        write(*,*) 'Land Use data-base.'
+        write(*,*) 'File does not exist:'
+        write(*,*) trim(inp%dirs%land_use)//'/cont_lu-',trim(st3),'-',st2(1:4),'.dat'
+        stop
+      endif
+
+      do ii=1,4
+        do jj=1,4
+          row = int(rrow)+jj-1
+          col = int(rcol)+ii-1
+          if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) then
+            recn = (row-1)*lonn + col
+            read(99,'(i3)',rec=recn) x 
+            xx(ii,jj) = real(x)
+            if (x<200) then
+              indx(ii,jj) = 1
+            else
+              indx(ii,jj) = 0
+            endif
+          else
+            indx(ii,jj) = -1
+          endif
+        enddo
+      enddo
+
+      call bi_lin(xx,indx,xnorm,ynorm,ans)
+      
+      x = int(ans+0.5)
+      
+      !This allows only specific crops
+      !IF (k/=29) ans=0.
+      
+      classprop(classes(k)) = ans
+      close(99)
+
+    enddo ! end of loop over the classes
+    
+!----------------------------------------------------------------------!
+! Now calculate the ftprop.
+!----------------------------------------------------------------------!
+    do ift=2,nft
+      ftprop(ift)=0.0
+      do k=1,nclasses
+        ftprop(ift)=ftprop(ift)+lutab(classes(k),ift)*classprop(classes(k))/100.0
+      enddo
+    enddo
+
+!----------------------------------------------------------------------!
+! Calculate the bare soil.
+!----------------------------------------------------------------------!
+    if ((ftprop(2)<=100).and.(ftprop(2)>=0)) then
+      ftprop(1)=100
+      do ift=2,nft
+        ftprop(1)=ftprop(1)-ftprop(ift)
+      enddo
+    endif
+
+  endif ! finished reading
+
+  do ift=1,nft
+    cluse(ift,i) = ftprop(ift)
+  enddo
+
+enddo
+
+!! TRENDY SDGVM method - assumes smoothed change in land-use between years specified in input dataset
+!DO i=1,years(n)-yr0a
+!  IF ( (i==1).or.((i+yr0a-1)==years(j1)) ) THEN
+!    ij  = i
+!    ij1 = ij + years(j1+1) - years(j1) 
+!    j1  = j1 + 1
+!  ELSE
+!    DO ift=1,nft
+!      cluse(ift,i) = cluse(ift,ij) + ( (real(i)-real(ij))/(real(ij1)-real(ij))* & 
+! (cluse(ift,ij1) - cluse(ift,ij)) )
+!    ENDDO
+!  ENDIF
+!ENDDO
+
+if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or.(indx(3,3)==1)) then
+  l_lu = .true.
+else
+  l_lu = .false.
+endif
+
+end subroutine ex_clu
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          readCO2 :: data                             !
+!                          ---------------                             !
+!                                                                      !
+! subroutine readCO2(yr0,yrf,co2)                                      !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Reads co2 values for each year
+!! @details It will read from the co2 file the concentration vector 
+!! with starting and end year as produced by the read_input_file sub.
+!! If the co2 file has only one value then it will be used for all the
+!! years meaning constant co2 concentrations.
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine readco2(yr0,yrf,co2,daily_co2,nyears)
+!----------------------------------------------------------------------!
+real(dp) :: co2(max_years),ca
+integer :: yr0,yrf,norecs,year,const,kode
+integer :: yra,yrfa,prev_year,nyears
+integer :: mnth,yr0a,daily_co2,day
+logical :: co2spin
+!**********************************************************************!
+
+open(98,file=trim(inp%dirs%co2),status='OLD',iostat=kode)
+if (kode/=0) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'Co2 file does not exist.'
+  write(*,'('' "'',A,''"'')') trim(inp%dirs%co2)
+  stop
+endif
+
+norecs = 0
+const = 0
+10    continue
+  read(98,*,end=99) year,ca
+    if ((year>=yr0).and.(year<=yrf)) then
+    co2(norecs+1) = ca
+    norecs = norecs + 1
+  endif
+  const = const + 1
+goto 10
+99 continue
+close(98)
+
+if (const==1) then
+  do year=yr0,yrf
+    co2(year-yr0+1) = ca
+  enddo
+endif
+
+end subroutine readco2
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                         landuse1 :: data                             !
+!                         ----------------                             !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine landuse1(luse,yr0,yrf,fire_ant,harvest_ant)
+!**********************************************************************!
+integer :: yr0,yrf,year,early,rep,luse(max_years),i,use
+logical :: fire_ant(max_years),harvest_ant(max_years)
+!----------------------------------------------------------------------!
+
+early = yrf+max_years
+
+do i=1,max_years
+  luse(i) = 0
+enddo
+
+do i=1,inp%land_use%n
+  year = inp%land_use%year(i)
+  if (year-yr0+1>0)  luse(year-yr0+1) = int(inp%land_use%map(i))
+  if (year<early) rep = int(inp%land_use%map(i))
+enddo
+
+do i=1,max_years
+  if (luse(i)>0) rep = luse(i)
+  luse(i) = rep
+enddo
+
+return
+
+
+
+!do i=1,max_years
+!  luse(i) = 0
+!enddo
+
+!i = 1
+!10    continue
+!  read(fid_input,*,end=20) year,use
+!  print*,use
+!  if (year-yr0+1>0)  luse(year-yr0+1) = use
+!  if (year<early) rep = use
+!  i = i+1
+!goto 10
+!20    continue
+
+!do i=1,max_years
+!  if (luse(i)>0) rep = luse(i)
+!  luse(i) = rep
+!enddo
+
+
+!return
+
+! Anthony's updated version this seems to cause a problem.
+!      early = yrf+max_years
+!      luse(:) = 1000
+      
+!      i = 1
+!11    CONTINUE
+!        READ(98,*,end=21) year,use
+!        IF (year-yr0+1>0)  luse(year-yr0+1) = use
+!        IF ((year<early).and.(use>0)) rep = use
+!        !early = year
+!        i = i+1
+!      GOTO 11
+!21    CONTINUE
+
+!      if(rep<=0) then
+!        print*, 'ERROR:: Land use mapping equal to or below 0'
+!        print*, 'you must specifiy at least one year with a cover type'
+!      endif
+
+!      DO i=1,max_years
+!        If ((luse(i)>0).and.(luse(i)<1000)) rep = luse(i)
+!        If (luse(i)<0) fire_ant(i)    = .TRUE.
+!        If (luse(i)==0) harvest_ant(i) = .TRUE.
+!        luse(i) = rep
+!      ENDDO
+
+end subroutine landuse1
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          ex_lu :: data                               !
+!                          -------------                               !
+!                                                                      !
+! subroutine ex_lu(lat,lon,luse,yr0,yrf,du)                            !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Extract land use.
+!! @details Extract land use from land use soils database for the
+!! nearest site to lat,lon, replace lat,lon with the nearest cell from
+!! the database.
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine ex_lu(lat,lon,luse,yr0,yrf,du)
+!**********************************************************************!
+real(dp) :: lat,lon,lon0,latf,latr,lonr,xlat,xlon
+integer :: i,n,j,du,latn,lonn,row,col,recn,kode
+integer :: luse(max_years),yr0,yrf,rep,years(1000),lu(1000),nrecl
+character(len=str_len) :: st1
+!**********************************************************************!
+
+open(99,file=trim(inp%dirs%land_use)//'/readme.dat')
+read(99,*)
+read(99,*) latf,lon0
+read(99,*)
+read(99,*) latr,lonr
+read(99,*)
+read(99,*) latn,lonn
+read(99,*)
+read(99,'(A)') st1
+close(99)
+
+n = n_fields(st1)
+call ST2ARR(st1,years,1000,n)
+
+if (du==1) then
+  nrecl = 16+n*3
+else
+  nrecl = 16+n*3+1
+endif
+
+lu(1) = 0
+open(99,file=trim(inp%dirs%land_use)//'/landuse.dat',status='old', &
+ form='formatted',access='direct',recl=nrecl,iostat=kode)
+if (kode/=0) then
+  write(*,'('' PROGRAM TERMINATED'')')
+  write(*,*) 'File does not exist:',trim(inp%dirs%land_use)//'/landuse.dat'
+  stop
+endif
+
+row = int((latf - lat)/latr + 1.0)
+col = int((lon - lon0)/lonr + 1.0)
+
+recn = (row-1)*lonn + col
+if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=recn) xlat,xlon,(lu(i),i=1,n)
+
+if (lu(1)==0) then
+  row = int((latf - (lat + latr))/latr + 1.0)
+  col = int(((lon) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat - latr))/latr + 1.0)
+  col = int(((lon) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat))/latr + 1.0)
+  col = int(((lon + lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat))/latr + 1.0)
+  col = int(((lon - lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat + latr))/latr + 1.0)
+  col = int(((lon + lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat - latr))/latr + 1.0)
+  col = int(((lon + lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat + latr))/latr + 1.0)
+  col = int(((lon - lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+if (lu(1)==0) then
+  row = int((latf - (lat - latr))/latr + 1.0)
+  col = int(((lon - lonr) - lon0)/lonr + 1.0)
+  recn = (row-1)*lonn + col
+  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
+ read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+endif
+
+close(99)
+
+rep = lu(1)
+j = 1
+do i=1,n
+  if (yr0>=years(j+1)) then
+    rep = lu(i)
+    j = i
+  endif
+enddo
+
+do i=1,yrf-yr0+1
+  if ((i+yr0-1>=years(j+1)).and.(j<n)) then
+    j = j+1
+    rep = lu(j)
+  endif
+  luse(i) = rep
+enddo
+
+end subroutine ex_lu
 
 
 
@@ -461,150 +967,249 @@ end subroutine ex_soil
 
 
 
-
 !**********************************************************************!
 !                                                                      !
-!                          ex_lu :: data                               !
-!                          -------------                               !
+!                          read_soil :: sdgvm1                         !
+!                          -------------------                         !
 !                                                                      !
-! subroutine ex_lu(lat,lon,luse,yr0,yrf,du)                            !
+! subroutine read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)           !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Extract land use.
-!! @details Extract land use from land use soils database for the
-!! nearest site to lat,lon, replace lat,lon with the nearest cell from
-!! the database.
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine ex_lu(lat,lon,luse,yr0,yrf,du)
+subroutine read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)
 !**********************************************************************!
-real(dp) :: lat,lon,lon0,latf,latr,lonr,xlat,xlon
-integer :: i,n,j,du,latn,lonn,row,col,recn,kode
-integer :: luse(max_years),yr0,yrf,rep,years(1000),lu(1000),nrecl
-character(len=str_len) :: st1
-!**********************************************************************!
+real(dp) :: lat,lon,soil_chr(10),soil_chr2(10)
+integer :: du
+logical :: l_soil(20)
+!----------------------------------------------------------------------!
 
-open(99,file=trim(inp%dirs%land_use)//'/readme.dat')
-read(99,*)
-read(99,*) latf,lon0
-read(99,*)
-read(99,*) latr,lonr
-read(99,*)
-read(99,*) latn,lonn
-read(99,*)
-read(99,'(A)') st1
-close(99)
-
-n = n_fields(st1)
-call ST2ARR(st1,years,1000,n)
-
-if (du==1) then
-  nrecl = 16+n*3
+call EX_SOIL(lat,lon,soil_chr2,du,l_soil)
+if (soil_chr(1)>0.01) then
+  ssp%sand = soil_chr(1)
+  ssp%silt = soil_chr(2)
+  l_soil(1) = .true.
+  l_soil(2) = .true.
 else
-  nrecl = 16+n*3+1
+  ssp%sand = soil_chr2(1)
+  ssp%silt = soil_chr2(2)
+endif
+ssp%clay = 100.0 - ssp%sand - ssp%silt
+
+if (soil_chr(3)>0.01) then
+  ssp%bulk  = soil_chr(3)
+  l_soil(3) = .true.
+else
+  ssp%bulk = soil_chr2(3)
 endif
 
-lu(1) = 0
-open(99,file=trim(inp%dirs%land_use)//'/landuse.dat',status='old', &
- form='formatted',access='direct',recl=nrecl,iostat=kode)
-if (kode/=0) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'File does not exist:',trim(inp%dirs%land_use)//'/landuse.dat'
-  stop
+if (soil_chr(4)>0.01) then
+  ssp%orgc  = soil_chr(4)
+  l_soil(4) = .true.
+else
+  ssp%orgc = soil_chr2(4)
 endif
 
-row = int((latf - lat)/latr + 1.0)
-col = int((lon - lon0)/lonr + 1.0)
-
-recn = (row-1)*lonn + col
-if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=recn) xlat,xlon,(lu(i),i=1,n)
-
-if (lu(1)==0) then
-  row = int((latf - (lat + latr))/latr + 1.0)
-  col = int(((lon) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+if (soil_chr(5)>0.01) then
+  ssp%wilt  = soil_chr(5)
+  ssp%field = soil_chr(6)
+  ssp%sat   = soil_chr(7)
+  l_soil(5) = .true.
+  l_soil(6) = .true.
+  l_soil(7) = .true.
+else
+  ssp%wilt = soil_chr2(5)
+  ssp%field = soil_chr2(6)
+  ssp%sat = soil_chr2(7)
 endif
 
-if (lu(1)==0) then
-  row = int((latf - (lat - latr))/latr + 1.0)
-  col = int(((lon) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+if (soil_chr(8)>0.01) then
+  ssp%soil_depth = soil_chr(8)
+  l_soil(8) = .true.
+else
+  ssp%soil_depth = soil_chr2(8)
 endif
 
-if (lu(1)==0) then
-  row = int((latf - (lat))/latr + 1.0)
-  col = int(((lon + lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
+end subroutine read_soil
+
+
+!**********************************************************************!
+!                                                                      !
+!                          co2_0_f :: sdgvm1                           !
+!                          -----------------                           !
+!                                                                      !
+! subroutine co2_0_f(co20,co2f,yearv,yr0,co2,nyears)                   !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine co2_0_f(co20,co2f,yearv,yr0,co2,nyears)
+!**********************************************************************!
+integer :: iyear,year,nyears,yr0,yearv(max_years)
+real(dp) :: co20,co2f,co2(max_years)
+!----------------------------------------------------------------------!
+
+iyear = 1
+year = yearv(iyear)
+if ((inp%run%spinup_length>0).and.(iyear>inp%run%spinup_length)) then
+  co20 = co2(year-yr0+1)
+else
+  if (inp%run%co2_constant>0.0) then
+    co20 = inp%run%co2_constant
+  else
+    co20 = co2(year-yr0+1)
+  endif
+endif
+iyear = nyears
+year = yearv(iyear)
+if ((inp%run%spinup_length>0).and.(iyear>inp%run%spinup_length)) then
+  co2f = co2(year-yr0+1)
+else
+  if (inp%run%co2_constant>0.0) then
+    co2f = inp%run%co2_constant
+  else
+    co2f = co2(year-yr0+1)
+  endif
 endif
 
-if (lu(1)==0) then
-  row = int((latf - (lat))/latr + 1.0)
-  col = int(((lon - lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
-endif
+end subroutine co2_0_f
 
-if (lu(1)==0) then
-  row = int((latf - (lat + latr))/latr + 1.0)
-  col = int(((lon + lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
-endif
 
-if (lu(1)==0) then
-  row = int((latf - (lat - latr))/latr + 1.0)
-  col = int(((lon + lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
-endif
+!**********************************************************************!
+!                                                                      !
+!                          set_landuse :: sdgvm1                       !
+!                          ---------------------                       !
+!                                                                      !
+! subroutine set_landuse(ftprop,ilanduse,tmp,prc,nat_map,nft,cluse,    !
+! year,yr0)                                                            !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Set landuse by allocating the cover of new ground.
+!! @details Assign gound available for new growth, through disturbance
+!! and mortality, given by ftprop. 
+!! For the specific year,check whether each ft can grow.
+!! If it can then ftprop(ft) acquires the value of cluse array which holds
+!! the desired cover for each ft and year as read from cover file.
+!! If ftprop(1)<0 then it sets it to 0 and proportionally reduced the 
+!! cover of the ofther fts to add up to 100.
+!!
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine set_landuse(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
+!**********************************************************************!
+integer :: ft,nft,nat_map(8)
+integer :: year,yr0
+real(dp) :: tmp(12,31),prc(12,31),cluse(max_cohorts,max_years)
+real(dp) :: ftprop(max_cohorts)
+!----------------------------------------------------------------------!
 
-if (lu(1)==0) then
-  row = int((latf - (lat + latr))/latr + 1.0)
-  col = int(((lon - lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
-endif
-
-if (lu(1)==0) then
-  row = int((latf - (lat - latr))/latr + 1.0)
-  col = int(((lon - lonr) - lon0)/lonr + 1.0)
-  recn = (row-1)*lonn + col
-  if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) &
- read(99,'(f7.3,f9.3,1000i3)',rec=int(min(recn,latn*lonn))) xlat,xlon,(lu(i),i=1,n)
-endif
-
-close(99)
-
-rep = lu(1)
-j = 1
-do i=1,n
-  if (yr0>=years(j+1)) then
-    rep = lu(i)
-    j = i
+ftprop(1) = 100.0
+do ft=2,nft
+  if (check_ft_grow(tmp,ssv(1)%chill,ssv(1)%dschill,ft)==1) then
+    ftprop(ft) = cluse(ft,year-yr0+1)
+    ftprop(1) = ftprop(1) - ftprop(ft)
+  else
+    ftprop(ft) = 0.0
   endif
 enddo
+if (ftprop(1)<0.0) then
+  do ft=2,nft
+    ftprop(ft) = ftprop(ft)*100.0/(100.0 - ftprop(1))
+  enddo
+  ftprop(1) = 0.0
+endif
 
-do i=1,yrf-yr0+1
-  if ((i+yr0-1>=years(j+1)).and.(j<n)) then
-    j = j+1
-    rep = lu(j)
-  endif
-  luse(i) = rep
+end subroutine set_landuse
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          set_climate :: sdgvm1                       !
+!                          ---------------------                       !
+!                                                                      !
+! subroutine set_climate(xtmpv,xprcv,xhumv,xcldv,withcloudcover,yearv, !
+! iyear,tmp,prc,hum,cld,thty_dys,yr0,year)                             !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Set 'tmp' 'hum' 'prc' and 'cld'.
+!! @details Assign climate from the raw data which is help in 'x???v'
+!! arrays.
+!! It also calculates the monthly average of temperature,precipitation
+!! and humidity.It uses that info to calculate the exponentially-weighted
+!! 20-year monthly means which are assigned to site structure
+!! variable ssp.Those values are required for the crop processes.
+!! Note that here I want to calculate the 20-year monthly mean twice,one
+!! for this year and one for the next which is the reason why this sub
+!! is in a loop.Careful,the index nn1 that goes from the loop in the sub
+!! goes from 1 to 0. 
+!! @author Mark Lomas,EPK
+!! @date Oct 2016
+!----------------------------------------------------------------------!
+subroutine set_climate(xtmpv,xprcv,xhumv,xcldv,xswrv,withcloudcover,yearv,&
+ iyear,tmp,prc,hum,cld,swr,thty_dys,yr0,year,nyears,nn1)
+!**********************************************************************!
+real(dp), dimension(500,12,31) :: xtmpv,xprcv,xhumv,xswrv
+real(dp), dimension(500,12) :: xcldv
+integer :: yearv(max_years),iyear,mnth,day,thty_dys,yr0,year,nn1,nyears,nn2
+logical :: withcloudcover
+real(dp) :: tmp(12,31),prc(12,31),hum(12,31),cld(12),swr(12,31)
+!----------------------------------------------------------------------!
+
+!nn2 plays no role unless we are in the last year of the run where it
+!ensures that we wont be reading outside the array.
+nn2=0
+if(iyear==nyears.and.nn1==1) nn2=-1
+
+ssp%mnthtmp(:)=0.
+ssp%mnthprc(:)=0.
+ssp%mnthhum(:)=0.
+
+do mnth=1,12
+  do day=1,no_days(year,mnth,thty_dys)
+    tmp(mnth,day) = real(xtmpv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/100.0
+    prc(mnth,day) = real(xprcv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/10.0
+    hum(mnth,day) = real(xhumv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/100.0
+    swr(mnth,day) = real(xswrv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))
+    ssp%mnthtmp(mnth)=ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    ssp%mnthprc(mnth)=ssp%mnthprc(mnth)+prc(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    if (withcloudcover) then
+      cld(mnth) = real(xcldv(yearv(iyear+nn1+nn2)-yr0+1,mnth))/1000.0
+    else
+      cld(mnth) = 0.5
+    endif
+  enddo
 enddo
 
-end subroutine ex_lu
+do mnth=1,12
+  do day=1,no_days(year+nn1+nn2,mnth,thty_dys)
+    if (hum(mnth,day)<30.0)  hum(mnth,day) = 30.0
+    if (hum(mnth,day)>95.0)  hum(mnth,day) = 95.0
+    ssp%mnthhum(mnth)=ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+  enddo
+enddo
+
+if(iyear==1) THEN
+  ssp%emnthtmp(:,nn1+1)=ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1)=ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1)=ssp%mnthhum(:)
+ELSE
+  ssp%emnthtmp(:,nn1+1)=0.95*ssp%emnthtmp(:,nn1+1)+0.05*ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1)=0.95*ssp%emnthprc(:,nn1+1)+0.05*ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1)=0.95*ssp%emnthhum(:,nn1+1)+0.05*ssp%mnthhum(:)
+endIF
+
+
+end subroutine set_climate
 
 
 
@@ -612,537 +1217,117 @@ end subroutine ex_lu
 
 !**********************************************************************!
 !                                                                      !
-!                          ex_clu :: data                              !
-!                          --------------                              !
+!                          set_co2 :: sdgvm1                           !
+!                          -----------------                           !
 !                                                                      !
-!  subroutine EX_CLU(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)   !
+! subroutine set_co2(ca,iyear,speedc,co2,year,yr0)                     !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Set CO2 value 'ca'.
+!! @details
+!! @author Mark Lomas
+!! @date Feb 2006
+!----------------------------------------------------------------------!
+subroutine set_co2(ca,iyear,speedc,co2,year,yr0)
+!**********************************************************************!
+real(dp) :: ca,co2(max_years)
+integer :: iyear,year,yr0
+logical :: speedc
+!----------------------------------------------------------------------!
+
+if ((inp%run%spinup_length>0).and.(iyear>inp%run%spinup_length)) then
+  speedc = .false.
+  ca = co2(year-yr0+1)
+else
+  if (inp%run%co2_constant>0.0) then
+    ca = inp%run%co2_constant
+  else
+    ca = co2(year-yr0+1)
+  endif
+endif
+
+end subroutine set_co2
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                        read_landuse :: sdgvm1                        !
+!                        ----------------------                        !
+!                                                                      !
+! subroutine read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,       !
+! luse,cluse,l_lu)                                                     !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
-!! @details  Extract land use from land use database for the
-!! nearest site to lat,lon, replace lat,lon with the nearest cell from
-!! the database. The data contains the percent (in byte format) for
-!! each pft from 2 to nft.
-!! First reads the readme.dat from the land use dataset with info such 
-!! as resolution,years available and number of classes.Description of
-!! classes and proportion assigned to model ft are ignored.
-!! Land use must be written per class per year in vector format (i3)
-!! 0-100 with 255 for water.Direction is West to East,North to South.
-!! lutab(landcover classes,nft) is read from setup file.
+!! @details
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine ex_clu(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)
+subroutine read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,&
+ luse,cluse,l_lu)
 !**********************************************************************!
-real(dp) :: lat,lon,lon0,latf,latr,lonr,classprop(255)
-real(dp) :: cluse(max_cohorts,max_years),lutab(255,100),ans
-real(dp) :: ftprop(max_cohorts),rrow,rcol,xx(4,4),xnorm,ynorm
-integer :: i,n,j,du,latn,lonn,row,col,recn,k,x,nft,ift
-integer :: ii,jj,indx(4,4),yr0,yrf,years(1000),nrecl
-integer :: classes(1000),nclasses,kode
-character(len=str_len) :: st1,st2,st3
+integer :: ilanduse,icontinuouslanduse,yr0,yrf,du,year,ft,nft,&
+ luse(max_years),nat_map(8)
+real(dp) :: lat,lon,cluse(max_cohorts,max_years),lutab(255,100),sum
+character(len=str_len) :: st2
+character(len=str_len), dimension(max_outputs) :: fttags
+
 logical :: l_lu
 !----------------------------------------------------------------------!
 
-!----------------------------------------------------------------------!
-! read in the readme file 'readme.dat'.                                !
-!----------------------------------------------------------------------!
-open(99,file=trim(inp%dirs%land_use)//'/readme.dat',&
- status='old',iostat=kode)
-if (kode/=0) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'Land use file does not exist.'
-  write(*,'('' "'',A,''/readme.dat"'')') trim(inp%dirs%land_use)
-  stop
-endif
+icontinuouslanduse = 1
 
-read(99,*) st1
-st2='CONTINUOUS'
-if (stcmp(st1,st2)==0) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'landuse is not a continuous field ?'
-  write(*,*) 'readme.dat should begin with CONTINUOUS'
-  stop
-endif
-read(99,*)
-read(99,*) latf,lon0
-read(99,*)
-read(99,*) latr,lonr
-read(99,*)
-read(99,*) latn,lonn
-read(99,*)
-read(99,'(A)') st1
-n = n_fields(st1)
-call ST2ARR(st1,years,1000,n)
-read(99,*)
-read(99,'(A)') st1
-close(99)
-nclasses = n_fields(st1)
-call ST2ARR(st1,classes,1000,nclasses)
-
-!----------------------------------------------------------------------!
-if (du==1) then
-!  This works for ftn95
-!  nrecl = 3
-  nrecl = 5
-else
-  nrecl = 4
-endif
-
-if ((n>1).and.(yr0<years(1))) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'Can''t start running in ',yr0,&
- ' since landuse map begin in ',years(1)
-  stop
-endif
-
-!     look for the first year
-j=1
-
- 10   continue
-if ((j<n).and.(years(j)<yr0)) then
-   j = j + 1
-   goto 10
-endif
-
-!----------------------------------------------------------------------!
-! Find the real(dp) :: row col corresponding to lat and lon.                  !
-!----------------------------------------------------------------------!
-rrow = (latf - lat)/latr
-rcol = (lon - lon0)/lonr
-
-ynorm = rrow - real(int(rrow))
-xnorm = rcol - real(int(rcol))
-!----------------------------------------------------------------------!
-
-j=1
-do i=1,yrf-yr0+1
-  if ((i==1).or.((i+yr0-1)==years(j))) then
-    st2=in2st(years(j))
-    call STRIPB(st2)
-    j=j+1
-
-    do k=1,nclasses
-      classprop(classes(k)) = 0
-
-      st3=in2st(classes(k))
-      call STRIPB(st3)
-      open(99,file= &
- trim(inp%dirs%land_use)//'/cont_lu-'//st3(1:blank(st3))//'-'//st2(1:4)//'.dat', & 
- status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
-      if (kode/=0) then
-        write(*,'('' PROGRAM TERMINATED'')')
-        write(*,*) 'Land Use data-base.'
-        write(*,*) 'File does not exist:'
-        write(*,*) trim(inp%dirs%land_use)//'/cont_lu-',st3(1:blank(st3)),'-',st2(1:4),'.dat'
-        stop
-      endif
-
-      do ii=1,4
-        do jj=1,4
-          row = int(rrow)+jj-1
-          col = int(rcol)+ii-1
-          if ((row>=1).and.(row<=latn).and.(col>=1).and.(col<=lonn)) then
-            recn = (row-1)*lonn + col
-            read(99,'(i3)',rec=recn) x 
-            xx(ii,jj) = real(x)
-            if (x<200) then
-              indx(ii,jj) = 1
-            else
-              indx(ii,jj) = 0
-            endif
-          else
-            indx(ii,jj) = -1
-          endif
-        enddo
-      enddo
-
-      call bi_lin(xx,indx,xnorm,ynorm,ans)
-      
-      x = int(ans+0.5)
-      
-      !This allows only specific crops
-      !IF (k/=29) ans=0.
-      
-      classprop(classes(k)) = ans
-      close(99)
-
-    enddo ! end of loop over the classes
-    
-!----------------------------------------------------------------------!
-! Now calculate the ftprop.
-!----------------------------------------------------------------------!
-    do ift=2,nft
-      ftprop(ift)=0.0
-      do k=1,nclasses
-        ftprop(ift)=ftprop(ift)+lutab(classes(k),ift)*classprop(classes(k))/100.0
+if (ilanduse==0) then
+  if (icontinuouslanduse==0) then
+    call EX_LU(lat,lon,luse,yr0,yrf,du)
+! Create the continuous land use (cluse)
+    do year=yr0,yrf
+      do ft=1,nft
+        cluse(ft,year-yr0+1) = lutab(luse(year-yr0+1),ft)
       enddo
     enddo
-
-!----------------------------------------------------------------------!
-! Calculate the bare soil.
-!----------------------------------------------------------------------!
-    if ((ftprop(2)<=100).and.(ftprop(2)>=0)) then
-      ftprop(1)=100
-      do ift=2,nft
-        ftprop(1)=ftprop(1)-ftprop(ift)
-      enddo
-    endif
-
-  endif ! finished reading
-
-  do ift=1,nft
-    cluse(ift,i) = ftprop(ift)
-  enddo
-
-enddo
-
-!! TRENDY SDGVM method - assumes smoothed change in land-use between years specified in input dataset
-!DO i=1,years(n)-yr0a
-!  IF ( (i==1).or.((i+yr0a-1)==years(j1)) ) THEN
-!    ij  = i
-!    ij1 = ij + years(j1+1) - years(j1) 
-!    j1  = j1 + 1
-!  ELSE
-!    DO ift=1,nft
-!      cluse(ift,i) = cluse(ift,ij) + ( (real(i)-real(ij))/(real(ij1)-real(ij))* & 
-! (cluse(ift,ij1) - cluse(ift,ij)) )
-!    ENDDO
-!  ENDIF
-!ENDDO
-
-if ((indx(2,2)==1).or.(indx(2,3)==1).or.(indx(3,2)==1).or.(indx(3,3)==1)) then
-  l_lu = .true.
-else
-  l_lu = .false.
-endif
-
-end subroutine ex_clu
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     lorc :: data                                     !
-!                     ------------                                     !
-!                                                                      !
-! subroutine lorc(du,lat,lon,latdel,londel,xx)                  !
-!                                                                      !
-!----------------------------------------------------------------------!
-!> @brief Determine if the site is a land site
-!! @details Using a half an arc-second land sea mask. Determine whether
-!! the site is land or sea based on the majority of the mask within
-!! the limits of the gridcell.
-!! @author Mark Lomas
-!! @date Feb 2006
-!----------------------------------------------------------------------!
-subroutine lorc(du,lat,lon,latdel,londel,xx)
-!**********************************************************************!
-logical :: xx
-real(dp) :: lat,lon,latdel,londel,del,latf,lon0
-character :: outc(6200)
-integer :: i,j,k,x(7),ians(43300),sum1,n,col,row,check,nrecl,du,kode
-!----------------------------------------------------------------------!
-
-if (du==1) then
-!  This works for ftn95
-!  nrecl = 6172
-  nrecl = 6172 + 2
-else
-  nrecl = 6172 + 1
-endif
-
-open(99,file=trim(inp%dirs%land_mask)//'/land_mask.dat', &
- form='formatted',recl=nrecl,access='direct',status='old',iostat=kode)
-if (kode/=0) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'Land sea mask.'
-  write(*,*) 'Either the file doesn''t exist or there is a record length miss match.'
-  write(*,*) 'Check that the correct DOS|UNIX switch is being used in the input file.'
-  write(*,*) 'Land sea file :',trim(inp%dirs%land_mask)
-  stop
-endif
-
-del = 1.0d0/60.0d0/2.0d0
-latf = 90.0d0 - del/2.0d0
-lon0 =-180.0d0 + del/2.0d0
-
-col = int((lon - lon0)/del + 0.5d0)
-row = int((latf - lat)/del + 0.5d0)
-
-n = min((latdel/del-1.0d0)/2.0d0,(londel/del-1.0d0)/2.0d0)
-
-!----------------------------------------------------------------------!
-! Check nearest pixel for land.                                        !
-!----------------------------------------------------------------------!
-sum1 = 0
-read(99,'(6172a)',rec=row) (outc(j),j=1,6172)
-
-do j=1,6172
-  call base72i(outc(j),x)
-  do k=1,7
-    ians(7*(j-1)+k) = x(k)
-  enddo
-enddo
-if (ians(col)>0) sum1 = sum1 + 1
-check = 1
-
-!----------------------------------------------------------------------!
-if (n>0) then
-!----------------------------------------------------------------------!
-! Check outward diagonals for land.                                    !
-!----------------------------------------------------------------------!
-  do i=1,n
-    read(99,'(6172a)',rec=row+i) (outc(j),j=1,6172)
-    do j=1,6172
-      call base72i(outc(j),x)
-      do k=1,7
-        ians(7*(j-1)+k) = x(k)
-      enddo
-    enddo
-    if (ians(col+i)>0) sum1 = sum1 + 1
-    if (ians(col-i)>0) sum1 = sum1 + 1
-
-    read(99,'(6172a)',rec=row-i) (outc(j),j=1,6172)
-    do j=1,6172
-      call base72i(outc(j),x)
-      do k=1,7
-        ians(7*(j-1)+k) = x(k)
-      enddo
-    enddo
-    if (ians(col+i)>0) sum1 = sum1 + 1
-    if (ians(col-i)>0) sum1 = sum1 + 1
-    check = check + 4
-  enddo
-!----------------------------------------------------------------------!
-endif
-
-close(99)
-
-if (real(sum1)>=(check+1)/2) then
-  xx = .true.
-else
-  xx = .false.
-endif
-
-end subroutine lorc
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                          base72I :: data                             !
-!                          ---------------                             !
-!                                                                      !
-! subroutine base72i(c,x)                                              !
-!                                                                      !
-!----------------------------------------------------------------------!
-!> @brief
-!! @details
-!! @author Mark Lomas
-!! @date Feb 2006
-!----------------------------------------------------------------------!
-subroutine base72i(c,x)
-!**********************************************************************!
-character :: c
-integer :: x(7),i
-!----------------------------------------------------------------------!
-
-i=ichar(c)-100
-x(1)=i/64
-i=i-x(1)*64
-x(2)=i/32
-i=i-x(2)*32
-x(3)=i/16
-i=i-x(3)*16
-x(4)=i/8
-i=i-x(4)*8
-x(5)=i/4
-i=i-x(5)*4
-x(6)=i/2
-i=i-x(6)*2
-x(7)=i
-
-end subroutine base72i
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                          n7 :: data                                  !
-!                          ----------                                  !
-!                                                                      !
-! Returns the value of a seven digit binary number given as a seven    !
-! dimensional array of 0's and 1's                                     !
-!                                                                      !
-!    integer function n7(x)                                            !
-!                                                                      !
-!----------------------------------------------------------------------!
-!> @brief
-!! @details
-!! @author Mark Lomas
-!! @date Feb 2006
-!----------------------------------------------------------------------!
-integer function n7(x)
-!----------------------------------------------------------------------!
-integer :: x(7)
-!----------------------------------------------------------------------!
-
-n7 = 64*x(1)+32*x(2)+16*x(3)+8*x(4)+4*x(5)+2*x(6)+x(7)
- 
-!**********************************************************************!
-end function n7
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                          bi_lin :: data                              !
-!                          --------------                              !
-!                                                                      !
-!                                                                      !
-!  subroutine bi_lin(xx,indx,xnorm,ynorm,ans)                          !
-!                                                                      !
-!----------------------------------------------------------------------!
-!> @brief Performs bilinear interpolation between four points.
-!! @details Performs bilinear interpolation between four points, the
-!! normalised
-!! distances from the point (1,1) are given by 'xnorm' and 'ynorm'.
-!! @author Mark Lomas
-!! @date Feb 2006
-!----------------------------------------------------------------------!
-subroutine bi_lin(xx,indx,xnorm,ynorm,ans)
-!----------------------------------------------------------------------!
-real(dp) :: xx(4,4),xnorm,ynorm,ans,av
-integer :: indx(4,4),iav,ii,jj
-!**********************************************************************!
-
-!----------------------------------------------------------------------!
-! Fill in averages if necessary.                                       !
-!----------------------------------------------------------------------!
-do ii=2,3
-  do jj=2,3
-    if (indx(ii,jj)/=1) then
-      av = 0.0
-      iav = 0
-      if (indx(ii+1,jj)==1) then
-        av = av + xx(ii+1,jj)
-        iav = iav + 1
-      endif
-      if (indx(ii-1,jj)==1) then
-        av = av + xx(ii-1,jj)
-        iav = iav + 1
-      endif
-      if (indx(ii,jj+1)==1) then
-        av = av + xx(ii,jj+1)
-        iav = iav + 1
-      endif
-      if (indx(ii,jj-1)==1) then
-        av = av + xx(ii,jj-1)
-        iav = iav + 1
-      endif
-      if (indx(ii+1,jj+1)==1) then
-        av = av + xx(ii+1,jj+1)
-        iav = iav + 1
-      endif
-      if (indx(ii-1,jj-1)==1) then
-        av = av + xx(ii-1,jj-1)
-        iav = iav + 1
-      endif
-      if (indx(ii+1,jj-1)==1) then
-        av = av + xx(ii+1,jj-1)
-        iav = iav + 1
-      endif
-      if (indx(ii-1,jj+1)==1) then
-        av = av + xx(ii-1,jj+1)
-        iav = iav + 1
-      endif
-      if (iav>0) then
-        xx(ii,jj) = av/real(iav)
-      endif
-    endif
-  enddo
-enddo
-
-!----------------------------------------------------------------------!
-! Bilinear interpolation.                                              !
-!----------------------------------------------------------------------!
-ans = xx(2,2)*(1.0-xnorm)*(1.0-ynorm) + xx(3,2)*xnorm*(1.0-ynorm) + &
- xx(2,3)*(1.0-xnorm)*ynorm + xx(3,3)*xnorm*ynorm
-
-!----------------------------------------------------------------------!
-! nearest pixel.                                                       !
-!----------------------------------------------------------------------!
-! ans = xx(int(xnorm+2.5),int(ynorm+2.5))
-!----------------------------------------------------------------------!
-
-end subroutine bi_lin
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                          readCO2 :: data                             !
-!                          ---------------                             !
-!                                                                      !
-! subroutine readCO2(yr0,yrf,co2)                                      !
-!                                                                      !
-!----------------------------------------------------------------------!
-!> @brief Reads co2 values for each year
-!! @details It will read from the co2 file the concentration vector 
-!! with starting and end year as produced by the read_input_file sub.
-!! If the co2 file has only one value then it will be used for all the
-!! years meaning constant co2 concentrations.
-!! @author Mark Lomas
-!! @date Feb 2006
-!----------------------------------------------------------------------!
-subroutine readco2(yr0,yrf,co2,daily_co2,nyears)
-!----------------------------------------------------------------------!
-real(dp) :: co2(max_years),ca
-integer :: yr0,yrf,norecs,year,const,kode
-integer :: yra,yrfa,prev_year,nyears
-integer :: mnth,yr0a,daily_co2,day
-logical :: co2spin
-!**********************************************************************!
-
-open(98,file=trim(inp%dirs%co2),status='OLD',iostat=kode)
-if (kode/=0) then
-  write(*,'('' PROGRAM TERMINATED'')')
-  write(*,*) 'Co2 file does not exist.'
-  write(*,'('' "'',A,''"'')') trim(inp%dirs%co2)
-  stop
-endif
-
-norecs = 0
-const = 0
-10    continue
-  read(98,*,end=99) year,ca
-    if ((year>=yr0).and.(year<=yrf)) then
-    co2(norecs+1) = ca
-    norecs = norecs + 1
+  else
+    call EX_CLU(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)
   endif
-  const = const + 1
-goto 10
-99 continue
-close(98)
-
-if (const==1) then
+elseif (ilanduse==1) then
+  l_lu = .true.
   do year=yr0,yrf
-    co2(year-yr0+1) = ca
+    do ft=1,nft
+      cluse(ft,year-yr0+1) = lutab(luse(year-yr0+1),ft)
+    enddo
   enddo
+elseif (ilanduse==2) then
+  write(*,*) 'Checking natural vegetation types exist:'
+  write(*,*) 'BARE CITY C3 C4 Ev_Bl Ev_Nl Dc_Bl Dc_Nl.'
+  l_lu = .true.
+  st2 = 'BARE'
+  nat_map(1) = ntags(fttags,st2)
+  st2 = 'CITY'
+  nat_map(2) = ntags(fttags,st2)
+  st2 = 'C3'
+  nat_map(3) = ntags(fttags,st2)
+  st2 = 'C4'
+  nat_map(4) = ntags(fttags,st2)
+  st2 = 'Ev_Bl'
+  nat_map(5) = ntags(fttags,st2)
+  st2 = 'Ev_Nl'
+  nat_map(6) = ntags(fttags,st2)
+  st2 = 'Dc_Bl'
+  nat_map(7) = ntags(fttags,st2)
+  st2 = 'Dc_Nl'
+  nat_map(8) = ntags(fttags,st2)
+  do year=yr0,yrf
+    do ft=1,nft
+      cluse(ft,year-yr0+1) = 0.0
+    enddo
+  enddo
+  cluse(1,1) = 100.0
 endif
 
-end subroutine readco2
+end subroutine read_landuse
 
 
 
@@ -1150,90 +1335,189 @@ end subroutine readco2
 
 !**********************************************************************!
 !                                                                      !
-!                         landuse1 :: data                             !
-!                         ----------------                             !
+!                          country :: sdgvm1                           !
+!                          -----------------                           !
+!                                                                      !
+! subroutine country(lat,lon,country_name,country_id,l_regional)       !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief
+!> @brief Read internal parameters from "param.dat" file, and io
+!! parameters from "misc_params.dat".
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine landuse1(luse,yr0,yrf,fire_ant,harvest_ant)
+subroutine country(lat,lon,country_name,country_id,l_regional)
 !**********************************************************************!
-integer :: yr0,yrf,year,early,rep,luse(max_years),i,use
-logical :: fire_ant(max_years),harvest_ant(max_years)
+real(dp) :: lat,lon,adj_lat,adj_lon,xlat,xlon
+integer :: country_id,ilat,ilon,ans(360),x,i
+character(len=str_len) :: country_name
+logical :: l_regional
 !----------------------------------------------------------------------!
 
-early = yrf+max_years
+ilat = int(91.0 - lat)
+ilon = int(lon + 181.0)
 
-do i=1,max_years
-  luse(i) = 0
-enddo
+open(99,file=trim(inp%dirs%land_mask)//'/country.dat',status='old')
+  if (ilat>1) then
+    do i=1,ilat-1
+      read(99,*)
+    enddo
+  endif
+  read(99,*) ans
+  country_id = ans(ilon)
+close(99)
 
-do i=1,inp%land_use%n
-  year = inp%land_use%year(i)
-  if (year-yr0+1>0)  luse(year-yr0+1) = int(inp%land_use%map(i))
-  if (year<early) rep = int(inp%land_use%map(i))
-enddo
+!----------------------------------------------------------------------!
+! If OCEAN was found try the nearest adjacent squares.                 !
+!----------------------------------------------------------------------!
+if (country_id==0) then
 
-do i=1,max_years
-  if (luse(i)>0) rep = luse(i)
-  luse(i) = rep
-enddo
+! Nearest lateral.
 
-return
+  xlat = lat+500-real(int(lat+500.0))
+  if (xlat>0.5) then
+    adj_lat = 1.0
+  else
+    adj_lat = -1.0
+  endif
+
+  xlon = lon+500-real(int(lon+500.0))
+  if (xlon>0.5) then
+    adj_lon = 1.0
+  else
+    adj_lon = -1.0
+  endif
+
+  if (abs(xlat-0.5)>abs(xlon-0.5)) then
+    adj_lon = 0.0
+  else
+    adj_lat = 0.0
+  endif
+
+  ilat = int(91.0 - (lat + adj_lat))
+  ilon = int((lon + adj_lat) + 181.0)
+
+  if (ilon==0) ilon = 360
+  if (ilon==361) ilon = 1
+  if (ilat==0) ilat = 1
+  if (ilat==91) ilat = 90
+
+  open(99,file=trim(inp%dirs%land_mask)//'/country.dat',status='old')
+    if (ilat>1) then
+      do i=1,ilat-1
+        read(99,*)
+      enddo
+    endif
+    read(99,*) ans
+    country_id = ans(ilon)
+  close(99)
+
+endif
+
+if (country_id==0) then
+
+! Next nearest lateral.
+
+  if (abs(adj_lat)<0.5) then
+    xlat = lat+500-real(int(lat+500.0))
+    if (xlat>0.5) then
+      adj_lat = 1.0
+    else
+      adj_lat = -1.0
+    endif
+  endif
+
+  if (abs(adj_lon)<0.5) then
+    xlon = lon+500-real(int(lon+500.0))
+    if (xlon>0.5) then
+      adj_lon = 1.0
+    else
+      adj_lon = -1.0
+    endif
+    adj_lat = 0.0
+  endif
+
+  if (abs(adj_lat)>0.5)  adj_lon = 0.0
+
+  ilat = int(91.0 - (lat + adj_lat))
+  ilon = int((lon + adj_lat) + 181.0)
+
+  if (ilon==0) ilon = 360
+  if (ilon==361) ilon = 1
+  if (ilat==0) ilat = 1
+  if (ilat==91) ilat = 90
+
+  open(99,file=trim(inp%dirs%land_mask)//'/country.dat',status='old')
+  if (ilat>1) then
+    do i=1,ilat-1
+      read(99,*)
+    enddo
+  endif
+  read(99,*) ans
+  country_id = ans(ilon)
+  close(99)
+
+endif
+
+if (country_id==0) then
+
+! Nearest diagonal
+
+  xlat = lat+500-real(int(lat+500.0))
+  if (xlat>0.5) then
+    adj_lat = 1.0
+  else
+    adj_lat = -1.0
+  endif
+
+  xlon = lon+500-real(int(lon+500.0))
+  if (xlon>0.5) then
+    adj_lon = 1.0
+  else
+    adj_lon = -1.0
+  endif
+
+  ilat = int(91.0 - (lat + adj_lat))
+  ilon = int((lon + adj_lat) + 181.0)
+
+  if (ilon==0) ilon = 360
+  if (ilon==361) ilon = 1
+  if (ilat==0) ilat = 1
+  if (ilat==91) ilat = 90
+
+  open(99,file=trim(inp%dirs%land_mask)//'/country.dat',status='old')
+    if (ilat>1) then
+      do i=1,ilat-1
+        read(99,*)
+      enddo
+    endif
+    read(99,*) ans
+    country_id = ans(ilon)
+  close(99)
+
+endif
+
+!----------------------------------------------------------------------!
+! Regional or country switch.                                          !
+!----------------------------------------------------------------------!
+if (.not.(l_regional)) country_id = country_id-mod(country_id,100)
+!----------------------------------------------------------------------!
+
+open(99,file=trim(inp%dirs%land_mask)//'/country_id.dat',status='old')
+10    continue
+  read(99,'(i6,5x,a15)') x,country_name
+  if (x==country_id) goto 20
+goto 10
+20    continue
+close(99)
+
+end subroutine country
 
 
 
-!do i=1,max_years
-!  luse(i) = 0
-!enddo
-
-!i = 1
-!10    continue
-!  read(fid_input,*,end=20) year,use
-!  print*,use
-!  if (year-yr0+1>0)  luse(year-yr0+1) = use
-!  if (year<early) rep = use
-!  i = i+1
-!goto 10
-!20    continue
-
-!do i=1,max_years
-!  if (luse(i)>0) rep = luse(i)
-!  luse(i) = rep
-!enddo
 
 
-!return
 
-! Anthony's updated version this seems to cause a problem.
-!      early = yrf+max_years
-!      luse(:) = 1000
-      
-!      i = 1
-!11    CONTINUE
-!        READ(98,*,end=21) year,use
-!        IF (year-yr0+1>0)  luse(year-yr0+1) = use
-!        IF ((year<early).and.(use>0)) rep = use
-!        !early = year
-!        i = i+1
-!      GOTO 11
-!21    CONTINUE
-
-!      if(rep<=0) then
-!        print*, 'ERROR:: Land use mapping equal to or below 0'
-!        print*, 'you must specifiy at least one year with a cover type'
-!      endif
-
-!      DO i=1,max_years
-!        If ((luse(i)>0).and.(luse(i)<1000)) rep = luse(i)
-!        If (luse(i)<0) fire_ant(i)    = .TRUE.
-!        If (luse(i)==0) harvest_ant(i) = .TRUE.
-!        luse(i) = rep
-!      ENDDO
-
-end subroutine landuse1
 
 end module data

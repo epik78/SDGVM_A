@@ -11,8 +11,7 @@ use site_parameters
 use func
 use light_methods
 use system_state
-use data
-use input_methods
+use input_file
 
 implicit none
 
@@ -950,23 +949,23 @@ do i=1,yrf-yr0+1
   !If you are looking at the first year or any year when we have data,read file
   if((i==1).or.((i+yr0-1)==years(j))) then
     st2=in2st(years(j))
-    CALL STRIPB(st2)
+    st2 = adjustl(st2)
     j=j+1
     ! For each of the classes I have fertilizer data,look for file
     do k=1,nclasses
 
       st3=in2st(classes(k))
-      CALL STRIPB(st3)
+      st3 = adjustl(st3)
       ! For each of the 3 fertilizers,look for file 
       do l=1,size(f_typ,1)
         open(99,file= &
-   trim(inp%dirs%fert)//'/cont_fert_'//f_typ(l)//'_'//st3(1:blank(st3))//'_'//st2(1:4)//'.dat', & 
+   trim(inp%dirs%fert)//'/cont_fert_'//f_typ(l)//'_'//trim(st3)//'_'//st2(1:4)//'.dat', & 
    status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
         if(kode/=0) THEN
           write(*,'('' PROGRAM TERMINATED'')')
           write(*,*) 'Fertilizer data-base.'
           write(*,*) 'File does not exist:'
-          write(*,*) trim(inp%dirs%fert)//'/cont_fert_'//f_typ(l)//'_'//st3(1:blank(st3)),'_',st2(1:4),'.dat'
+          write(*,*) trim(inp%dirs%fert)//'/cont_fert_'//f_typ(l)//'_'//trim(st3),'_',st2(1:4),'.dat'
           stop
         endIF
         
@@ -1117,21 +1116,21 @@ do i=1,yrf-yr0+1
   ! If you are looking at the first year or any year when we have data,read file
   if((i==1).or.((i+yr0-1)==years(j))) then
     st2=in2st(years(j))
-    CALL STRIPB(st2)
+    st2 = adjustl(st2)
     j=j+1
     ! For each of the classes I have irrigation data,look for file
     do k=1,nclasses
 
       st3=in2st(classes(k))
-      CALL STRIPB(st3)
+      st3 = adjustl(st3)
       open(99,file= &
- trim(inp%dirs%irri)//'/cont_irr_'//st3(1:blank(st3))//'_'//st2(1:4)//'.dat', & 
+ trim(inp%dirs%irri)//'/cont_irr_'//trim(st3)//'_'//st2(1:4)//'.dat', & 
  status='old',form='formatted',access='direct',recl=nrecl,iostat=kode)
       if(kode/=0) THEN
         write(*,'('' PROGRAM TERMINATED'')')
         write(*,*) 'Irrigation data-base.'
         write(*,*) 'File does not exist:'
-        write(*,*) trim(inp%dirs%irri),'/cont_irr_',st3(1:blank(st3)),'_',st2(1:4),'.dat'
+        write(*,*) trim(inp%dirs%irri),'/cont_irr_',trim(st3),'_',st2(1:4),'.dat'
         stop
       endIF
       
