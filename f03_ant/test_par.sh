@@ -1,5 +1,6 @@
 #!/bin/bash
 #$ -l h_rt=48:00:00
+#module load compilers/gcc/5.2
 
 #How many qsubs
 nprocesses=100
@@ -42,12 +43,13 @@ do
   fi
   echo "#!/bin/bash">> $batchfile
   echo "#$ -l h_rt=23:59:00">> $batchfile
+  echo "  "
   echo "module load compilers/gcc/5.2">> $batchfile
   echo "./bin/sdgvm.exe $inputfile $outd $sites $start $end">> $batchfile
 done
 
 #Launch the jobs
-for i in $(seq 1 $nprocesses)
+for i in $(seq 33 33)
 do
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
