@@ -1,0 +1,4 @@
+doxygen (this should run from a command prompt)
+graphviz (this is needed for dot: path to be given in config file)
+miktex (this is needed for latex: should run from a command prompt)
+ghostview (this is need for gswin32c: should run from a command prompt)

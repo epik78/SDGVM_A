@@ -6,7 +6,7 @@ use site_parameters, only: ssp
 use pft_parameters,  only: pft, pft_tab
 use misc_values
 use tuning_parameters
-use input_methods
+use input_file
 use file_class
 use file_object
 use fnames_class

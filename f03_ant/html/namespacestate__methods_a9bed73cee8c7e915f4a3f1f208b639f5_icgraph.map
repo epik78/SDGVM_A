@@ -1,0 +1,7 @@
+<map id="state_methods::initialise_state_cohort" name="state_methods::initialise_state_cohort">
+<area shape="rect" id="node2" href="$namespacestate__methods.html#a9bcb1707267bb0c440ce0b83c8f54645" title="accumulate_dist_soil_res ! " alt="" coords="216,5,399,47"/>
+<area shape="rect" id="node5" href="$namespacestate__methods.html#aceacb5079eab83cab2b32564348de362" title="Remove cohorts with zero cover. " alt="" coords="221,71,394,112"/>
+<area shape="rect" id="node6" href="$namespaceveg__dynamics.html#ab622b9b913d9e18341142613c3d32891" title="INITIALISE_NEW_COHORTS. " alt="" coords="228,136,387,177"/>
+<area shape="rect" id="node3" href="$namespaceveg__dynamics.html#ad6d5fb0db18577ca60743ce3a99d2aed" title="NEWGROWTH. " alt="" coords="447,46,620,73"/>
+<area shape="rect" id="node4" href="$namespaceveg__dynamics.html#aafdee2e09bc2d856258f1597189b70da" title="cover " alt="" coords="668,46,811,73"/>
+</map>

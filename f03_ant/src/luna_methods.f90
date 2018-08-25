@@ -9,11 +9,6 @@ module luna_methods
 ! version 1.0, by Chonggang Xu, Ashehad Ali and Rosie Fisher. July 14  2015.
 ! version 0.1, by Chonggang Xu, Ashehad Ali and Rosie Fisher. October 30 2014. 
 !********************************************************************************************************************************************************************** 
-     
-
-
-
-
 
 use real_precision
 use productivity_luna_methods
@@ -212,9 +207,6 @@ real(dp), parameter :: PARLowLim = 200.0d-6             ! minimum photosynthetic
 real(dp), parameter :: minrelh = 0.25                 ! minimum relative humdity for nitrogen optimization
      
 !----------------------------------------------------------------------!       
-   
-!print*, z,vcmx25_z,jmx25_z,PNlc_z,enzs_z,lnc,par240d
-   
 ! SDGVM asssumes daily average temperatures for the leaf & constant pressure 
 tleafd10    = tair10
 tleafn10    = tair10
@@ -267,7 +259,6 @@ PNcbold     = 0.0
 ! set referfence NUE parameters 
 ! - using sinlge common NUE function fed with default values as arguments
 ! call NUEref(NUEjref, NUEcref, Kj2Kcref)
-!print*, 'LUNA start'
 call NUE(O2ref*0.1013, 0.7*CO2ref*0.1013, 25.0_dp, 25.0_dp, &
  NUEjref, NUEcref, Kj2Kcref,ttype,ftToptV,ftHaV,ftHdV, &
  ftToptJ,ftHaJ,ftHdJ)
@@ -312,7 +303,7 @@ do while ( (PNlcoldi /= PNlc) .and. (jj < 100) )
  NUEr = Cv * NUEr25 * ( RespTBernacchi(tleafd10c) * hourpd + &
   RespTBernacchi(tleafn10c) * (24.0 - hourpd) ) !nitrogen use efficiency for respiration (g biomass/m2/day/g N)
 
-!print*, 'LUNA do while loop'
+!'LUNA do while loop'
  
   call NUE(O2a10, ci, tair10, tleafd10c, NUEj, NUEc, Kj2Kc,ttype, &
  ftToptV,ftHaV,ftHdV,ftToptJ,ftHaJ,ftHdJ)
@@ -422,7 +413,6 @@ vcmx25_z    = vcmx25_z+sign(1.0_dp,chg)*chg_constrn
 chg         = jmx25_opt-jmx25_z
 chg_constrn = min(abs(chg),jmx25_z*max_daily_pchg)
 jmx25_z     = jmx25_z+sign(1.0_dp,chg)*chg_constrn 
-!print*, jmx25_opt,chg,jmx25_z      
 
 if(enzs_z<1.0) enzs_z = enzs_z * (1.0 + max_daily_pchg)
 
@@ -573,14 +563,13 @@ if(KcKjFlag==0) then      !update the Kc,Kj, anc ci information
  298.15)) * (1.0 - (298.15) / (273.15 + tleafd10)))
   c_p = Cp25 * exp((37830.0 / (8.31 * &
  298.15)) * (1.0 - (298.15) / (273.15 + tleafd10)))
-  !print*, 'LUNA  orig.', k_c,k_o,c_p,tleafd10
  
   !k_c  = exp(35.8   - 80.5 / (0.00831*(tleafd10+273.15)) )
   !k_o  = exp(9.6    - 14.51/ (0.00831*(tleafd10+273.15)) )
   !k_o  = k_o * 1.0d3
   !tau  = exp(-3.949 + 28.99/ (0.00831*(tleafd10+273.15)) )
   !c_p  = 0.5*O2a10/tau
-  !print*, 'SDGVM orig.', k_c,k_o,c_p,tleafd10
+!'SDGVM orig.', k_c,k_o,c_p,tleafd10
  
 ! this function is over-parameterised due to an old attempt to use the Brent solver that is currently not implemented
 ! Vcmax and J are also assumed to be in molm-2s-1 in SDGVM

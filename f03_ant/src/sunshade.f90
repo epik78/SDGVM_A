@@ -6,10 +6,11 @@ implicit none
 contains
 
 !**********************************************************************!
-subroutine SET_GOUD_PARAMS()
+subroutine set_goud_params()
 !**********************************************************************!
 real(dp) :: soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo
 common /GOUD_PARAMS/soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo
+!----------------------------------------------------------------------!
 
 soilalbedo = 0.15
 leafalbedo = 0.15
@@ -17,16 +18,16 @@ kbeam = 0.5
 kdiff = 0.66
 m = sqrt(1.0-leafalbedo)
 kbeamstar = m*kbeam
-canopyalbedo=2.0*kbeam/(kbeam+kdiff)*(1.0-m)/(1.0+m)
+canopyalbedo = 2.0*kbeam/(kbeam+kdiff)*(1.0 - m)/(1.0 + m)
 
-end subroutine SET_GOUD_PARAMS
+end subroutine set_goud_params
 
 
 
 
 
 !**********************************************************************!
-subroutine GOUDRIAANSLAW2(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade, &
+subroutine goudriaanslaw2(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade, &
 !**********************************************************************!
  soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo,albedobeam,albedodiff)
 real(dp) :: lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade
@@ -50,7 +51,7 @@ qsunlit=(1.0-leafalbedo)*kbeamstar*beamrad+qshade
 fsunlit=exp(-kbeam*lyr)
 fshade=1-fsunlit
 
-end subroutine GOUDRIAANSLAW2
+end subroutine goudriaanslaw2
 
 
 
@@ -143,7 +144,7 @@ end subroutine goudriaanslaw_ant
 
 
 !**********************************************************************!
-subroutine GOUDRIAANSLAW(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
+subroutine goudriaanslaw(lyr,lai,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
 !**********************************************************************!
 real(dp) :: lyr,lai,beamrad,diffrad
 real(dp) :: fsunlit,qsunlit,fshade,qshade
@@ -183,14 +184,14 @@ qsunlit = (1.0 - leafalbedo)*kbeamstar*beamrad + qshade
 fsunlit = exp(-kbeam*lyr)
 fshade = 1.0 - fsunlit
 
-end subroutine GOUDRIAANSLAW
+end subroutine goudriaanslaw
 
 
 
 
 
 !**********************************************************************!
-subroutine BEERSLAW(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
+subroutine beerslaw(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
 !**********************************************************************!
 implicit none
 real(dp) :: lyr,beamrad,diffrad
@@ -209,14 +210,14 @@ fsunlit=0
 qsunlit=0.0
 qshade=beamrad*kbeam*exp(-kbeam*lyr)+diffrad*kdiff*exp(-kdiff*lyr)
 
-end subroutine BEERSLAW
+end subroutine beerslaw
 
 
 
 
 
 !**********************************************************************!
-subroutine SUNFLECT(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
+subroutine sunflect(lyr,beamrad,diffrad,fsunlit,qsunlit,fshade,qshade)
 !**********************************************************************!
 real(dp) :: lyr,beamrad,diffrad
 real(dp) :: fsunlit,qsunlit,fshade,qshade
@@ -234,7 +235,7 @@ fshade=0.5
 qsunlit=beamrad*kbeam*exp(-kbeam*lyr)+diffrad*kdiff*exp(-kdiff*lyr)
 qshade=qsunlit
 
-end subroutine SUNFLECT
+end subroutine sunflect
 
 
 end module sunshade

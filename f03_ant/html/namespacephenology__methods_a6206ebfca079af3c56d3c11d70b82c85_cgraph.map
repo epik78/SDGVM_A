@@ -1,0 +1,5 @@
+<map id="phenology_methods::phenology3" name="phenology_methods::phenology3">
+<area shape="rect" id="node2" href="$namespacelight__methods.html#a460c621fdcfe4e59cf83e62e12cedb82" title="Calculates daylength (h) for the gridcell lat and day of year. " alt="" coords="200,5,335,32"/>
+<area shape="rect" id="node3" href="$namespacecrops.html#a5d606228c6bf81247e263a6e8972c019" title="Get vernalisation factors for crops. " alt="" coords="218,56,317,83"/>
+<area shape="rect" id="node4" href="$namespacecrops.html#ac9094e82a42f3669f55be6ba1d2e8d3b" title="Get temperature and photoperiod response function values for crops. " alt="" coords="383,81,505,108"/>
+</map>

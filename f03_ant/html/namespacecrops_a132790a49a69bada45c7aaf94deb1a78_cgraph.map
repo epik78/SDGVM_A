@@ -1,0 +1,10 @@
+<map id="crops::seasonality" name="crops::seasonality">
+<area shape="rect" id="node2" href="$namespacelight__methods.html#a460c621fdcfe4e59cf83e62e12cedb82" title="Calculates daylength (h) for the gridcell lat and day of year. " alt="" coords="181,5,316,32"/>
+<area shape="rect" id="node3" href="$namespacecrops.html#a828fad9eba6de472f05ac315951cc364" title="crops::getwet" alt="" coords="199,56,299,83"/>
+<area shape="rect" id="node4" href="$namespacefunc.html#ac36931ffa366eff3f57fb99c2ea5f53f" title="func::no_days" alt="" coords="197,107,300,133"/>
+<area shape="rect" id="node5" href="$namespacelight__methods.html#afdae8e8405ab30124af7a23ab9260137" title="Calculates total,direct and diffuse radiation for the day. " alt="" coords="185,157,313,184"/>
+<area shape="rect" id="node6" href="$namespacecrops.html#a5d606228c6bf81247e263a6e8972c019" title="Get vernalisation factors for crops. " alt="" coords="199,208,298,235"/>
+<area shape="rect" id="node7" href="$namespacecrops.html#ac9094e82a42f3669f55be6ba1d2e8d3b" title="Get temperature and photoperiod response function values for crops. " alt="" coords="364,233,487,260"/>
+<area shape="rect" id="node8" href="$namespacecrops.html#ad17583c09ce9f145f979e68da90b8375" title="Find the start day of summer as defined by a threshold temperature. " alt="" coords="183,309,314,336"/>
+<area shape="rect" id="node9" href="$namespacecrops.html#a2c8946984659d8cc631e0f90913c45e2" title="Find the start day of winter as defined by a threshold temperature. " alt="" coords="190,360,307,387"/>
+</map>

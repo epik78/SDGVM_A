@@ -1,0 +1,2116 @@
+/**
+@mainpage Sheffield Dynamic Vegetation Model Update 2018
+
+@section Introduction
+
+ The SDGVM code has been updated to utilise modern Fortran features. 
+ As well as a major reworking of the internal loop structure which
+ now allow for individual cohorts to grow daily.
+
+
+@image html sysDiagram.png "SDGVM Carbon and Water cycles" width=700px
+
+
+The distance between \f$(x_1,y_1)\f$ and \f$(x_2,y_2)\f$ is 
+  \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+
+  
+
+\page page0 The Role of Dynamic Vegetation Models
+
+<div class="input_file">
+
+<h1>1. Introduction</h1>
+Dynamic vegetation models (DVMs) attempt to calculate the distribution of carbon 
+in vegetation and soils and how these will evolve under changing climate and 
+changes in the concentrations of CO2 and N in the atmosphere. Their approach 
+is based on representing the biophysical processes by which carbon is fixed 
+and transported within the atmosphere-soil-vegetation system. Originally 
+they were designed for global scale calculations that indicate trends and 
+interactions, rather than for detailed calculations of the carbon budget. 
+Applying them to greenhouse gas (GHG) accounting in Siberia therefore 
+requires evaluation of their suitability for this task; in particular, it 
+is necessary to establish whether they adequately describe all the relevant 
+processes determining GHG concentrations and fluxes in this region. In 
+addition, most of the current DVMs make limited use of external data, other 
+than coarse scale soil type maps and idealised climate. As a result, their 
+connection to the actual state of terrestrial vegetation is rather weak and 
+it is important to establish much stronger links between the models and data. 
+Here remote sensing data are especially needed, because of their consistent, 
+global, repetitive and consistent description of surface variables.
+
+This report has three main objectives: 
+1.	to explain the structure and functioning of current DVMs;
+2.	to clarify their role in GHG accounting;
+3.	to clarify their use of external data and how the models may have to 
+be changed in order to make better use of available data sources, especially 
+those provided by remote sensing. 
+The first section is a high-level but fairly thorough explanation of the 
+structure of the Sheffield Dynamic Global Vegetation Model (SDGVM). This 
+is typical of the current generation of DVMs, and give insight into the 
+whole class of models (a review of six of the leading DVMs, including LPJ 
+and SDGVM, is given in Cramer et al., 2001).
+This explanation of how the models work is followed by a description of 
+their strengths and weaknesses as regards their potential use for GHG 
+accounting in Siberia. The report concludes with a summary of measured 
+parameters that could in principle be used in the models, together with 
+brief indications of the difficulties involved in doing so. This last 
+section pulls together remarks made throughout the report.
+
+
+<h1>2. Dynamic Vegetation Models</h1>
+DVMs were originally designed to model the response of terrestrial 
+ecosystems to long-term atmospheric changes in temperature, precipitation 
+and gas concentrations (CO2 and N). The typical structure of a DVM is shown 
+in Figure 1. A core set of coupled modules represents the interactions of 
+ecosystem carbon and water exchanges with vegetation dynamics, under given 
+soil and atmospheric conditions. The biochemical processes of photosynthesis 
+and the dependence of gas exchange on stomatal conductance are explicitly 
+modelled; these depend on temperature and soil moisture. Canopy conductance 
+controls soil water loss by transpiration. The assignment of nitrogen uptake 
+to leaf layers is proportional to irradiance and respiration, and maximum 
+assimilation rates depend on nitrogen uptake and temperature. Total nitrogen 
+uptake is derived from soil carbon and nitrogen and depends on temperature. 
+The intrinsic timescales of the processes are indicated in Figure 1. In 
+practice, averaging and interpolation are used to deal with the most rapid 
+effects (which are embodied in the vegetation physiology and biophysics 
+module), thereby reducing the computational load.
+
+The great strength of such models is their generality and predictive 
+capability: by accurately representing the biophysical processes involved, 
+they allow credible calculations of the long-term behaviour of vegetation 
+systems under changing climate. However, in order to achieve this, they 
+necessarily use generalised descriptions of the system. In particular:
+a)	current DVMs use the concept of potential vegetation (i.e., vegetation 
+growing without constraints imposed by human interference);
+b)	vegetation is represented by generalised functional types, rather than 
+by species;
+c)	the only interaction with external data is through the imposed soil 
+and atmospheric conditions;
+d)	the models only deal with the role of CO2 in the carbon cycle, and 
+currently neglect other GHGs, such as CH4.
+
+@image html images/fig_1.png "Fig 1: General Structure of a DVM" width=500px
+
+The Sheffield Dynamic Global Vegetation Model (SDGVM) and the PIK LPJ 
+models both have the general structure of Figure 1. In the following 
+sections we describe the SDGVM, the main differences from LPJ are noted 
+in Section 4.
+
+<h2>3. The Sheffield Dynamic Global Vegetation Model (SDGVM)</h2>
+Section 3 is organised into a series of subsections that explain the 
+underlying concepts of the SDGVM, the main component modules, and how 
+the calculations are actually carried out.
+
+<h2>3.1 Fundamental Concepts</h2>
+
+<h3>3.1.1 Point and Area Representations</h3>
+In principle, the SDGVM is a point model, i.e., there is no area 
+associated with a particular point and all variables produced by the 
+model are per unit area. A point where the model is run, defined by 
+its latitude and longitude, is referred to as a site. Resources available 
+at a site are exclusive to that site and there are no interactions 
+between sites. In practice, each site is considered to be representative 
+of some area. For example, the SDGVM might be run globally on the 
+0.5o x 0.5o latitude-longitude grid from the UEA (University of East 
+Anglia) climate data set, or on a 2.5o x 3.75o GCM (General Circulation 
+Model) climate data set. If the DVMs are to be run at a finer (kilometric) 
+scale in SIBERIA-II, it will be necessary to investigate whether 
+decreasing the area associated with a grid point invalidates any of 
+the assumptions underlying the model.
+
+<h3>3.1.2  Plant Functional Types and Their Parameterisation</h3>
+The basic concept for describing vegetation in the SDGVM is that of 
+the plant functional type (PFT), all modelled vegetation is described 
+by a number such types (the maximum number, maxNft, is set to ten in 
+the source code but can easily be altered). Within the SDGVM, and the 
+output files it produces, the PFTs are referenced sequentially, in the 
+order that they appear in the input file.  The first PFT (1) is reserved 
+to represent bare ground, and as such does not require a PFT 
+parameterisation in the input file. The second and third PFTs (2 & 3) 
+are reserved to represent grass, a parameterisation for each must be 
+present in the input file; the remainder (4+) are used to represent 
+trees. The trees and grasses are treated differently in the way in 
+which new vegetation is allowed to propagate, described in section 
+3.5.2. Two PFTs are set aside for grasses to allow for C3 and C4, the 
+photosynthetic pathway is set in the parameterisation.
+
+A fraction of the area associated with each site is allocated to each 
+PFT. These fractions have no spatial arrangement within the site. 
+Unvegetated land is given over to bare ground, and bare ground is 
+available for growth by the PFTs as specified by ‘landuse’ in the 
+input file.
+
+The PFTs are currently described by seventeen parameters. Each PFT 
+parameterisation is specified in the input file by a record containing 
+seventeen space-delimited fields.
+
+<ol>
+  <li> life-span: The maximum age that a PFT can attain. Vegetation 
+  dies once it reaches this age.
+  <li> wood density (t C m-3):
+  <li> xylem conductivity (10-9 m3 s-1):
+  <li> water potential (M Pa): The maximum water potential across 
+  the full height of a tree, before cavitation sets in and disrupts 
+  the water column. </li>
+  <li> photosynthetic pathway: C3 C4 pathway, 1 = C3, 0 = C4. </li>
+  <li> specific leaf area (m2 kg-1): The cost, in terms of carbon, 
+  to produce a leaf of unit area is inversely proportional to the SLA. </li>
+  <li> leaf life span (days): The maximum age that a leaf can attain. 
+  A leaf dies once it reaches this age. </li>
+  <li> stem life span (days): Age at which stems cease to respire. </li>
+  <li> root life span (days): Age at which roots cease to respire. </li>
+  <li> leaf mortality (0-1): fraction of leaves which die in space 
+  of their lifespan. </li>
+  <li> leaf growth rate: Leaf growth rate multiplier. </li>
+  <li> bud burst (oC): Average temperature at which leaves may grow, 
+  taken over a 14 day period. </li>
+  <li> senescence (oC): Average temperature at which leaves drop, 
+  taken over a 14 day period. </li>
+  <li> nppstore (g m-2): carbon storage within vegetation. </li>
+  <li> initial minimum growth rate (m): minimum diameter growth rate 
+  in first year. </li>
+  <li> final minimum growth rate (m): minimum diameter growth rate at 
+  maturity. </li>
+  <li> seeding density (m-2): The initial number density of new cover 
+  elements. </li>
+</ol>
+
+<h2>3.2 Driving Variables: Soil and Atmospheric Descriptors</h2>
+As Figure 1 shows, calculations with the SDGVM require information 
+on the soil and atmospheric conditions. These depend on the 
+latitude-longitude position of the site; latitude is also important 
+in determining the radiation and daylight hours at the site.
+
+For the timescales of a DVM run, the soil conditions (which refer 
+only to texture and depth; organic content is calculated within the 
+model) are effectively constant. Soil texture is given as percentages 
+of clay, sand and silt, which sum to 100%. These determine the soil 
+hydrological characteristics, and are also parameters used in the 
+computation of the soil carbon and nitrogen dynamics. The default 
+option for soil texture is to use an ISLSCP soil texture map 
+(International Satellite Land Surface Climatology Project CD-ROM, 
+published March 1995). This is a global categorisation of soil 
+texture on a 1o by 1o scale, with the categories as given in 
+Table 2. Note that field capacity and wilting points are given as 
+fractions. To obtain actual capacities these fractions are multiplied 
+by soil depth. In the SDGVM, all of the hydrological variables depend 
+purely on depth within the soil layer, due to the per area rationale. 
+The soil depth is currently set to 1m everywhere, although an ISLSCP 
+soil depth map is available. The impact of soil depth has not been 
+studied in any detail.
+
+The climatic variables used to drive the SDGVM are precipitation, 
+relative humidity and temperature, provided either daily or as 
+monthly averages derived from meteorological station data. When 
+monthly data are used, more realistic precipitation patterns are 
+simulated using a ‘rain generator’. This predicts the number of 
+wet days in a month given the total monthly precipitation, and 
+divides the precipitation equally between these wet days. Dry and 
+wet days are arranged as uniformly as possible within the month. 
+
+<table class="input_file_table">
+  <tr>
+    <th>Classification
+    <th>Index
+    <th>Clay
+    <th>Sand
+    <th>Silt
+    <th>Field Capacity
+    <th>Wilting Point
+  </tr>
+
+  <tr class="tag">
+    <td>Loamy sand
+    <td style="text-align:center"> 1
+    <td style="text-align:center"> 7
+    <td style="text-align:center"> 80
+    <td style="text-align:center"> 13
+    <td style="text-align:center"> 0.1179
+    <td style="text-align:center"> 0.0439
+  </tr>
+
+  <tr class="tag">
+    <td>Sandy loam
+    <td style="text-align:center"> 2
+    <td style="text-align:center"> 12
+    <td style="text-align:center"> 62
+    <td style="text-align:center"> 26
+    <td style="text-align:center"> 0.1667
+    <td style="text-align:center"> 0.0737
+  </tr>
+
+  <tr class="tag">
+    <td>Loam
+    <td style="text-align:center"> 3,7
+    <td style="text-align:center"> 18
+    <td style="text-align:center"> 42
+    <td style="text-align:center"> 40
+    <td style="text-align:center"> 0.2217
+    <td style="text-align:center"> 0.1130
+  </tr>
+
+  <tr class="tag">
+    <td>Sandy clay loam
+    <td style="text-align:center"> 4
+    <td style="text-align:center"> 27
+    <td style="text-align:center"> 63
+    <td style="text-align:center"> 10
+    <td style="text-align:center"> 0.1963
+    <td style="text-align:center"> 0.1136
+  </tr>
+
+  <tr class="tag">
+    <td>Clay loam
+    <td style="text-align:center"> 5
+    <td style="text-align:center"> 30
+    <td style="text-align:center"> 35
+    <td style="text-align:center"> 35
+    <td style="text-align:center"> 0.2526
+    <td style="text-align:center"> 0.1520
+  </tr>
+
+</table>
+
+
+Temperatures are treated as constant throughout each month for the 
+purpose of calculating biochemical processes, and minimum temperatures 
+required for PFT allocation are estimated from monthly averages. The 
+atmospheric CO2 concentration is a yearly average given as a partial 
+pressure. The default CO2 data cover the period 1830-2100 and were 
+produced by the Hadley Centre.
+
+<h2>3.3 State Variables of the SDGVM</h2>
+The state of the soil-vegetation system at a particular site and 
+time is given by specifying the following variables:
+
+
+Soil Variables 
+
+soil moisture: The soil moisture profile is given as depths of water 
+in a series of layers. Six separate pools are modelled: 4 soil layers, 
+a snow pool and a liquid snow pool.
+
+soil carbon: Eight soil carbon pools are modelled: surface and soil 
+structural material, active soil organic matter, surface microbes, 
+surface and soil metabolic material, slow and passive soil organic material.
+
+soil nitrogen: Eight soil nitrogen pools are modelled, as for soil carbon.
+
+Vegetation Variables
+
+cover and cover elements: A site contains a proportion of each PFT, 
+which is further divided into age in years. The total fraction of 
+cover taken up by each PFT is given by summing the contributions at 
+each age. The cover corresponding to a specific age and PFT is 
+referred to as a cover element. For example, one such cover element 
+would be the fraction of cover taken up by 5 year old evergreen 
+broadleaf trees.
+
+leaf, stem and root biomass: The carbon equivalent biomass of each 
+cover element is partitioned into leaf, stem (or trunk for trees) 
+and root biomass. 
+
+leaf area index (LAI): This dimensionless variable specifies the 
+area of leaf per area of vegetation. All cover elements of a 
+particular PFT have the same LAI. The LAI variable is further split 
+into age in days, this is allows leaf mortality to be implemented.
+
+net primary productivity (NPP): The net annual carbon gain through 
+photosynthesis after allowing for respiration. All cover elements of 
+a particular PFT have the same NPP.
+
+number density: The number of plants per m2 for each cover element 
+(trees only).
+
+height: Tree trunks are modelled as cylinders, whose height is 
+given by this variable. No height is assigned to grasses.
+
+litter: Intermediate carbon pool, providing inputs for the soil 
+carbon sub-system. The pool is fed by dead vegetation and is 
+partitioned into leaves stems and roots.
+
+NPP_store: Intermediate carbon store from which vegetation (leaves, 
+stems and roots) is formed, this is fed by NPP. A maximum value of 
+this variable is defined in the FT parameterisation. The maximum 
+value defines the ability of the vegetation to withstand years of 
+low productivity.
+
+daily_leaf: leaf carbon partitioned into age in days.
+
+daily_stem: active stem carbon partitioned into age in days. This 
+information is required to compute the stem respiration, which only 
+occurs for the active stem biomass, stem biomass ceases to respires 
+after stem_ll days, currently set to 365 for all PFTs.
+
+daily_root: active root carbon partitioned into age in days. This 
+information is required to compute root respiration, which only 
+occurs for the active root biomass, root biomass no-longer respires 
+after root_ll days, currently set to 365 for all PFTs.
+
+These variables allow a range of descriptors, such as age profiles, 
+histograms or average parameters, to be calculated for each PFT. 
+
+It is the rationale within the SDGVM, to share resources between all 
+cover elements of all fts. This is achieved by pooling together 
+resources from each of the cover elements at the end of a year. At 
+the onset of the following year the pooled resource value is used by 
+all cover elements of all fts. Specifically, the resources are soil 
+moisture, litter and soil carbon & nitrogen. 
+
+The condition of the system at a given time 0 is described completely 
+by the state vector,  , containing this set of state variables. Since 
+the state vector includes a complete description of the age structure 
+of each PFT and the biomass allocation at each age, it carries the 
+history of the processes that have occurred at each site. This is 
+important, because:
+
+a)	Knowledge of averaged quantities at a given time will not 
+normally provide the full information carried in the state vector;
+
+b)	Inaccurate description of processes occurring through time will 
+cause the state vector to depart from the actual state at a site. 
+This is particularly important for processes that are introduced in 
+a probabilistic way, such as fire and other forms of disturbance.
+
+The dynamics of the model lie in the transition from state to state as 
+time progresses, i.e., the SDGVM is a method of moving between states: 
+S(t0) -> S(tf). The basic time-step is one year, but this integrates 
+processes that occur on daily or shorter timescales. These processes 
+and their interactions are described in Section 3.4. 
+
+
+<h2>3.4 Component Modules of the SDGVM</h2>
+The overall structure of the SDGVM is shown in Figure 2. There are 
+five main components, dealing with soil carbon and nitrogen dynamics, 
+hydrology, calculation of NPP, phenology and vegetation growth, with 
+interactions as indicated in the Figure. We first describe these 
+sub-models, before describing how they knit together to form the SDGVM.
+
+
+</div>
+
+
+
+
+
+\page page1 Download
+  \tableofcontents
+  \author Mark Lomas
+  \section sec Downloading SDGVM
+  
+The latest version of the SDGVM software can be obtained from git.com.
+
+  
+  This page contains the subsections \ref subsection1 and \ref subsection2.
+  For more info see page \ref page2.
+  \subsection subsection1 The first subsection
+  Text.
+  \subsection subsection2 The second subsection
+  More text.
+
+\page page2 Running
+
+<h1> Running The SDGVM </h1>
+  
+The input data for the SDGVM is fully described by an ASCII file, 
+whose name is supplied to the SDGVM as the first command line 
+argument. If no arguments are supplied to the SDGVM, the program 
+terminates after outputting the version number. All input data is 
+given in the input file, or, in files specified by the input file. 
+Within the input file all fields are space delimited, multiple 
+spaces are allowed, initial spaces are ignored if present. In the 
+following, the input file records are described, sequentially, 
+with examples. Line numbers are given in brackets.
+
+Certain information required by the input file can be input via 
+command line arguments. These are specified in the input file by 
+the appearance of ‘ARGUMENT’. The arguments are passed to the input 
+file in the order that they appear on the command line. This facility 
+is particularly useful when setting up a parallel SDGVM run.
+
+(1) DOS|UNIX: The platform on which the model is to be compiled/run. 
+This information is required due to differences in handling record 
+lengths when using direct access.
+
+NOTE  A common problem which can occur on a DOS platform is when 
+transferred ASCII files contain formatting. This can result in a 
+file whose end of line character requires 1 byte, the SDGVM is 
+expecting DOS ASCII file end of line characters to take up 2 
+bytes. Simply opening and saving the file normally resolves 
+this problem.
+
+
+(2) The directory path of the climate database. As with all 
+pathnames, this can be a full path from root or a partial path 
+from the current directory. Currently, the database must contain 
+monthly values for temperature, precipitation, humidity and 
+percentage cloud cover; unless stated otherwise the units of 
+these variables are in 0.1 oC, mm, .1 % and 0.1 % respectively.
+
+	Full directory path:		c:\data\daily
+
+	Partial directory path:		..\..\data\daily
+
+The directory must contain a file named ‘readme.dat’ which 
+describes the type of climate in the directory. The first line 
+of the file is either DAILY MONTHLY or SITE. 
+
+NOTE  The data read to be read in from ‘readme.dat’ files occurs 
+on alternate lines leaving root for comments; the comment lines 
+must be present even if empty.
+
+
+DAILY: A gridded daily climate of 30 day months. The extent and 
+special/temporal resolution are given in the ‘readme.dat’ file.
+
+eg
+
+<ol>
+    <li> DAILY </li>
+    <li> Upper left lat and long (centre of pixel) </li>
+    <li> 72.0 –11.0 </li>
+    <li> lat and lon resolution </li>
+    <li> 0.16666667 0.16666667 </li>
+    <li> number of pixels (north to south, east to west) </li>
+    <li> 228 258 </li>
+    <li> initial and final years of the dataset </li>
+    <li> 1901 2000 </li>
+</ol>
+
+The directory must also contain a file named ‘maskmap.dat’. This 
+file maps the spatial position to the position of the site in the 
+data file, using this technique we remove the need to record none 
+land sites in the data files.
+
+
+MONTHLY: A gridded monthly climate. The geographical and temporal 
+extent and spatial resolution are given in the ‘readme.dat’ file.
+
+eg
+
+<ol>
+	<li> MONTHLY </li>
+	<li> Upper left lat and long (centre of pixel) </li>
+    <li> 72.0 –11.0 </li>
+    <li> lat and lon resolution </li>
+    <li> 0.16666667 0.16666667 </li>
+    <li> number of pixels (north to south, east to west) </li>
+    <li> 228 258 </li>
+    <li> initial and final years of the dataset </li>
+    <li> 1901 2000 </li>
+</ol>
+
+The directory must also contain a file named ‘maskmap.dat’. This 
+file maps the spatial position to the position of the site in the 
+data file, using this technique we remove the need to record none 
+land sites in the data files.
+
+
+SITE (daily): An individual climate site with daily climate. 
+The location and temporal resolution are given in the 
+‘readme.dat’ file. The data must contain values for every 
+day of every month (including leap year adjustments).
+
+<ol>
+    <li> SITED </li>
+    <li> lat and long </li>
+    <li> 52.083 –10.417 </li>
+    <li> initial and final years of the dataset </li>
+    <li> 1901 1903 </li>
+</ol>
+
+In this case, all data is kept in one file named ‘site.dat’. 
+Each record contains year, month, day, temperature (C) 
+precipitation (mm) humidity (%). List directed format is used, 
+so all that is required is that the data be space delimited.
+
+
+
+SITE (monthly): An individual climate site with monthly 
+climate. The location and temporal resolution are given in 
+the ‘readme.dat’ file.
+
+<ol>
+    <li> SITEM </li>
+    <li>lat and long </li>
+    <li> 52.083 –10.417 </li>
+    <li> initial and final years of the dataset </li>
+    <li> 1901 1903 </li>
+</ol>
+
+In this case, all data is kept in one file prc.dat tmp.dat 
+and hum.dat. Each record contains year and twelve monthly 
+values. List directed format is used, so all that is required 
+is that the data be space delimited.
+
+
+(3) The directory path of climatic statistics database. These 
+data are used together with monthly climate data to produce 
+daily climate via a weather generator. The extent and 
+special/temporal resolution are given in the ‘readme.dat’ file 
+if appropriate. The directory may contain one set of monthly 
+statistics, which are to be used at all sites or a grid of 
+statistics covering a rectangular area. In the former case 
+the first record of the file should read UNIFORM; in the latter 
+case it should read LONLAT.
+
+eg
+<ol>
+    <li> UNIFORM </li>
+</ol>
+	
+or
+<ol>
+    <li> LONLAT </li>
+    <li> Upper left lat and long (centre of pixel) </li>
+    <li> 72.0 –11.0 </li>
+    <li> lat and lon resolution </li>
+    <li> 0.16666667 0.16666667 </li>
+    <li> number of pixels (north to south, east to west) </li>
+    <li> 228 258 </li>
+</ol>
+
+The monthly statistics are given in three files named 
+‘stdtmp.dat’, ‘stdhum.dat’ and ‘raindays.dat’, the units 
+are oC, % and days/month respectively. In the case of UNIFORM 
+data list directed format is used, so all that is required 
+is that the data be space delimited. In the case of LATLON 
+data then the format of each record is (12f6.2) thus one 
+record per site.
+
+(4) The directory path of the soil characteristics database. 
+The data resides in a file named ‘data.dat’ which contains 
+values for % sand % silt, bulk density (g/m2) and depth (cm). 
+Negative values are used to represent no data. The geographical 
+extent and spatial resolution are given in ‘readme.dat’.
+
+eg
+<ol>
+    <li> Upper left lat and long (top left corner of pixel) </li>
+    <li> 90.0 –180.0 </li>
+    <li> latitude and longitude resolution </li>
+    <li> 1.0 1.0 </li>
+    <li> number of pixels (north to south east to west) </li>
+    <li> 180 360 </li> </li>
+</ol>
+	  
+The ‘data.dat’ file is in the following format, latitude, 
+longitude, % sand, % silt, bulk density (g/m2) and depth 
+‘(f7.3,f9.3,4f12.3)’.
+
+NOTE  Any of these values are over written when positive 
+default values exist in the soil input line of the input file.
+
+
+(5) The directory path of the land use database. The directory 
+must contain a file named ‘readme.dat’ which contains the 
+geographical and temporal, extent and resolutions. The first 
+line of this file must contain ‘CONTINUOUS’.
+
+eg
+<ol>
+    <li> CONTINUOUS </li>
+    <li> Upper left lat and long (centre of pixel) </li>
+    <li> 90.0 –180.0 </li>
+    <li> latitude and longitude resolution </li>
+    <li> 0.5 0.5 </li>
+    <li> number of pixels (north to south east to west) </li>
+    <li> 360 720 </li>
+    <li> years of landuse </li>
+    <li> 1700 1750 1800 1850 1900 1950 1990 </li>
+    <li> classes </li>
+    <li> 1 2 3 4 5 6 10 22 44 </li>
+</ol>
+
+The land use data are stored as continuous percentages of cover. 
+There is one file per class per year. The files are named 
+
+	cont_lu-<class>-<year>.dat
+
+where class and year can be are the fields specified in lines 9 
+and 11.
+
+The percentages are stored as (I3), one value per record.
+
+NOTE The land use described in this database can be over written 
+by the land use section of the input file.
+
+
+(6) The filename of the CO2 data. This is optionally separated 
+from the climate data to allow for ease of running different CO2 
+scenarios. The CO2 file is an ASCII file containing values of 
+yearly averaged global CO2 partial pressures given in Pa. 
+
+	c:\data\co2\co21.dat
+
+Each record in the file should contain consecutive years and 
+co2 values, one year per record.
+
+eg
+<ul>
+    <li>  1861 28.82 </li>
+    <li>  1862 28.83 </li>
+    <li>  1863 28.84 </li>
+    <li>  1864 28.85 </li>
+    <li>     . . . </li>
+    <li>     . . . </li>
+    <li>     . . . </li>
+    <li>  2000 37.77 </li>
+</ul>
+
+(7) A constant CO2 value. If the value is positive, then it is 
+used for the first phase of a run whether it is a spin-up or a 
+run proper. If the value is negative then values are taken from 
+the CO2 file. Typically a positive value will be used for a 
+spin-up run and a negative value for the run proper, if spin 
+up and run proper are being done in one run then this is done 
+automatically. For a pre-industrial spin-up this value would 
+typically be set to 28.82.
+
+
+(8) The file name of the land sea mask. The default mask provided 
+with the SDGVM is derived from the GLOBE DEM. It is an array of 
+0’s and 1’s at a resolution of 30 arc-seconds. To reduce the size 
+of the file, the 0’s and 1’s are written as 7 figure binary 
+digits, which are converted to ASCII characters, these DIY 
+binaries are used as an alternative to FORTRAN binary’s, which 
+are not compatible between platforms and compilers.
+
+In UNIX the number of columns is (360*120)/7 + 1 = 6173, in 
+DOS (360*120)/7 + 2 = 6174, the number of rows in either case 
+is (180*120) = 21600.
+
+Therefore the size of the land sea mask is 
+6173*21600=133,336,800 b in UNIX and 6174*21600=133,358,400 b in DOS.
+
+
+(9) Skipped.
+
+
+(10) The directory path containing initialisation files. These 
+are used to initialise the state at the beginning of a run. 
+Generally this will be the path to a directory where the output 
+from a spin-up run has been placed. There are two methods to 
+define this.
+
+	a) A string in the input file.
+
+	b) A command line argument. To invoke this option the entry in 
+the input file must read ‘ARGUMENT’.
+
+
+(11) The directory path where all output files from the run 
+will be placed. There are two methods to define this.
+
+	a) A string in the input file.
+
+	b) A command line argument. To invoke this option the entry in 
+the input file must read ‘ARGUMENT’.
+
+
+(12) Skipped.
+
+
+(13) Three or four logical values (0 = no, 1 = yes). 
+
+(10) Initialise the system state in a simplistic manner within the SDGVM. 
+Typically, ‘yes’ for spin-up, ‘no’ for the run proper. If ‘no’ then the 
+state is initialised using files in the directory named by (4).
+
+(11) Output the system state at the end of the run. Typically, ‘yes’ for 
+spin-up and ‘no’ for the run proper. If ‘yes’ then as with all output 
+files the files containing the state of the system will be placed in 
+the directory specified in (5). NOTE  The option not to output the 
+system state is included to save hard disk space: system state files 
+are much larger than standard output files.
+
+(12) Use manipulated carbon dynamics. This is a technique employed 
+to enable the carbon pools to reach the equilibrium cycle faster than 
+they would naturally. Typically, enabled for the spin-up run, disabled 
+for the run proper. This is can give rise to problems at certain sites 
+and should be used tentatively.
+
+(13) Seed for the random number generator used by the weather generator 
+to convert from monthly to daily where necessary, denote by rseed. If no 
+value is given a default value of 1 is used. There are 3 modes of 
+randomisation:
+<ul>
+  <li> i) seed<0, ii) seed=0 and  (iii) seed>0. </li>
+  <li> i) rseed<0. The seed is initialised to –rseed at the beginning 
+of the run. </li>
+  <li> ii) rseed=0. The seed is initialised by the system clock at the 
+beginning of the run. </li>
+  <li> iii) rseed>0. The seed is initialised to rseed for each site. </li>
+</ul>
+
+eg
+	Spin-up:		1 1 0
+
+	Run proper:	0 0 0
+
+
+(14) Three methods to describe a run.
+
+1) spin-up run: four fields: number of years of the spin-up, the 
+initial year of the climate to be used, the length of the spin-up 
+climate cycle, switch for randomisation of each climate cycle 
+(0=no randomisation, 1=randomise). A cycle of at least 20 years is 
+desirable, short spin-up cycles are more likely to contain climate 
+untypical of the larger period for which it is being used to 
+representative. The length of the spin-up should be no less than 500 years.
+
+eg
+	500 1901 20 1
+
+For a five hundred year spin-up using a repeated randomised 
+climate of 1901-1920. A separate randomisation is used for each cycle.
+
+2) Run proper: two fields: initial year of the run, final year of the run.
+
+eg
+
+	1901 2000
+
+3) spin-up + run proper: six fields: 1) + 2)
+
+eg
+
+	500 1901 20 1 1901 2000
+
+For any of the three methods above, an additional field can be 
+supplied to state the number of years of output required before 
+the final year of the run. If this is not supplied then default 
+values are used as follows, 1) the last climate cycle plus one 
+year, 2) all of the years from the run proper, 3) all of the years 
+from the run proper.
+
+
+(15) Description of required monthly and or daily outputs. The 
+first field must contain ‘PIXEL’, the second field must 
+contain one of {MONTHLY, DAILY, ALL}.
+
+	MONTHLY:Monthly outputs.
+	DAILY: 	Daily outputs.
+	ALL:	Monthly and daily outputs.
+
+The next field specifies the number of years of output, prior 
+to the final year. Followed by the actual outputs required. 
+These can be any of the following, and can be given in any order.
+
+<ul>
+   <li> lai: Leaf area index </li>
+   <li> rof: Run off (mm) </li>
+   <li> evt: Evapotranspiration (mm) </li>
+   <li> trn: Transpiration (mm) </li>
+   <li> npp: Net Primary Productivity (g C m-2 yr-1) </li>
+   <li> gpp: Gross Primary Productivity (g C m-2 yr-1) </li>
+   <li> srp: Soil respiration (g C m-2 yr-1) </li>
+   <li> nep: Net Ecosystem Productivity (g C m-2 yr-1) </li>
+   <li> tmp: Temperature (oC) </li>
+   <li> prc: Precipitaiton (mm) </li>
+   <li> hum: Humidity (%) </li>
+   <li> nps: NPP storage (g C m-2) </li>
+   <li> swf: Fraction of soil moisture between wilting point 
+   and field capacity (0-1) </li>
+   <li> pet: Potential evapotranspiration (mm m-2). </li>
+   <li> int: Interception (mm m-2) </li>
+   <li> bse: Bare soil evaporation (mm m-2). </li>
+   <li> ssm: Surface soil moisture (surface currently set at 5 cm) (mm m-2) </li>
+   <li> swc: Soil water content (mm m-2). </li>
+   <li> rsp: Plant respiration (g C m-2). </li>
+   <li> qdr: Direct radiation (MJ m-2 day-1 or mol m-2 day-1) ?? </li>
+   <li> qdf: Diffuse radiation (MJ m-2 day-1 or mol m-2 day-1) ?? </li>
+   <li> lfn: Leaf nitrogen (g m-2) </li>
+   <li> lfl: Leaf litter (g m-2) </li>
+   <li> cld: Percentage of cloud cover (%). </li>
+   <li> fpr: Fraction of photosynthetically active radiation (mol) </li>
+</ul>
+   
+eg
+	PIXEL DAILY 1990 2000 lai nep trn
+
+If no outputs are specified then all are produced. Output files are 
+of the form [monthly|daily]_variable.dat. Where variable denotes the 
+three letter code above.
+
+
+
+(16) Description of required monthly and or daily outputs per 
+ft/species. The first field must contain ‘SUBPIXEL’, if a second 
+field exists it must be ‘MONTHLY’, ‘DAILY’ or ‘ALL’.
+
+	YEARLY: 	No monthly or daily outputs.
+	MONTHLY: 	Monthly outputs.
+	DAILY: 		Daily outputs.
+	ALL: 		Monthly and daily outputs.
+
+The next two fields specify the initial and final years of the 
+required output, followed by the actual outputs required. These 
+can be any of the following and can be given in any order.
+
+<ul>
+  <li> lai: Leaf area index </li>
+  <li> rof: Run off (mm) </li>
+  <li> evt: Evapotranspiration (mm) </li>
+  <li> trn: Transpiration (mm) </li>
+  <li> npp: Net Primary Productivity (g C m-2 yr-1) </li>
+  <li> gpp: Gross Primary Productivity (g C m-2 yr-1) </li>
+  <li> srp: Soil respiration (g C m-2 yr-1) </li>
+  <li> nep: Net Ecosystem Productivity (g C m-2 yr-1) </li>
+  <li> tmp: Temperature (oC) </li>
+  <li> prc: Precipitaiton (mm) </li>
+  <li> hum: Humidity (%) </li>
+  <li> nps: NPP storage (g C m-2) </li>
+  <li> swf: Fraction of soil moisture between wilting point and field 
+  <li> capacity (0-1) </li>
+  <li> pet: Potential evapotranspiration (mm m-2). </li>
+  <li> int: Interception (mm m-2) </li>
+  <li> bse: Bare soil evaporation (mm m-2). </li>
+  <li> ssm: Surface soil moisture (surface currently set at 5 cm) (mm m-2) </li>
+  <li> swc: Soil water content (mm m-2). </li>
+  <li> rsp: Plant respiration (g C m-2). </li>
+  <li> qdr: Direct radiation </li>
+  <li> qdf: Diffuse radiation </li>
+  <li> lfn: Leaf nitrogen (g m-2) </li>
+  <li> lfl: Leaf litter (g m-2) </li>
+  <li> cld: Percentage of cloud cover (%). </li>
+  <li> fpr: Fraction of photosynthetically active radiation (mol) </li>
+</ul>
+
+eg
+	SUBPIXEL ALL 5 hum srp lai gpp npp
+
+If no outputs are specified then all are produced. Output files 
+are of the form [monthly|daily]_variable_tag.dat. Where tag 
+denotes the functional type, described in (22), variable denotes 
+the three letter code above.
+
+
+In addition to the variables above, the following outputs are also 
+available at the subpixel level.
+
+cov: Fractional cover (0-1).
+bio: Biomass (g C m-2).
+bud: Budburst (day of year).
+sen: Senescence (day of year).
+
+These outputs are only available as yearly values, and as such are 
+not affected by the value in the second field. Output files are of 
+the form variable_tag.dat.
+
+NOTE The production of many output files may greatly reduce the 
+speed of a run. If all possible files were output for a run 
+containing 10 fts, over 500 files would be produced, these files 
+would all be open throughout the run.
+
+
+(17) Years where the output data describing the forest structure 
+is required. The data is a subset of the full state and is large 
+compared with standard output files. The data is composed of cover, 
+biomass, number density, and height for all cover elements. The 
+first field should contain SANPSHOTS, subsequent fields specify 
+individual output years if they are present.
+
+The data contained in the “snapshots” files can be used to 
+produce a cartoon of the landscape of a particular site using 
+a companion program ‘cartoon.for’. This image is to scale and 
+covers a hectare of the landscape. The positioning of the cohorts 
+in the cartoon is random as there is no spatial arrangement of 
+cohorts within the SDGVM. The program utilises “PSPLOT” 
+subroutines to produce a post-script file which can be viewed 
+in any post-script friendly application (Coreldraw, Ghostview, 
+Pageview),  ghostscript/gsview is freely downloadable for 
+windows and unix. The program ‘cartoon.for’ is written in 
+fortran77 and compiles in g77 which is freely downloadable 
+for windows and unix.
+
+Compile with 
+
+      g77 –o cartoon cartoon.for
+
+cartoon accepts 3 compulsory arguments which give the directory 
+name of where the “snapshot” files exist and the year and site 
+number of interest. The perspective and vertical randomisation 
+of the cartoon may be altered using four additional arguments. 
+
+cartoon directory year site_number [height depth shift randomy]
+
+height = The height of the cartoon.
+depth = The reduction of the horizontal from the foreground to the background.
+shift = A shift in the background.
+randomy =  The randomness of cohorts in the vertical plane 
+(generally this should be set to 1.0).
+
+Set depth to 1.0 and shift to 0.0 for no perspective.
+
+
+(18) Blank
+
+
+(19) Bare ground functional type parameterisation must contain 
+“BARE” and a mixing parameter, normally set to 1.0.
+
+ eg
+      BARE 1.0
+
+
+(20) City functional type parameterisation, must contain 
+“CITY” and a mixing parameter, normally set to 0.0.
+
+eg
+      CITY 0.0
+
+
+(21) Skipped.
+
+
+(22) The functional types parameterisations. There are three 
+methods to input these parameters.
+
+	a) From the input file itself.
+
+	b) From a file whose name is given in the input file.
+
+c) From a file whose name is given as a command line argument. 
+To invoke this option entry in the input file must read ‘ARGUMENT’.
+
+Each record corresponds to a functional type/species until a 
+blank line is encountered. There are currently 26 parameters 
+(fields) used for the description. Let nft denote the number 
+of these records if option a) is being used, otherwise, nft=1.
+
+(14)Tag name used to distinguish output files.
+(15)Mixing parameter (0-1).
+(16)Photosynthetic pathway (0=C4, 1=C3).
+(17)Phenology: 1 for grass 2 for tree.
+(18)Fraction of leaves harvested (0-1).
+(19)Length of crop season (days)
+(20)Maximum age (years).
+(21)Wood density ().
+(22)Xylem conductivity ().
+(23)Water potential ().
+(24)Specific leaf area (m2/g).
+(25)Leaf life span (days).
+(26)Stem life span (days).
+(27)Root life span (days).
+(28)Leaf mortality index (0-1).
+(29)Leaf growth rate.
+(30)Bud burst memory (days).
+(31)Bud burst minimum threshold (C).
+(32)Bud burst maximum (C).
+(33)Bud burst limit (days).
+(34)Senescence memory (days).
+(35)Senescence sensitivity (C).
+(36)Senescence limit (C).
+(37)Maximum carbon store (g C m-2).
+(38)Initial minimum stem growth rate (mm).
+(39)Final minimum stem growth rate (mm).
+(40)Seeding density (no m-2).
+
+eg
+      Dc_Bl 200 0.375 5.50 2.2 1 0.015 180 360 360 
+      0.751.0 21 5 5 60 21 15 5 600.0 0.004 0.001 0.1
+
+The mixing parameter 2) describes to what extent the resources 
+(soil water, carbon and nitrogen) are shared between cover elements 
+within a pixel: 1.0 = all resources are shared, 0.0 = no resources 
+are shared.
+
+NOTE  If specific leaf area is negative then it is computed 
+empirically as a function of leaf life span. Bare ground is 
+set automatically with a tag name of ‘BARE’.
+
+
+(22+nft) Skipped.
+
+
+(23+nft) Land use mapping. A list of records describing the 
+land use index in terms of the ft/species. One record per index. 
+Let nlu denote the number of these records.
+
+eg
+      10  60 Ev_Nl 40 Dc_Bl
+
+NOTE  Bare ground can be set explicitly, by default any ground 
+not assigned is mapped to bare ground.
+
+
+(23+nft+nlu) Skipped.
+
+
+(24+nft+nlu) Three fields: two real values followed by an integer.
+
+(41)The maximum rate at which pfts  2 may take over pfts 1 and 2 
+grass, fraction per year.
+
+(42)The maximum rate at which pfts 1 and 2 may take over bare 
+ground, fraction per year.
+
+(43)Fire control. If positive. The age at which pfts become 
+resistant to fire. A vale larger than the maximum lifespan of 
+the pfts will result in no fire resistance, whilst a value of 
+zero will produce no fire. If negative. A constant fraction of 
+the pixel to be burnt each year (0-1). This is given in 1000ths, 
+ie. a value of -10 would burn 1% of the pixel each year.
+
+
+(25+nft+nlu) Skipped.
+
+
+(26+nft+nlu) Three methods of defining the sites to be simulated.
+
+If the climate directory is pointing to a SITE data base
+
+a) The latitude and longitude are taken from the ‘readme.dat’ 
+file and this line is skipped, unless it contains one field in 
+which case this is used as the number of sites. This is useful 
+to repeatedly run the same site to examine the sensitivity to the 
+weather generator. 
+
+If the climate directory is pointing to a DAILY or MONTHLY data base.
+
+b) A list of sites can be specified one site per record, two 
+fields per record: latitude and longitude. There are three 
+methods for site input.
+
+		i) Directly from the input file.
+ 
+		ii) From a file whose name is given in the input file. 
+		If this option is used the following line can, optionally, 
+		contain a list of space delimited countries and or regions 
+		as defined in the country_id.dat file in the data directory. 
+		Only sites belonging to one of the countries or regions will be run. 
+
+eg
+      ../../data/sites/global_1deg.dat
+      SPAIN U.K. USA_NJ
+
+iii) From a file whose name is given as a command line argument. 
+Three command line arguments are used in order to define both the 
+file a section of the file: file name, line number of the initial 
+site, line number of the final site. This option was introduced to 
+enable simple parallelisation of the model. To invoke this option 
+the input file should read ‘ARGUMENT’
+
+In (ii) & (iii) the format of the file records must be (F7.3,F9.3) as direct
+access is used.
+
+c) A box can be defined using four fields: minimum latitude, maximum 
+latitude, minimum longitude and maximum longitude. Optionally the 
+resolution of the simulation can also be given for both latitude 
+and longitude; the resolution of the climate database is used by 
+default. An additional field in either case results in the 
+termination of the program after the land sites have been written 
+to the file ‘land_sites.dat’. This facility can be used to produce 
+a list of sites which can then be used as the site file in b) iii) above.
+
+
+(+1) Skipped.
+
+
+(+1) Eight or nine fields specifying the soil characteristics. The 
+values specified here overwrite those given in the soil characteristics 
+data base or the default values if they are positive. The nine fields 
+are sand %, silt %, bulk density (g/m3), organic carbon content (%), 
+wilting point fraction (0-1), field capacity fraction (0-1), saturated 
+water content fraction (0-1), depth (cm) and the depth of the top soil 
+layer (mm). The default value for the top soil layer is 5mm, this is 
+used if the ninth field is not present.
+
+eg
+      50.0 30.0 1.21 0 0 0 0 100.0
+
+Default values of bulk density and soil depth are currently set at 
+1330000.0 g/m3 and 100.0 cm respectively. Note that the wilting point, 
+field capacity and saturated wilting point can be calculated from the 
+Brookes Correy equations (as opposed to the soils data-base), this is 
+invoked by using a negative number in the wilting point field.
+
+
+(+1) Skipped.
+
+(+1) Optionally the word ‘ARGUMENT’. This puts the SDGVM into 
+parameter adjustment mode which is designed to be used for 
+sensitivity type studies where many runs are required at one 
+site, each using a different set of parameter values. The name 
+of the file containing the array of parameter values (one record 
+per run) is given as an argument in the command line followed by 
+two integer values giving the first and last records (parameter sets) 
+to be run.
+
+eg,
+
+sdgvm0 ../../output/input.dat ../../output/parameter_array.dat 3 5
+
+Would run the same site 3 times using parameter values taken from 
+the 3rd, 4th and 5th records of the parameter file.
+
+Editing of the source code is likely to be needed to hook up the 
+parameters of interest. Though, this is fairly straight forward 
+using the existing parameter framework. A parameter of interest 
+should be included in the ‘param’ common block which exists in 
+the file ‘param.inc’, all values are conventionally prefixed 
+with ‘p_’ to distinguish them in the general code. To gain access 
+to the variables in the ‘param’ common from a subroutine, include 
+the line
+
+INCLUDE ‘param.inc’
+
+in the variable type definitions; this already exists in many 
+subroutines of the SDGVM. The parameter sets are read into the 
+common block in the subroutine ‘PARAMETER_ADJUSTMENT’ which can 
+be found in the file ‘parameter_adjustment.f’. This is invoked 
+around line 1466 in the main program (found in sdgvm0.f) along 
+with any necessary setting of variables to parameter values. 
+
+
+(+1) Skipped if ‘ARGUMENT’ was used on the previous line.
+
+(+1) Switch defining land use, there are three options [0,1,2].
+
+	0) Use the database defined at the start of the input file.
+
+1) Use the land use defined explicitly in the input file. This is 
+done using a list of records containing two fields: year and land 
+
+use index.
+
+eg
+      1901 7
+      1950 9
+      1993 15
+	2) Use natural vegetation. If this facility is being used, then 
+	the six tag names ‘Ev_Bl’ ‘Ev_Nl’ ‘Dc_Bl’ ‘Dc_Nl’ ‘C3’ and ‘C4’ 
+	must exist as functional type parameterisations. They can exist 
+	in any order, and other tagnames may be present, though they will 
+	not be assigned any cover.
+
+
+Default Output Files
+
+NOTE  The currency symbol $ is now used to suppress a carriage return 
+at the end of a line. Unfortunately, this is a Fortran extension and 
+is not available in standard Fortran. Compilers without this extension 
+will output each data value on a separate line. A companion program 
+‘dosrec.f’ is supplied along with the SDGVM to put the resulting files 
+in the desired format. The program accepts one argument which is the 
+directory containing the SDGVM output.
+
+diag.dat: File containing reports of carbon or water leakage, should 
+always be empty.
+site_info.dat: Site information: latitude, longitude, land use initial 
+year, land use final year, CO2 initial year, CO2 final year, sand %, 
+silt %, bulk density (g/m3), field capacity (0-1), wilting point (0-1), 
+saturated water capacity (0-1), soil depth (cm).
+simulation.dat: A copy of the input file which produced the run, 
+along with a copy of the parameters from the ‘param.dat’ file.
+land_sites.dat: A file containing all land sites as judged by the 
+land sea mask.
+init.dat: Some of the variables making up the system state.
+lai.dat: Leaf area index (m2 m-2).
+npp.dat: Net primary productivity (g m-2).
+scn.dat: Soil carbon in the top 1m (g m-2).
+snn.dat: Soil nitrogen in the top 1m (g m-2)
+nep.dat: Net ecosystem productivity (NPP – Soil respiration) (g m-2).
+swc.dat: Soil water content. The amount of water contained in 
+the top 1m of soil (mm or kg m-2).
+biot.dat: The total biomass (g m-2)
+bioind.dat: The dominant functional type in terms of biomass (1-nft).
+covind.dat: The dominant functional type in terms of cover (1-nft).
+dof.dat: The number of days in the year where LAI was zero (0-360).
+rof.dat: The yearly runoff (mm or kg m-2).
+fcn.dat: The carbon released into the atmosphere through burning (g m-2).
+nppstore.dat: Stored NPP (g C m-2).
+stembio.dat: The biomass of roots (g m-2)
+rootbio.dat: The biomass of roots (g m-2)
+leafper.dat: The percentage of NPP utilised in the production of leaves.
+stemper.dat: The percentage of NPP utilised in the production of stems.
+rootper.dat: The percentage of NPP utilised in the production of roots.
+sresp.dat: Soil respiration (g m-2)
+evt.dat: Evapotranspiration: transpiration plus evaporation (mm yr-1)
+gpp.dat: Gross primary productivity. The total photosynthesis (g m-2).
+lch.dat: Soil carbon leaching (g m-2).
+prc.dat: Yearly precipitation (mm or kg m-2).
+nbp.dat: Net biosphere production (g C m-2 yr-1). (NPP –Soil respiration - Fire)
+trn: Transpiration (mm yr-1)
+fab: Fire area burnt, the fraction of the pixel which is burnt each year (0-1).
+tmp: Average yearly temperature (C).
+
+  
+
+\page page3 Input File
+
+<div class="input_file">
+
+<h1>INPUT FILE</h1>
+<p>The input file is a necessary argument for the SDGVM. It 
+gives the location of resources, sets runtime options, describes 
+plant functional types, and optionally sets land 
+cover and soil characteristics.</p>
+
+<h2>Comments &amp; Whitespace</h2>
+<p>A comment is defined as all characters following an exclamation
+ mark. And therefore, can appear alongside none-commented text in 
+ the same line. Spaces are used as delimiters, tabs are not
+ recommended. Blank lines, lines containing only whitespace and
+ anything outside of a pair of 'Tags' are ignored.</p>
+
+<h2>Tags</h2>
+<p>The SDGVM input file uses a tags to separate groups of 
+options and parameters. HTML style tags are employed: an opening 
+tag is compossed of name (no whitespace) enclosed in angled 
+brackets, and likewise for the closing tag with the addition 
+of a forward slash prior to the name. The following tag names are 
+available.</p>
+<ul>
+  <li>dirs</li>
+  <li>run</li>
+  <li>output</li>
+  <li>pft_mapping</li>
+  <li>land_use</li>
+  <li>sites</li>
+  <li>soil</li>
+  <li>pft</li>
+</ul>
+They may appear in any order, but must be unique.
+
+<h2>Fields</h2>
+<p>Within each tag, a number of fields may be set. Some are 
+optional some are mandatory. Where optional they are either set 
+to default values or set as arguments on the command line. The 
+fields are generally set with a name-value pair, separated by 
+a double colon.</p>
+
+<h3>Table of all fields with descriptions and optional status.</h3>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th class="mrlth">Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;dirs&gt;
+    <th>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">input ::
+    <td>The location of the directory of the input state. This is generally 
+the default outputs from a previous run.
+    <td>Man: Unless supplied as an argument on the command line.
+  </tr>
+
+  <tr>
+    <td style="text-align:right">output&nbsp;::
+    <td>The location of the model output directory.
+    <td>Man: Unless specified as an argument on the command line.
+  </tr>
+
+  <tr>
+    <td style="text-align:right">climate&nbsp;::
+    <td>The location of the climate directory.
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">stats&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">soil&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_use&nbsp;::
+    <td>Location of the land use directory.
+    <td>Man: Unless it is supplied elsewhere in the input file.
+  </tr>
+
+  <tr>
+    <td style="text-align:right">fert&nbsp;::
+    <td> hello
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">irri&nbsp;::
+    <td>
+    <td> hello
+  </tr>
+
+  <tr>
+    <td style="text-align:right">co2&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td> Location of the directory containing the land mask file.
+    <td>
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;run&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">initialise_state&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">output_state&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">random_seed&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">spinup_length&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">spinup_year0&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">spinup_cycle_length&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">year0&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">yearf&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">co2_constant&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">s070607&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">s140129&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">subdaily&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">read_daily_co2&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">read_par&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">par_scaling&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">read_clump&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">calc_zen&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">no_soil_water_limitation&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">cstype&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">ncalc_type&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">ttype&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">vcmax_type&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">soilp_map&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">gs_func&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">gs_func&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;output&gt;
+    <th>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">nyears&nbsp;::
+    <td> Years of output prior to the final 
+	year of the run for default variables.
+    <td> Opt: yrf-yr0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_yearly&nbsp;::
+    <td> Years of yearly output for optional variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_monthly&nbsp;::
+    <td> Years of monthly output for optional variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_daily&nbsp;::
+    <td> Years of daily output for optional variables.
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_yearly&nbsp;::
+    <td> Years of yearly output for optional sub-pixel 
+	(pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_monthly&nbsp;::
+    <td> Years of monthly output for optional sub-pixel 
+	(pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_daily&nbsp;::
+    <td> Years of daily output for optinal sub-pixel 
+	(pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_vars_yearly&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_vars_monthly&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tile_vars_daily&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_vars_yearly&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_vars_monthly&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pft_vars_daily&nbsp;::
+    <td> Years of output of sub-pixel (pft) variables.
+    <td> Opt: 0
+  </tr>
+
+  <tr>
+    <td style="text-align:right">state_years&nbsp;::&nbsp;int(n)
+    <td> Years in which to dump the system state. 
+	The output files are suffixed with the year for each.
+    <td> Opt
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;pft_mapping&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;land_use&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;sites&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">land_mask&nbsp;::
+    <td>
+    <td>
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;soil&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sand&nbsp;::
+    <td> Percentage of sand (1-100).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">silt&nbsp;::
+    <td> Percentage of sand (1-100).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">bulk&nbsp;::
+    <td> Bulk density.
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">orgc&nbsp;::
+    <td> Organic carbon content.
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">wilt&nbsp;::
+    <td> Fractional wilting point (0-1).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">field&nbsp;::
+    <td> Fractional field capacity (0-1).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sat&nbsp;::
+    <td> Fractional saturation point (0-1).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">topsl&nbsp;::
+    <td> Depth of the top soil:first bucket in the bucket model, (cm).
+    <td>Opt: -1
+  </tr>
+
+  <tr>
+    <td style="text-align:right">depth&nbsp;::
+    <td> Total depth of the soil (cm).
+    <td>Opt: -1
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<table class="input_file_table">
+  <tr>
+    <th>Field
+    <th>Description
+    <th>Optional
+  </tr>
+
+  <tr class="tag">
+    <th>
+    <th style="text-align:center">&lt;pft&gt;
+    <th>Mandatory
+  </tr>
+
+  <tr>
+    <td style="text-align:right">tag&nbsp;::&nbsp;St
+    <td> Name of the pft.
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">phen&nbsp;::&nbsp;In
+    <td> Type of phenology 1=grass, 2=tree, 3=crop.
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">mix&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">crop&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">d2h&nbsp;::&nbsp;In
+    <td> Days to harvest.
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">mort&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">wden&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">xyl&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">pdif&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sla&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">lls&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sls&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">rls&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">lmor&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">lrat&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">bbmem&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">bb0&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">bbmax&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">bblim&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">senm&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sens&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">senlim&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">chill&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">dschill&nbsp;::&nbsp;In
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">stemx&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">gr0&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">grf&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">ppm0&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">can_clump&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">vna&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">vnb&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">jva&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">jvb&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">g0&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">g1&nbsp;::&nbsp;Re
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sowthresh&nbsp;::&nbsp;Re(2)
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">lethal&nbsp;::&nbsp;Re(2)
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">cardinal&nbsp;::&nbsp;Re(9)
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">croptype&nbsp;::&nbsp;Re(2)
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">photoperiod&nbsp;::&nbsp;Re(6)
+    <td>
+    <td>
+  </tr>
+
+  <tr>
+    <td style="text-align:right">croprange&nbsp;::&nbsp;Re(4)
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">cropphen&nbsp;::&nbsp;Re(6)
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">irrig&nbsp;::&nbsp;Re(3)
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">sowday&nbsp;::&nbsp;Re(3)
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">cropgdd&nbsp;::&nbsp;Re(2,3)
+    <td>
+    <td>Man
+  </tr>
+
+    <tr>
+    <td style="text-align:right">fert&nbsp;::&nbsp;Re(6)
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">optlai&nbsp;::&nbsp;Re
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">harvindx&nbsp;::&nbsp;Re
+    <td>
+    <td>Man
+  </tr>
+
+  <tr>
+    <td style="text-align:right">limdharv&nbsp;::&nbsp;Re
+    <td>
+    <td>Man
+  </tr>
+
+</table>
+
+</div>
+
+
+\page page4 Developer
+
+<h1>Notes on Code Development</h1>
+Under construction.
+
+
+*/
+

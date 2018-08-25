@@ -13,10 +13,10 @@ use dims,            only: max_cohorts, max_years, max_outputs, str_len
 use system_state,    only: ssv
 use pft_parameters
 use state_methods
-use sdgvm1
-use read_input
+use output_methods
+use input_methods
 use phenology_methods
-use doly
+use daily_step
 use hydrology_methods
 use light_methods
 use soil_methods
@@ -26,7 +26,7 @@ use file_class
 use file_object
 use fnames_class
 use fnames_object
-use input_methods
+use input_file
 
 implicit none
 
@@ -90,21 +90,16 @@ character(len=80) :: buff1
 
 character(len=20) :: sttemp
 
-logical :: speedc,crand,xspeedc,withcloudcover,l_clim,l_lu, &
- l_soil(20),l_stats,l_regional,out_cov,out_bio,out_bud,out_sen,l_b_and_c
+logical :: speedc,crand,xspeedc,withcloudcover,l_clim,l_lu,l_soil(20)
+logical :: l_stats,l_regional,out_cov,out_bio,out_bud,out_sen,l_b_and_c
 
 logical :: met_seq,goudriaan_old
+!----------------------------------------------------------------------!
 
-character(len=200) :: arg
-
-logical :: arg_input_not_set,arg_output_not_set,arg_n_range_1_not_set
-logical :: arg_n_range_2_not_set,arg_filename_not_set
-integer :: additional_arguments
-
-call fnms%set_names()
+!call fnms%set_names()
 
 !----------------------------------------------------------------------!
-! Some temporary settings from ants work
+! Some temporary settings from ants work.                              !
 !----------------------------------------------------------------------!
 daily_co2 = -1
 read_par = -1
@@ -123,13 +118,11 @@ ce_maxlight    = 1.0e-3
 ! Get input filename from the command line.                            !
 !----------------------------------------------------------------------!
 call GET_INPUT_FILENAME(buff1)
-!buff1='../../SDGVM/output/f03_2.dat'
 
 !----------------------------------------------------------------------!
 ! Read internal parameters from "param.dat" file, and io               !
 ! parameters from "misc_params.dat".                                   !
 !----------------------------------------------------------------------!
-
 call read_param(stver)
 
 !----------------------------------------------------------------------!
@@ -138,86 +131,10 @@ call read_param(stver)
 call inp%read_input_file(trim(buff1))
 
 !----------------------------------------------------------------------!
-! Check additional command line arguemnts are consistent with input    !
-! and set.                                                             !
+! Check the number of command line arguments are consistent with the   !
+! input file.                                                          !
 !----------------------------------------------------------------------!
-arg_input_not_set     = .true.
-arg_output_not_set    = .true.
-arg_filename_not_set  = .true.
-arg_n_range_1_not_set = .true.
-arg_n_range_2_not_set = .true.
-
-additional_arguments = 0
-if (inp%dirs%input_argument) additional_arguments = &
- additional_arguments + 1
-if (inp%dirs%output_argument) additional_arguments = &
- additional_arguments + 1
-if (inp%sites%filename_argument) additional_arguments = &
- additional_arguments + 1
-if (inp%sites%n_range_argument) additional_arguments = &
- additional_arguments + 2
-
-i = 0
-do
-call get_command_argument(i,arg)
-  if (len_trim(arg) == 0) exit
-  i = i + 1
-enddo
-
-! check number of additoinal args is as required by the input file.
-if (additional_arguments/=i-2) then
-  write(*,'(''There are'',i2,'' arguments to sdgvm,'',i2 &
- ,'' were expected.'')') i-1,additional_arguments+1
-  write(*,'(''Expected'')')
-  i = 1
-  write(*,'(i2,''. input file'')') i
-  if (inp%dirs%input_argument) then
-    i = i + 1
-    write(*,'(i2''. input directory'')') i
-  endif
-  if (inp%dirs%output_argument) then
-    i = i + 1
-    write(*,'(i2''. output directory'')') i
-  endif
-  if (inp%sites%filename_argument) then
-    i = i + 1
-    write(*,'(i2''. land sites file directory'')') i
-  endif
-  if (inp%sites%n_range_argument) then
-    i = i + 1
-    write(*,'(i2,''. site0'')') i
-  endif
-  if (inp%sites%n_range_argument) then
-    i = i + 1
-    write(*,'(i2''. sitef'')') i
-  endif
-  stop
-endif
-
-i = 0
-do
-call get_command_argument(i,arg)
-  if (len_trim(arg) == 0) exit
-  if (i>1) then
-    if ((inp%dirs%input_argument).and.(arg_input_not_set)) then
-      read(arg,'(A)') inp%dirs%input
-      arg_input_not_set = .false.
-    elseif ((inp%dirs%output_argument).and.(arg_output_not_set)) then
-      read(arg,'(A)') inp%dirs%output
-      arg_output_not_set = .false.
-    elseif ((inp%sites%filename_argument).and.(arg_filename_not_set)) then
-      read(arg,'(A)') inp%sites%filename
-      arg_filename_not_set = .false.
-    elseif ((inp%sites%n_range_argument).and.(arg_n_range_1_not_set)) then
-      read(arg,*) inp%sites%site0
-      arg_n_range_1_not_set = .false.
-    elseif ((inp%sites%n_range_argument).and.(arg_n_range_2_not_set)) then
-      read(arg,*) inp%sites%sitef
-      arg_n_range_2_not_set = .false.
-    endif
-  endif
-  i = i + 1
-enddo
+call command_line_argument_check()
 
 !----------------------------------------------------------------------!
 ! Process the input file data.                                         !
@@ -232,87 +149,9 @@ call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
  oymdft,iofnft,sit_grd,du,narg,fire_ant,harvest_ant,met_seq,par_loops)
 
 !----------------------------------------------------------------------!
-! set up mapping for output files for inp. Need to tidy this up.
+! set up mapping for output files for and place in inp%output%*%map.   !
 !----------------------------------------------------------------------!
-do i=1,inp%output%tile_vars_yearly%n
-  do j=1,nomdos
-    if (trim(inp%output%tile_vars_yearly%tag(i)) == trim(otags(j))) then
-      inp%output%tile_vars_yearly%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of tile_vars_yearly'
-      write(*,*) trim(inp%output%tile_vars_yearly%tag(i))
-      stop
-    endif
-  enddo
-enddo
-do i=1,inp%output%tile_vars_monthly%n
-  do j=1,nomdos
-    if (trim(inp%output%tile_vars_monthly%tag(i)) == trim(otags(j))) then
-      inp%output%tile_vars_monthly%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of tile_vars_monthly'
-      write(*,*) trim(inp%output%tile_vars_monthly%tag(i))
-      stop
-    endif
-  enddo
-enddo
-do i=1,inp%output%tile_vars_daily%n
-  do j=1,nomdos
-    if (trim(inp%output%tile_vars_daily%tag(i)) == trim(otags(j))) then
-      inp%output%tile_vars_daily%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of tile_vars_daily'
-      write(*,*) trim(inp%output%tile_vars_daily%tag(i))
-      stop
-    endif
-  enddo
-enddo
-
-do i=1,inp%output%pft_vars_yearly%n
-  do j=1,nomdos
-    if (trim(inp%output%pft_vars_yearly%tag(i)) == trim(otags(j))) then
-      inp%output%pft_vars_yearly%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of pft_vars_yearly'
-      write(*,*) trim(inp%output%pft_vars_yearly%tag(i))
-      stop
-    endif
-  enddo
-enddo
-do i=1,inp%output%pft_vars_monthly%n
-  do j=1,nomdos
-    if (trim(inp%output%pft_vars_monthly%tag(i)) == trim(otags(j))) then
-      inp%output%pft_vars_monthly%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of pft_vars_monthly'
-      write(*,*) trim(inp%output%pft_vars_monthly%tag(i))
-      stop
-    endif
-  enddo
-enddo
-do i=1,inp%output%pft_vars_daily%n
-  do j=1,nomdos
-    if (trim(inp%output%pft_vars_daily%tag(i)) == trim(otags(j))) then
-      inp%output%pft_vars_daily%map(i) = j
-      exit
-    endif
-    if (j==nomdos) then
-      write(*,*) 'error in pft tags for output of pft_vars_daily'
-      write(*,*) trim(inp%output%pft_vars_daily%tag(i))
-      stop
-    endif
-  enddo
-enddo
+call output_mapping(nomdos,otags)
 
 !----------------------------------------------------------------------!
 ! Open output files.                                                   !
@@ -422,7 +261,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write lat/lon in crop output file                                    !
 !----------------------------------------------------------------------!
-!  call CROP_OUTPUTS(nft,2)
+!  call crop_outputs(nft,2)
 
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
@@ -477,17 +316,17 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Computation of hydrological parameters.                              !
 !----------------------------------------------------------------------!
-    call WSPARAM(l_b_and_c,nupc,awl,kd,kx,nci,infix,adp,topsl,sfc,sw,sswc)
+    call wsparam(l_b_and_c,nupc,awl,kd,kx,nci,infix,adp,topsl,sfc,sw,sswc)
 
 !----------------------------------------------------------------------!
 ! Extract initial and final C02 values.                                !
 !----------------------------------------------------------------------!
-    call CO2_0_F(co20,co2f,yearv,yr0,co2,nyears)
+    call co2_0_f(co20,co2f,yearv,yr0,co2,nyears)
 
 !----------------------------------------------------------------------!
 ! Extract the country/state corresponding to the site.                 !
 !----------------------------------------------------------------------!
-    call COUNTRY(lat,lon,country_name,country_id,l_regional)
+    call country(lat,lon,country_name,country_id,l_regional)
 
 !----------------------------------------------------------------------!
 ! Write site info to 'site_info.dat'.                                  !
@@ -501,10 +340,10 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
-    call INITIALISE_STATE(nft,cluse,xtmpv,soilt)
+    call initialise_state(nft,cluse,xtmpv,soilt)
 
     if (mod(site_dat,max(site_out,1))==min(1,site_out)-1) &
- write(*,'( '' Site no. '',i5,'', Lat ='',f7.3,'', Lon ='',f9.3,'' Cohorts ='',i5)') site_dat,lat,lon,ssp%cohorts
+ write(*,'( '' Site no. '',i0,'', Lat ='',f6.2,'', Lon ='',f7.2,'' Cohorts = '',i0)') site_dat,lat,lon,ssp%cohorts
 
     do iyear=1,nyears
 
@@ -518,11 +357,10 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Set CO2 value 'ca' from 'co2' or 'co2const'.                         !
 !----------------------------------------------------------------------!
-      call SET_CO2(ca,iyear,speedc,co2,year,yr0)
-      print*,'ca = ',ca
+      call set_co2(ca,iyear,speedc,co2,year,yr0)
 
-      if (mod(iyear,max(msp%year_out,1))==min(1,msp%year_out)-1) then
-        write(*,'('' Year no.'',2i5,'', ca = '',f6.2,'', cohorts = '', i3,''.'')') &
+      if (mod(iyear,max(sop%year_out,1))==min(1,sop%year_out)-1) then
+        write(*,'('' Year no. '',i0,'' '',i0,'', ca = '',f6.2,'', cohorts = '', i0,''.'')') &
  iyear,year,ca,ssp%cohorts
       endif
 
@@ -530,9 +368,9 @@ do site=1,sites
 ! Set 'tmp' 'hum' 'prc' and 'cld', and calc monthly and yearly avs.    !
 !----------------------------------------------------------------------!
       do nn1=1,0,-1
-        call SET_CLIMATE(xtmpv,xprcv,xhumv,xcldv,xswrv,withcloudcover, &
+        call set_climate(xtmpv,xprcv,xhumv,xcldv,xswrv,withcloudcover, &
  yearv,iyear,tmp,prc,hum,cld,swr,thty_dys,yr0,year,nyears,nn1)
-        call SEASONALITY(tmp,prc,cld,thty_dys,nft,year,nn1)
+        call seasonality(tmp,prc,cld,thty_dys,nft,year,nn1)
       enddo
       
       do ft=1,nft
@@ -546,21 +384,21 @@ do site=1,sites
         pft_tab(ft)%fert(3)=10*cfert(ft,year-yr0+1,3)
       enddo
       
-      call FERT_CROPS(nft)  
+      call fert_crops(nft)
 
-!      call READ_OPT_PAR()      
+!      call read_opt_par()
 !----------------------------------------------------------------------!
 ! Set land use through ftprop.                                         !
 !----------------------------------------------------------------------!
-      call SET_LANDUSE(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
+      call set_landuse(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
       
-      call COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
+      call cover(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
-      call INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
+      call initialise_new_cohorts(nft,ftprop,check_closure)
 
-      call MKDLIT()
+      call mkdlit()
 
-      call RESTRICT_COHORT_NUMBERS()
+      call restrict_cohort_numbers()
       
 !----------------------------------------------------------------------!
 ! Initialisations that were in doly at the beginning of the year       !
@@ -590,7 +428,7 @@ do site=1,sites
         
         ssp%mnth = mnth
 
-        call SUM_SOILCN(soilc,soiln,minn)
+        call sum_soilcn(soilc,soiln,minn)
 
 !----------------------------------------------------------------------!
 ! DAILY LOOP.                                                          !
@@ -641,16 +479,16 @@ do site=1,sites
               nfix=0.1*pft(ft)%fert(1)          
             endIF
             
-            call SET_MISC_VALUES(pft(ft)%sla,tmp(mnth,day))
+            call set_misc_values(pft(ft)%sla,tmp(mnth,day))
 
 !----------------------------------------------------------------------!
 ! nppstore leafnpp stemnpp rootnpp leaflit stemlit rootlit in mols
 !----------------------------------------------------------------------!
             soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
-            call IRRIGATE(ssp%cohort,sfc,sw) 
+            call irrigate(ssp%cohort,sfc,sw) 
 
-            call DOLYDAY(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
+            call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
  cld(mnth),ca,soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx, &
  daygpp,resp_l,lai(ft),evap,tran,roff,interc,evbs,flow1(ft),flow2(ft), &
  pet,ht(ft),ft,lmor_sc(:,pft(ft)%itag),nleaf,leaflitter,hrs,q,qdirect, &
@@ -658,23 +496,23 @@ do site=1,sites
  ce_t,ce_maxlight(:,:,ft),ce_ga(:,:,ft),ce_rh,check_closure, &
  par_loops,lat,year,mnth,day,thty_dys,inp%run%gs_func,swr(mnth,day))
 
-            call EVAPOTRANSPIRATION(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
+            call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
             pet = eemm
             pet2 = pet
             
-            call HYDROLOGY(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
+            call hydrology(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
      s1in,tmp(mnth,day),ssv(ft)%lai%tot(1),evap,tran,roff,interc,evbs,f2,f3,ft)
             flow1(ft) = flow1(ft) + f2/10.0
             flow2(ft) = flow2(ft) + f3/10.0
 
-            call PHENOLOGY(yield,laiinc)
+            call phenology(yield,laiinc)
 
-            call ALLOCATION(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
+            call allocation(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
 
             ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
               
-            call SOIL_DYNAMICS2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
+            call soil_dynamics2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
     
 !----------------------------------------------------------------------!
@@ -756,7 +594,7 @@ do site=1,sites
 ! End of the monthly loop.                                             !
 !----------------------------------------------------------------------!
 
-  call GROWTH(nft,lai,stembio,rootbio,check_closure)
+  call growth(nft,lai,stembio,rootbio,check_closure)
   
 !----------------------------------------------------------------------!
 ! Average outputs by cover proportions.                                !
@@ -860,7 +698,7 @@ write(fun%get_id('hum.dat'),'('' '',f8.2)',advance='NO') outputs(daily_out,11,'A
 ! Write var in crop output file                                        !
 !----------------------------------------------------------------------!
 
-!    call CROP_OUTPUTS(nft,3)
+!    call crop_outputs(nft,3)
 
   endif
 
@@ -1246,7 +1084,7 @@ endif
 !----------------------------------------------------------------------!
 ! Skip line in crop output files.                                      !
 !----------------------------------------------------------------------!
-!call CROP_OUTPUTS(nft,4)
+!call crop_outputs(nft,4)
 
 !***********************************************************************
 enddo ! site loop
@@ -1259,8 +1097,7 @@ enddo ! site loop
 !----------------------------------------------------------------------!
 call fun%open(trim(inp%dirs%output)//'/simulation.dat',fid)
 
-call GETARG(0,buff1)
-call STRIPB(stver)
+call getarg(0,buff1)
 write(fid,'(A)') stver(1:28)
 write(fid,*)
 
@@ -1269,7 +1106,7 @@ write(fid,'(''* Command line arguments                       !'')')
 write(fid,'(''************************************************'')')
 
 do i=0,iargc()
-  call GETARG(i,buff1)
+  call getarg(i,buff1)
   write(fid,'(A,'' '')',advance='no') trim(buff1)
 enddo
 write(fid,*)
@@ -1291,7 +1128,7 @@ write(fid,'(''************************************************'')')
 write(fid,'(''* Input file                                   !'')')
 write(fid,'(''************************************************'')')
 
-call GETARG(1,buff1)
+call getarg(1,buff1)
 call fun%open_old(buff1,i)
 do
   read(i,'(A)',iostat=kode) st1
@@ -1348,10 +1185,11 @@ endif
 !----------------------------------------------------------------------!
 ! Close crop output files.                                             !
 !----------------------------------------------------------------------!
-!call CROP_OUTPUTS(nft,1)
+!call crop_outputs(nft,1)
 
 !call fun%print()
 
 end program sdgvm
+
 
 

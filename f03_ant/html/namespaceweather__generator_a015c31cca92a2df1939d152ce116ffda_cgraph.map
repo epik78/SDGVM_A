@@ -1,0 +1,15 @@
+<map id="weather_generator::ex_clim_weather_generator" name="weather_generator::ex_clim_weather_generator">
+<area shape="rect" id="node2" href="$namespacedata.html#a7f237cdc24b1a6135d9cf3165167e634" title="Performs bilinear interpolation between four points. " alt="" coords="531,75,617,102"/>
+<area shape="rect" id="node3" href="$namespaceweather__generator.html#ac0e70e60c39bdc8a95ec3026b55f08ed" title="weather_generator::\lfloatingmean2" alt="" coords="262,71,398,112"/>
+<area shape="rect" id="node4" href="$namespaceweather__generator.html#a45dc327f44b2931fdfdf60ac127b9e8b" title="weather_generator::\lhum_day_mean2_fn" alt="" coords="261,356,399,397"/>
+<area shape="rect" id="node10" href="$namespaceweather__generator.html#ab07607a60dccf02adf84c5147ac9d10f" title="weather_generator::\lmean_pres" alt="" coords="262,188,398,229"/>
+<area shape="rect" id="node11" href="$namespaceweather__generator.html#a80e534087e3cfb24ab09651ae89c2364" title="weather_generator::\lrain_day_sub_fully_normalised" alt="" coords="475,247,673,288"/>
+<area shape="rect" id="node13" href="$namespaceweather__generator.html#a8f8a193874d7dff28c427e05cfc86f58" title="weather_generator::\lread_wg_file" alt="" coords="262,5,398,47"/>
+<area shape="rect" id="node14" href="$namespacemetdos.html#a88251dea7d8d8fb4a3078f17d1de9320" title="metdos::temp_day_mean2_fn" alt="" coords="233,305,427,331"/>
+<area shape="rect" id="node5" href="$namespacemetdos.html#a10ebcc8f0ae6b33c4238df8f572873a5" title="metdos::norm_from_rand_fn" alt="" coords="483,359,665,386"/>
+<area shape="rect" id="node6" href="$namespacemetdos.html#abb62171cad81acf5e7ba3575b678f371" title="metdos::normdist2_fn" alt="" coords="725,410,872,437"/>
+<area shape="rect" id="node8" href="$namespacemetdos.html#a8287554b4bc02618da65ff56ad832913" title="metdos::normdist_fn" alt="" coords="729,359,869,386"/>
+<area shape="rect" id="node9" href="$namespacemetdos.html#a4166775d13b46c78ecce65cdbca9b29d" title="metdos::transnorm_fn" alt="" coords="725,309,873,335"/>
+<area shape="rect" id="node7" href="$namespacemetdos.html#a9c9368239168c43489905705d07e8c9e" title="metdos::rndf" alt="" coords="924,309,1019,335"/>
+<area shape="rect" id="node12" href="$namespacemetdos.html#a7df5c52aaefda332112ab6149be333fd" title="metdos::gammadist_fn" alt="" coords="721,258,876,285"/>
+</map>
