@@ -1,6 +1,5 @@
 #!/bin/bash
 #$ -l h_rt=48:00:00
-#module load compilers/gcc/5.2
 
 #How many qsubs
 nprocesses=100
@@ -43,7 +42,6 @@ do
   fi
   echo "#!/bin/bash">> $batchfile
   echo "#$ -l h_rt=23:59:00">> $batchfile
-  echo "  "
   echo "module load compilers/gcc/5.2">> $batchfile
   echo "./bin/sdgvm.exe $inputfile $outd $sites $start $end">> $batchfile
 done
