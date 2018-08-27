@@ -33,8 +33,11 @@ Set up default mergetool
   git config --global merge.tool [kdiff3]
 Use default mergetool
   git mergetool
+Set up gitk for viewing merging/commit history
+  sudo apt-get install gitk
 
 To merge a branch with master.
+  1. Commit on your branch.
   1. Switch branch to master
   2. Merge branch
        git merge branch
@@ -52,6 +55,7 @@ See settings
   git config --list
   git config --global user.name [markus]
   git config --global user.email [markus@gmail.com]
+  git config --global core.editor gedit
 
 
 ====================================
@@ -61,4 +65,16 @@ Locally
   git branch -d [branch_name]
 Remote
   git push origin :[branch_name]
+
+
+====================================
+CREDENTIALS
+====================================
+Store password and username in a file (git-credentials) on disc.
+If not supplied, this will be placed in $HOME/.config/git/credentials
+or ~/.git-credentials.
+  git config credential.helper store --file
+
+
+
 

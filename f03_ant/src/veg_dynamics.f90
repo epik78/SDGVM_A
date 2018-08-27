@@ -229,6 +229,7 @@ do ft=1,nft
 
     amount_taken = prop_taken*ssp%xnew_slc(ft)
     ssp%xnew_slc(ft) = ssp%xnew_slc(ft) - amount_taken
+
     extras_slc = extras_slc + amount_taken
 
     amount_taken = prop_taken*ssp%xnew_rlc(ft)
@@ -255,7 +256,6 @@ prop_needed = 0.0
 do ft=1,nft
   if (ssp%xnew_cov(ft)-ftprop(ft)<-1.e-6) then
 !  if (loop_check(ft)==0) then
-!    print*,'y ',ft,ssp%xnew_cov(ft)-ftprop(ft)
     prop_needed = (ftprop(ft) - ssp%xnew_cov(ft))/sumftprop/&
 sum_prop_taken
 
@@ -508,7 +508,6 @@ do ft=1,nft
     do coh=2,ssp%co2ftmap(ft,1)+1
       ift = ssp%co2ftmap(ft,coh)
       year = int(ssv(ift)%age+.50001)
-!      print*,'hello ',ssv(ift)%age,year
       if (ssv(ift)%hgt>0) i = i + 1
       scale(year) = 1.0 - ssv(ift)%cov
       if (scale(year)<minhgt)  minhgt = scale(year)
@@ -1179,7 +1178,6 @@ do ft=1,ssp%cohorts
 !----------------------------------------------------------------------!
 ! Age the state structure.                                             !
 !----------------------------------------------------------------------!
-!      print*,'age ',ssv(ft)%age
       ssv(ft)%age = ssv(ft)%age + 1.0
     endif
 !  ENDIF

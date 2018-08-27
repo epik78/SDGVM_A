@@ -44,7 +44,6 @@ if ((t>0.0).and.(rn>0.0).and.(soil2g>wtwp).and.(fshade+fsunlit>0.1)) then
 ! conductance if Wc goes in Eq.1
     call ASSVMAX3(tpav,tppcv,cs,tpgsv,oi,ca,vmx,rh,kg,ko,kc,&
  tau,rd,ga,t,p,t154,xdvy,dv,px,oitau1,oitau2,kcoiko,gsmin,gs_type,ii)
-
 !     make the sum of assimilation, internal concentration and stomatal
 !     conductance.
     a = 0.0
@@ -56,8 +55,6 @@ if ((t>0.0).and.(rn>0.0).and.(soil2g>wtwp).and.(fshade+fsunlit>0.1)) then
 ! conductance if J goes in Eq.1
       call ASSJ3(tpaj,tppcj,tpgsj,oi,ca,rh,kg,tau,rd,ga,t,p,&
  jshade,t154,xdvy,dv,px,oitau1,oitau2,gsmin,gs_type,ii)
-
-!print*,'tpaj ',tpaj,gsmin,kg
 ! Checks which assimilation process is smaller and keeps
 ! those values of assimilation,partial pressure and stomatal conductance 
      call LIMITATIONPROCESS(tpav,tppcv,tpgsv,tpaj,tppcj,tpgsj,&
@@ -70,14 +67,12 @@ if ((t>0.0).and.(rn>0.0).and.(soil2g>wtwp).and.(fshade+fsunlit>0.1)) then
     if (fsunlit>0.01) then
       call ASSJ4(tpaj,tppcj,tpgsj,oi,ca,rh,kg,tau,rd,ga,t,p,&
  jsunlit,t154,xdvy,dv,px,oitau1,oitau2,gsmin,gs_type,ii)
-!print*,'tpaj ',tpaj
       call LIMITATIONPROCESS(tpav,tppcv,tpgsv,tpaj,tppcj,tpgsj,&
  asunlit,pcsunlit,gssunlit)
       a = a + fsunlit*asunlit
       ci = ci + fsunlit*pcsunlit
       gs = gs + fsunlit*gssunlit
     endif
-!    print*,tpav,tpaj,ii,fsunlit
 
   else
 
@@ -123,6 +118,57 @@ end subroutine assimilation_calc
 
 !**********************************************************************!
 !                                                                      !
+!                   assvmax3 :: productivity_methods                   !
+!                   --------------------------------                   !
+! ! ASSVMAX computes the assimilation rate by forming a cubic equation !
+! from the equations defining assimilation rate, stomatal conductance, !
+! CO2 partial pressure (assimilation diffusion equaiton) and the       !
+! carboxylation rate. The cubic equation is solved and the largest     !
+! real root is assumed to be the assimilation rate. The variables here !
+! correspond to the Doly paper, in the main program they are such that !
+!        po,pa,vmax,g0,g1,rh,ko,kc,kg,tau,rd                           !
+!     = oi,ca,vmx(i),c1,c2,rh,ko,kc,kg,tau,rd.                         !
+!                                                                      !
+! SUBROUTINE assvmax3(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,  !
+! t154,xdvy,px,oitau1,oitau2,gsmin,kcoiko)                             !
+!                                                                      !
+!----------------------------------------------------------------------!
+subroutine assvmax3(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,&
+ t154,xdvy,dv,px,oitau1,oitau2,kcoiko,gsmin,gs_type,ii)
+!**********************************************************************!
+real(dp) :: a,ci,gs,oi,ca,vmx,rh,ko,kc,tau,rd,fa0,faf,gam,step, &
+ p,ga,x,y,t,a0,cs,af,fa,kg,ax,bx,cx,gsmin,t154,xdvy,dv,px,oitau1,&
+ oitau2,kcoiko
+integer :: gs_type,ii
+!----------------------------------------------------------------------!
+
+if (ssv(ssp%cohort)%assv(ssp%lai,ii) > 0.0) then
+  a = ssv(ssp%cohort)%assv(ssp%lai,ii)
+  cs = ca - a*px/ga
+  gs = gs_calc(pft(ssp%cohort)%g0,pft(ssp%cohort)%g1,t,kg,a,cs,dv, &
+ t154,gs_type)
+  ci = cs - a*px/gs
+  gam = 1.0 - oitau2/ci
+  a = (gam*vmx*ci/(ci + kcoiko) - rd)*1.0e6
+
+  if (a<0.or.(abs(a-ssv(ssp%cohort)%assv(ssp%lai,ii))/ssv(ssp%cohort)%assv(ssp%lai,ii)>.2)) then
+    call ASSVMAX(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,gsmin, &
+ gs_type)
+  endif
+else
+  call ASSVMAX(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,gsmin, &
+ gs_type)
+endif
+ssv(ssp%cohort)%assv(ssp%lai,ii) = a
+
+end subroutine assvmax3
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
 !                      assj3 :: productivity_methods                   !
 !                      -----------------------------                   !
 !                                                                      !
@@ -155,6 +201,11 @@ if (ssv(ssp%cohort)%assj(ssp%lai,1,ii) > 0.0) then
   ci = cs - a*px/gs
   gam = 1.0 - oitau2/ci
   a = (gam*j*ci*0.25/(ci + oitau1) - rd)*1.0e6
+
+  if (a<0.or.(abs(a-ssv(ssp%cohort)%assj(ssp%lai,1,ii))/ssv(ssp%cohort)%assj(ssp%lai,1,ii)>.2)) then
+    call ASSJ(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
+  endif
+
 else
   call ASSJ(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
 endif
@@ -169,80 +220,10 @@ end subroutine assj3
 
 !**********************************************************************!
 !                                                                      !
-!                          FUNCTION T_SCALAR                           !
-!                          *****************                           !
-!     Gives vcmax or jmax temperature scalar                           !
+!                     assj4 :: productivity_methods                    !
+!                     -----------------------------                    !
 !                                                                      !
-!----------------------------------------------------------------------!
-function T_SCALAR(t,jv,ttype,ftTopt,ftkHa,ftkHd,tmonth,jfv)
-!**********************************************************************!
-REAL(dp)    :: t,qt,t_scalar,ftTopt,ftkHa,ftkHd,ftHa,ftHd,tmonth
-REAL(dp)    :: Tsk,Trk,R,deltaS,dS
-INTEGER, intent(in) :: ttype 
-LOGICAL, intent(in) :: jfv 
-CHARACTER :: jv
-!----------------------------------------------------------------------!
-
-if(ttype==0) then
-! SDGVM original
-  qt = 2.3
-  if (t>30.0) t = 30.0
-  t_scalar = qt**(t/10.0d0)/qt**(2.5)
-elseif (ttype>=1) then
-! modified Arrhenius
-        
-  R = 8.31446        
-
-! convert from kJ to J
-! parameter values are read in as kJ... to save space
-  ftHa = ftkHa*1.0e3
-  ftHd = ftkHd*1.0e3
-
-  if(ttype==2) then
-! employ Kattge&Knorr scaling based on mean temp of previous month 
-          
-    ftHd = 2.0e5
-
-    if(jv=='v') then
-      ftHa   = 71513.0
-      deltaS = 668.390 - 1.070*tmonth
-    else
-      ftHa   = 49884.0
-      deltaS = 659.700 - 0.750*tmonth
-    endif
-  else 
-! use fixed delta S based on input PFT parameters
-    deltaS = ftHd/(ftTopt+273.15) + (R*log(ftHa/(ftHd-ftHa)))
-  endif
-
-  Tsk = t + 273.15
-  Trk = 298.15
-  
-! see Medlyn etal 2002 or Kattge&Knorr 2007  
-  t_scalar = exp(ftHa*(Tsk-Trk)/(R*Tsk*Trk))*( &
- (1 + exp((Trk*deltaS-ftHd)/(Trk*R)))/(1 + exp((Tsk*deltaS-ftHd)/(Tsk*R))))  
-
-! adjust jmax based on kattge&knorr Jmax to Vcmax ratio relationship to temp
-  if((jv=='j').and.(ttype>=2).and.jfv)  t_scalar = t_scalar*(2.59-0.035*tmonth)/1.715
-
-else
-  t_scalar = 0.0
-  print*, 'temperature scalar type',ttype,'undefined'
-  stop
-endif
-
-
-end function t_scalar
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                   assvmax3 :: productivity_methods                   !
-!                   --------------------------------                   !
-! ! ASSVMAX computes the assimilation rate by forming a cubic equation !
+! ASSVMAX computes the assimilation rate by forming a cubic equation   !
 ! from the equations defining assimilation rate, stomatal conductance, !
 ! CO2 partial pressure (assimilation diffusion equaiton) and the       !
 ! carboxylation rate. The cubic equation is solved and the largest     !
@@ -251,90 +232,36 @@ end function t_scalar
 !        po,pa,vmax,g0,g1,rh,ko,kc,kg,tau,rd                           !
 !     = oi,ca,vmx(i),c1,c2,rh,ko,kc,kg,tau,rd.                         !
 !                                                                      !
-! SUBROUTINE assvmax3(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,  !
-! t154,xdvy,px,oitau1,oitau2,gsmin,kcoiko)                             !
+! SUBROUTINE assj4(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,px,&  !
+! oitau1,oitau2,gsmin)                                                 !
 !                                                                      !
 !**********************************************************************!
-subroutine assvmax3(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,&
- t154,xdvy,dv,px,oitau1,oitau2,kcoiko,gsmin,gs_type,ii)
-!**********************************************************************!
-real(dp) :: a,ci,gs,oi,ca,vmx,rh,ko,kc,tau,rd,fa0,faf,gam,step, &
- p,ga,x,y,t,a0,cs,af,fa,kg,ax,bx,cx,gsmin,t154,xdvy,dv,px,oitau1,&
- oitau2,kcoiko
+subroutine assj4(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,dv,px,&
+ oitau1,oitau2,gsmin,gs_type,ii)
+!----------------------------------------------------------------------!
+real(dp) :: a,ci,gs,oi,ca,rh,tau,rd,j,gam,fa0,faf,a0,af,step,p,ga,x,y, &
+ t,cs,fa,kg,ax,bx,cx,gsmin,t154,xdvy,dv,px,oitau1,oitau2
 integer :: gs_type,ii
 !----------------------------------------------------------------------!
 
-if (ssv(ssp%cohort)%assv(ssp%lai,ii) > 0.0) then
-  a = ssv(ssp%cohort)%assv(ssp%lai,ii)
+if (ssv(ssp%cohort)%assj(ssp%lai,2,ii) > 0.0) then
+  a = ssv(ssp%cohort)%assj(ssp%lai,2,ii)
   cs = ca - a*px/ga
-  gs = gs_calc(pft(ssp%cohort)%g0,pft(ssp%cohort)%g1,t,kg,a,cs,dv, &
- t154,gs_type)
+  gs = gs_calc(gsmin,0.0_dp,t,kg,a,cs,dv,t*1.54,gs_type)
   ci = cs - a*px/gs
   gam = 1.0 - oitau2/ci
-  a = (gam*vmx*ci/(ci + kcoiko) - rd)*1.0e6
-else
-  call ASSVMAX(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p,gsmin, &
- gs_type)
-endif
-ssv(ssp%cohort)%assv(ssp%lai,ii) = a
+  a = (gam*j*ci*0.25/(ci + oitau1) - rd)*1.0e6
 
-!**********************************************************************!
-end subroutine assvmax3
-!**********************************************************************!
-
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                   gs_calc :: productivity_methods                    !
-!                   -------------------------------                    !
-! SUBROUTINE gs_calc(g0,g1,t,kg,a,cs,dv,gs_type)   !
-!                                                                      !
-!**********************************************************************!
-real(dp) function gs_calc(g0,g1,t,kg,a,cs,dv,t154,gs_type)
-!**********************************************************************!
-real(dp) :: g0,g1,t,kg,a,cs,dv,t154
-integer :: gs_type
-real(dp) :: x
-!----------------------------------------------------------------------!
-
-
-if (gs_type==0) then
-!----------------------------------------------------------------------!
-! 070607                                                               !
-!----------------------------------------------------------------------!
-  x = 3.0 + 0.2*t
-  if (x<0.25) x = 0.25
-  gs_calc = g0 + ((x*a/(1.0 + dv/1.5)/(cs*10.0 - t154)))*kg
-
-elseif (gs_type==1) then
-!----------------------------------------------------------------------!
-! GS_WOOD, the default gs model is a form of the Leuning 1995 model    !
-! assuming gstar = 1.54t, this is inconsistent with the gstar in the   ! 
-! assimilations calculations                                           !
-!----------------------------------------------------------------------!
-  x = 3.0 + 0.2*t
-  if (x<0.25) x = 0.25
-  gs_calc = (g0 + (x*a/(1.0 + dv/1.5)/(cs*10.0 - t154)))*kg
-
-elseif (gs_type==2) then
-!----------------------------------------------------------------------!
-! From Ant's model, was named GS_MED, wasn't commented.                !
-!----------------------------------------------------------------------!
-  gs_calc = (g0 + (g1/(1.0 + dv**0.5))*(a/(cs/0.1013)))*kg
+  if (a<0.or.(abs(a-ssv(ssp%cohort)%assj(ssp%lai,2,ii))/ssv(ssp%cohort)%assj(ssp%lai,2,ii)>.2)) then
+    call ASSJ(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
+  endif
 
 else
-  write(*,*) 'Error: gs_type does not exist. gs_type = ',gs_type
-  stop
+  call ASSJ(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
 endif
+ssv(ssp%cohort)%assj(ssp%lai,2,ii) = a
 
-
-
-!**********************************************************************!
-end function gs_calc
-!**********************************************************************!
+end subroutine assj4
 
 
 
@@ -355,7 +282,7 @@ end function gs_calc
 !                                                                      !
 ! SUBROUTINE assvmax(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p)   !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine assvmax(a,ci,cs,gs,oi,ca,vmx,rh,kg,ko,kc,tau,rd,ga,t,p, &
  gsmin,gs_type)
 !**********************************************************************!
@@ -433,57 +360,8 @@ gs = gs_calc(gsmin,0.0_dp,t,kg,a,cs,dv,t*1.54,gs_type)
 ci = cs - a*1.0e-6*p/gs
 gam = 1.0 - 0.5*oi/tau/ci
 
-!print*,'gs ',a,gs
-
-!**********************************************************************!
 end subroutine assvmax
-!**********************************************************************!
 
-
-
-
-
-!**********************************************************************!
-!                                                                      !
-!                     assj4 :: productivity_methods                    !
-!                     -----------------------------                    !
-!                                                                      !
-! ASSVMAX computes the assimilation rate by forming a cubic equation   !
-! from the equations defining assimilation rate, stomatal conductance, !
-! CO2 partial pressure (assimilation diffusion equaiton) and the       !
-! carboxylation rate. The cubic equation is solved and the largest     !
-! real root is assumed to be the assimilation rate. The variables here !
-! correspond to the Doly paper, in the main program they are such that !
-!        po,pa,vmax,g0,g1,rh,ko,kc,kg,tau,rd                           !
-!     = oi,ca,vmx(i),c1,c2,rh,ko,kc,kg,tau,rd.                         !
-!                                                                      !
-! SUBROUTINE assj4(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,px,&  !
-! oitau1,oitau2,gsmin)                                                 !
-!                                                                      !
-!**********************************************************************!
-subroutine assj4(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,t154,xdvy,dv,px,&
- oitau1,oitau2,gsmin,gs_type,ii)
-!**********************************************************************!
-real(dp) :: a,ci,gs,oi,ca,rh,tau,rd,j,gam,fa0,faf,a0,af,step,p,ga,x,y, &
- t,cs,fa,kg,ax,bx,cx,gsmin,t154,xdvy,dv,px,oitau1,oitau2
-integer :: gs_type,ii
-!----------------------------------------------------------------------!
-
-if (ssv(ssp%cohort)%assj(ssp%lai,2,ii) > 0.0) then
-  a = ssv(ssp%cohort)%assj(ssp%lai,2,ii)
-  cs = ca - a*px/ga
-  gs = gs_calc(gsmin,0.0_dp,t,kg,a,cs,dv,t*1.54,gs_type)
-  ci = cs - a*px/gs
-  gam = 1.0 - oitau2/ci
-  a = (gam*j*ci*0.25/(ci + oitau1) - rd)*1.0e6
-else
-  call ASSJ(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
-endif
-ssv(ssp%cohort)%assj(ssp%lai,2,ii) = a
-
-!**********************************************************************!
-end subroutine assj4
-!**********************************************************************!
 
 
 
@@ -504,7 +382,7 @@ end subroutine assj4
 !                                                                      !
 ! SUBROUTINE assj(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j)                 !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine assj(a,ci,gs,oi,ca,rh,kg,tau,rd,ga,t,p,j,gs_type)
 !**********************************************************************!
 real(dp) :: a,ci,gs,oi,ca,rh,tau,rd,j,gam,fa0,faf,a0,af,step,p,ga,x,y,&
@@ -586,14 +464,126 @@ gs = gs_calc(gsmin,0.0_dp,t,kg,a,cs,dv,t*1.54,gs_type)
 ci = cs - a*1.0e-6*p/gs
 gam = 1.0 - 0.5*oi/tau/ci
 
-
-!print*,'gs ',a,gs
-!stop
-
-!**********************************************************************!
 end subroutine assj
-!**********************************************************************!
 
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                          FUNCTION T_SCALAR                           !
+!                          *****************                           !
+!     Gives vcmax or jmax temperature scalar                           !
+!                                                                      !
+!----------------------------------------------------------------------!
+function T_SCALAR(t,jv,ttype,ftTopt,ftkHa,ftkHd,tmonth,jfv)
+!**********************************************************************!
+REAL(dp)    :: t,qt,t_scalar,ftTopt,ftkHa,ftkHd,ftHa,ftHd,tmonth
+REAL(dp)    :: Tsk,Trk,R,deltaS,dS
+INTEGER, intent(in) :: ttype 
+LOGICAL, intent(in) :: jfv 
+CHARACTER :: jv
+!----------------------------------------------------------------------!
+
+if(ttype==0) then
+! SDGVM original
+  qt = 2.3
+  if (t>30.0) t = 30.0
+  t_scalar = qt**(t/10.0d0)/qt**(2.5)
+elseif (ttype>=1) then
+! modified Arrhenius
+        
+  R = 8.31446        
+
+! convert from kJ to J
+! parameter values are read in as kJ... to save space
+  ftHa = ftkHa*1.0e3
+  ftHd = ftkHd*1.0e3
+
+  if(ttype==2) then
+! employ Kattge&Knorr scaling based on mean temp of previous month 
+          
+    ftHd = 2.0e5
+
+    if(jv=='v') then
+      ftHa   = 71513.0
+      deltaS = 668.390 - 1.070*tmonth
+    else
+      ftHa   = 49884.0
+      deltaS = 659.700 - 0.750*tmonth
+    endif
+  else 
+! use fixed delta S based on input PFT parameters
+    deltaS = ftHd/(ftTopt+273.15) + (R*log(ftHa/(ftHd-ftHa)))
+  endif
+
+  Tsk = t + 273.15
+  Trk = 298.15
+  
+! see Medlyn etal 2002 or Kattge&Knorr 2007  
+  t_scalar = exp(ftHa*(Tsk-Trk)/(R*Tsk*Trk))*( &
+ (1 + exp((Trk*deltaS-ftHd)/(Trk*R)))/(1 + exp((Tsk*deltaS-ftHd)/(Tsk*R))))  
+
+! adjust jmax based on kattge&knorr Jmax to Vcmax ratio relationship to temp
+  if((jv=='j').and.(ttype>=2).and.jfv)  t_scalar = t_scalar*(2.59-0.035*tmonth)/1.715
+
+else
+  t_scalar = 0.0
+  write(*,*) 'Error: temperature scalar type',ttype,'undefined.'
+  stop
+endif
+
+end function t_scalar
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                   gs_calc :: productivity_methods                    !
+!                   -------------------------------                    !
+! SUBROUTINE gs_calc(g0,g1,t,kg,a,cs,dv,gs_type)   !
+!                                                                      !
+!----------------------------------------------------------------------!
+real(dp) function gs_calc(g0,g1,t,kg,a,cs,dv,t154,gs_type)
+!**********************************************************************!
+real(dp) :: g0,g1,t,kg,a,cs,dv,t154
+integer :: gs_type
+real(dp) :: x
+!----------------------------------------------------------------------!
+
+if (gs_type==0) then
+!----------------------------------------------------------------------!
+! 070607                                                               !
+!----------------------------------------------------------------------!
+  x = 3.0 + 0.2*t
+  if (x<0.25) x = 0.25
+  gs_calc = g0 + ((x*a/(1.0 + dv/1.5)/(cs*10.0 - t154)))*kg
+
+elseif (gs_type==1) then
+!----------------------------------------------------------------------!
+! GS_WOOD, the default gs model is a form of the Leuning 1995 model    !
+! assuming gstar = 1.54t, this is inconsistent with the gstar in the   ! 
+! assimilations calculations                                           !
+!----------------------------------------------------------------------!
+  x = 3.0 + 0.2*t
+  if (x<0.25) x = 0.25
+  gs_calc = (g0 + (x*a/(1.0 + dv/1.5)/(cs*10.0 - t154)))*kg
+
+elseif (gs_type==2) then
+!----------------------------------------------------------------------!
+! From Ant's model, was named GS_MED, wasn't commented.                !
+!----------------------------------------------------------------------!
+  gs_calc = (g0 + (g1/(1.0 + dv**0.5))*(a/(cs/0.1013)))*kg
+
+else
+  write(*,*) 'Error: gs_type does not exist. gs_type = ',gs_type
+  stop
+endif
+
+end function gs_calc
 
 
 
@@ -610,7 +600,7 @@ end subroutine assj
 !                                                                      !
 ! SUBROUTINE limitationprocess(av,pcv,gsv,aj,pcj,gsj,a,pc,gs)          !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine limitationprocess(av,pcv,gsv,aj,pcj,gsj,a,pc,gs)
 !**********************************************************************!
 real(dp) :: av,pcv,gsv,aj,pcj,gsj,a,pc,gs
@@ -626,13 +616,7 @@ else
    pc = pcj
 endif
 
-!**********************************************************************!
 end subroutine limitationprocess
-!**********************************************************************!
-
-
-
-
 
 
 
@@ -656,7 +640,7 @@ end subroutine limitationprocess
 !                                                                      !
 ! SUBROUTINE ASSC4(a,pc,gs,pa,vmax,rh,t,qg,p,up)                       !
 !                                                                      !
-!**********************************************************************!
+!----------------------------------------------------------------------!
 subroutine ASSC4(a,pc,gs,pa,vmax,rh,t,qg,p,up)
 !**********************************************************************!
 real(dp) :: a,pc,gs,pa,vmax,rh,t,qg,up,p,vmq,absx,qrub,f,jqq,dv,amxt,&
@@ -695,19 +679,15 @@ endif
 
 gs = a*1.6*p/(pa - pc)*1.0e-3
 
-!**********************************************************************!
 end subroutine ASSC4
+
+
+
+
+
 !**********************************************************************!
-
-
-
-
-
-
-!----------------------------------------------------------------------!       
 function max_daily_pchg(tleaf10) ! - define this as a function to return max_daily_pchg  
-! !LOCAL VARIABLES:
-! local pointers to implicit in variables
+!**********************************************************************!
 real(dp)               :: max_daily_pchg                  ! maximum daily percentrage change  for nitrogen allocation
 real(dp), intent (in)  :: tleaf10                         ! 10-day running mean of leaf temperature (oC)
 real(dp), parameter    :: Q10Enz = 2.0                 ! Q10 value for enzyme decay rate
@@ -719,7 +699,7 @@ EnzTurnoverTFactor = Q10Enz**(0.1*(min(40.0, tleaf10)- 25.))
 max_daily_pchg     = EnzTurnoverTFactor * Enzyme_turnover_daily
 
 end function max_daily_pchg
-!----------------------------------------------------------------------!       
+
 
 
 

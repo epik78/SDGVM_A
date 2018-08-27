@@ -19,8 +19,8 @@ contains
 
 !**********************************************************************!
 !                                                                      !
-!                          dolyday :: doly                             !
-!                          ---------------                             !
+!                          dailyStep :: daily_step                     !
+!                          -----------------------                     !
 !                                                                      !
 !           (D)ynamic gl(O)ba(L) phytogeograph(Y) model                !
 ! SUBROUTINE DOLYDAY(tmp,prc,hum,ca,soilc,soiln,minn,adp,sfc,sw,sswc,  !
@@ -35,9 +35,9 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn,adp,sfc,sw,sswc, &
- awl,kd,kx,daygpp,resp_l,rlai,evap,tran,roff,interc,evbs,flow1,flow2, &
- pet,ht,ft,lmor_sc,nleaf,leaflitter,hrs,q, &
+subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn,adp,sfc,sw, &
+ sswc,awl,kd,kx,daygpp,resp_l,rlai,evap,tran,roff,interc,evbs,flow1, &
+ flow2,pet,ht,ft,lmor_sc,nleaf,leaflitter,hrs,q, &
  qdirect,qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn,ce_light,ce_ci,ce_t, &
  ce_maxlight,ce_ga,ce_rh,check_closure,par_loops,lat,year,mnth,day, &
  thty_dys,gs_type,swr)
@@ -72,8 +72,8 @@ co = ssp%cohort
 !----------------------------------------------------------------------!
 if ((check_closure).and.(pft(co)%sla > 0.0)) then
   old_total_carbon = ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + &
- ssv(co)%nppstore(1) + ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + ssv(co)%bio(1) + &
- ssv(co)%bio(2)
+ ssv(co)%nppstore(1) + ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + &
+ ssv(co)%bio(1) + ssv(co)%bio(2)
 endif
 !----------------------------------------------------------------------!
 

@@ -717,7 +717,6 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
   ssp%xnew_sln(pft(ft)%itag)    = ssp%xnew_sln(pft(ft)%itag) + ssv(ft)%sln*x
   ssp%xnew_rln(pft(ft)%itag)    = ssp%xnew_rln(pft(ft)%itag) + ssv(ft)%rln*x
 
-
   if (x > 0.99999) then
     ssp%new_cov = ssp%new_cov + ssv(ft)%cov
     ssp%xnew_cov(pft(ft)%itag) = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov

@@ -169,14 +169,14 @@ srespm = 0.0
 lchm = 0.0
 
 if (c0(1)+c0(2)+c0(3)+c0(4)+c0(5)+c0(6)+c0(7)+c0(8)>1000.0) then
-  call CDYN(c0,c,t0,t1,slc,rlc,scl,rcl,kr,csa,cas,csp,cap, &
+  call cdyn(c0,c,t0,t1,slc,rlc,scl,rcl,kr,csa,cas,csp,cap, &
  cal,fms,fmr,xft,srespm,lchm,year,yr0,yrf,speedc)
 
-  call FLOWS(c0,c,t0,t1,fl,slc,rlc,scl,rcl,fms,fmr,csa,csp,cas,cap)
+  call flows(c0,c,t0,t1,fl,slc,rlc,scl,rcl,fms,fmr,csa,csp,cas,cap)
 
-  call NDYN(n0,n,minn,t0,t1,fl,c,flow1,flow2,ts,ml,al,scn,nfix,cal,nci,site)
+  call ndyn(n0,n,minn,t0,t1,fl,c,flow1,flow2,ts,ml,al,scn,nfix,cal,nci,site)
 
-  if (srespm<0.0) then
+    if (srespm<0.0) then
     write(*,*) 'Error: soil respiration negative'
     write(*,'(''c : '',8f8.0)') c0
     write(*,'(''slc rlc scl rcl : '',4f8.3)') slc,rlc,scl,rcl
@@ -184,7 +184,6 @@ if (c0(1)+c0(2)+c0(3)+c0(4)+c0(5)+c0(6)+c0(7)+c0(8)>1000.0) then
   endif
 
 else
-
   do ij=1,8
     c(ij) = c0(ij)
     n(ij) = n0(ij)
