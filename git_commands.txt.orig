@@ -70,18 +70,7 @@ Remote
 ====================================
 CREDENTIALS
 ====================================
-Store password and username in a file (git-credentials) on disc.
-If not supplied, this will be placed in $HOME/.config/git/credentials
-or ~/.git-credentials.
-  git config credential.helper store --file
-
-
-
-
-
-====================================
-CREDENTIALS
-====================================
+<<<<<<< HEAD
 To store username and password in plain text locally.
   git config credential.helper store
 The credentials are stored in a file called .git-credentials which
@@ -89,6 +78,12 @@ can be found in ~/.git-credentials by default.
 
 
 
+=======
+Store password and username in a file (git-credentials) on disc.
+If not supplied, this will be placed in $HOME/.config/git/credentials
+or ~/.git-credentials.
+  git config credential.helper store --file
+>>>>>>> bug
 
 
 

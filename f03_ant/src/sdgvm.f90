@@ -246,6 +246,9 @@ call SET_GOUD_PARAMS()
 
 site_dat = 0
 
+!======================================================================!
+!                         SITE LOOP                                    !
+!======================================================================!
 do site=1,sites
 
   ssp%jday = 5000
@@ -299,13 +302,13 @@ do site=1,sites
   
   call READ_IRRIGATION(du,yr0,yrf,lat,lon,nft,cirr)
   
-!----------------------------------------------------------------------!
-! Driving data exists 'if' statement.                                  !
-!----------------------------------------------------------------------!
+!======================================================================!
+!                         DRIVING DATA IF                              !
+!======================================================================!
   if ((l_clim).and.(l_stats).and.(l_soil(1)).and.(l_soil(3)).and. &
  (l_soil(5)).and.(l_soil(8)).and.(l_lu)) then
 
-  site_dat = site_dat + 1
+    site_dat = site_dat + 1
 
 !----------------------------------------------------------------------!
 ! Write lat & lon for output files.                                    !
@@ -345,6 +348,9 @@ do site=1,sites
     if (mod(site_dat,max(site_out,1))==min(1,site_out)-1) &
  write(*,'( '' Site no. '',i0,'', Lat ='',f6.2,'', Lon ='',f7.2,'' Cohorts = '',i0)') site_dat,lat,lon,ssp%cohorts
 
+!======================================================================!
+!                         YEARLY LOOP                                  !
+!======================================================================!
     do iyear=1,nyears
 
       year = yearv(iyear)
@@ -372,7 +378,7 @@ do site=1,sites
  yearv,iyear,tmp,prc,hum,cld,swr,thty_dys,yr0,year,nyears,nn1)
         call seasonality(tmp,prc,cld,thty_dys,nft,year,nn1)
       enddo
-      
+
       do ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
         pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
@@ -395,7 +401,7 @@ do site=1,sites
       call cover(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
       call initialise_new_cohorts(nft,ftprop,check_closure)
-
+ 
       call mkdlit()
 
       call restrict_cohort_numbers()
@@ -421,18 +427,18 @@ do site=1,sites
 
       enddo
       
-!----------------------------------------------------------------------!
-! START OF MONTH LOOP                                                  !
-!----------------------------------------------------------------------!
+!======================================================================!
+!                         MONTHLY LOOP                                 !
+!======================================================================!
       do mnth=1,12
         
         ssp%mnth = mnth
 
         call sum_soilcn(soilc,soiln,minn)
 
-!----------------------------------------------------------------------!
-! DAILY LOOP.                                                          !
-!----------------------------------------------------------------------!
+!======================================================================!
+!                         DAILY LOOP                                   !
+!======================================================================!
         do day=1,no_days(year,mnth,thty_dys)
 
 !      CALL HERBIVORY(daily_out)
@@ -465,30 +471,31 @@ do site=1,sites
 !----------------------------------------------------------------------!
 !          call MIX_WATER(ftcov,nft)
 
-!----------------------------------------------------------------------!
+!======================================================================!
+!                         COHORT LOOP                                  !
+!======================================================================!
           do ft=1,ssp%cohorts
-          
-          fpr=0.0
-          ssp%cohort = ft
+            fpr=0.0
+            ssp%cohort = ft
 
-          if (ssv(ft)%cov>0.0) then
+            if (ssv(ft)%cov>0.0) then
           
-            if(pft(ft)%fert(1)<=0.0) THEN
-              nfix=0.5
-            ELSE
-              nfix=0.1*pft(ft)%fert(1)          
-            endIF
+              if(pft(ft)%fert(1)<=0.0) then
+                nfix=0.5
+              else
+                nfix=0.1*pft(ft)%fert(1)          
+              endIF
             
-            call set_misc_values(pft(ft)%sla,tmp(mnth,day))
+              call set_misc_values(pft(ft)%sla,tmp(mnth,day))
 
 !----------------------------------------------------------------------!
 ! nppstore leafnpp stemnpp rootnpp leaflit stemlit rootlit in mols
 !----------------------------------------------------------------------!
-            soilt = 0.97*soilt + 0.03*tmp(mnth,day)
+              soilt = 0.97*soilt + 0.03*tmp(mnth,day)
             
-            call irrigate(ssp%cohort,sfc,sw) 
+              call irrigate(ssp%cohort,sfc,sw) 
 
-            call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
+              call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
  cld(mnth),ca,soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx, &
  daygpp,resp_l,lai(ft),evap,tran,roff,interc,evbs,flow1(ft),flow2(ft), &
  pet,ht(ft),ft,lmor_sc(:,pft(ft)%itag),nleaf,leaflitter,hrs,q,qdirect, &
@@ -496,29 +503,29 @@ do site=1,sites
  ce_t,ce_maxlight(:,:,ft),ce_ga(:,:,ft),ce_rh,check_closure, &
  par_loops,lat,year,mnth,day,thty_dys,inp%run%gs_func,swr(mnth,day))
 
-            call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
-            pet = eemm
-            pet2 = pet
+              call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
+              pet = eemm
+              pet2 = pet
             
-            call hydrology(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
+              call hydrology(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
      s1in,tmp(mnth,day),ssv(ft)%lai%tot(1),evap,tran,roff,interc,evbs,f2,f3,ft)
-            flow1(ft) = flow1(ft) + f2/10.0
-            flow2(ft) = flow2(ft) + f3/10.0
+              flow1(ft) = flow1(ft) + f2/10.0
+              flow2(ft) = flow2(ft) + f3/10.0
 
-            call phenology(yield,laiinc)
+              call phenology(yield,laiinc)
 
-            call allocation(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
+              call allocation(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
 
-            ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
-              
-            call soil_dynamics2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
+              ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
+
+              call soil_dynamics2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
     
 !----------------------------------------------------------------------!
-            swc = ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
-            swf = (swc-sw(1)-sw(2)-sw(3)-sw(4))/(sfc(1)+sfc(2)+sfc(3)+sfc(4)-sw(1)-sw(2)-sw(3)-sw(4))
-            ssm = ssv(ft)%soil_h2o(1)/10.0/topsl
+              swc = ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
+              swf = (swc-sw(1)-sw(2)-sw(3)-sw(4))/(sfc(1)+sfc(2)+sfc(3)+sfc(4)-sw(1)-sw(2)-sw(3)-sw(4))
+              ssm = ssv(ft)%soil_h2o(1)/10.0/topsl
 !----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
@@ -533,138 +540,144 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Set daily memories for output.                                       !
 !----------------------------------------------------------------------!
-            daily_out(1,ft,mnth,day) = ssv(ft)%lai%tot(1)
-            daily_out(2,ft,mnth,day) = roff
-            daily_out(3,ft,mnth,day) = evap+tran
-            daily_out(4,ft,mnth,day) = tran
-            daily_out(5,ft,mnth,day) = ssv(ft)%npp
-            daily_out(6,ft,mnth,day) = daygpp
-            daily_out(7,ft,mnth,day) = sresp(ft)
-            daily_out(8,ft,mnth,day) = daily_out(5,ft,mnth,day) - &
+              daily_out(1,ft,mnth,day) = ssv(ft)%lai%tot(1)
+              daily_out(2,ft,mnth,day) = roff
+              daily_out(3,ft,mnth,day) = evap+tran
+              daily_out(4,ft,mnth,day) = tran
+              daily_out(5,ft,mnth,day) = ssv(ft)%npp
+              daily_out(6,ft,mnth,day) = daygpp
+              daily_out(7,ft,mnth,day) = sresp(ft)
+              daily_out(8,ft,mnth,day) = daily_out(5,ft,mnth,day) - &
  daily_out(7,ft,mnth,day)
-            daily_out(9,ft,mnth,day) = tmp(mnth,day)
-            daily_out(10,ft,mnth,day) = prc(mnth,day)
-            daily_out(11,ft,mnth,day) = hum(mnth,day)
-            daily_out(12,ft,mnth,day) = ssv(ft)%nppstore(1)
-            daily_out(13,ft,mnth,day) = swf
-            daily_out(14,ft,mnth,day) = pet
-            daily_out(15,ft,mnth,day) = interc
-            daily_out(16,ft,mnth,day) = evbs
-            daily_out(17,ft,mnth,day) = &
+              daily_out(9,ft,mnth,day) = tmp(mnth,day)
+              daily_out(10,ft,mnth,day) = prc(mnth,day)
+              daily_out(11,ft,mnth,day) = hum(mnth,day)
+              daily_out(12,ft,mnth,day) = ssv(ft)%nppstore(1)
+              daily_out(13,ft,mnth,day) = swf
+              daily_out(14,ft,mnth,day) = pet
+              daily_out(15,ft,mnth,day) = interc
+              daily_out(16,ft,mnth,day) = evbs
+              daily_out(17,ft,mnth,day) = &
  min(1.0,ssv(ft)%soil_h2o(1)/10.0/topsl)
-            daily_out(18,ft,mnth,day) = swc
-            daily_out(19,ft,mnth,day) = 1.0
+              daily_out(18,ft,mnth,day) = swc
+              daily_out(19,ft,mnth,day) = 1.0
 !        daily_out(19,ft,mnth,day) = resp
-            daily_out(20,ft,mnth,day) = qdirect*hrs*3600.0
-            daily_out(21,ft,mnth,day) = qdiff*hrs*3600.0
-            daily_out(22,ft,mnth,day) = 1.0
+              daily_out(20,ft,mnth,day) = qdirect*hrs*3600.0
+              daily_out(21,ft,mnth,day) = qdiff*hrs*3600.0
+              daily_out(22,ft,mnth,day) = 1.0
 !        daily_out(22,ft,mnth,day) = nleaf
 !        daily_out(23,ft,mnth,day) = leaflit(ft) - lflitold
-            daily_out(24,ft,mnth,day) = cld(mnth)
-            daily_out(25,ft,mnth,day) = fpr
-            daily_out(26,ft,mnth,day) = 0.0
-            if (pft(ft)%sla > 0.0)  daily_out(26,ft,mnth,day) = &
+              daily_out(24,ft,mnth,day) = cld(mnth)
+              daily_out(25,ft,mnth,day) = fpr
+              daily_out(26,ft,mnth,day) = 0.0
+              if (pft(ft)%sla > 0.0)  daily_out(26,ft,mnth,day) = &
  ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
-            daily_out(27,ft,mnth,day) = &
+              daily_out(27,ft,mnth,day) = &
  ssv(ft)%bio(1) + ssv(ft)%stem%tot(1) + ssv(ft)%nppstore(1)
-            daily_out(28,ft,mnth,day) = ssv(ft)%bio(2) + ssv(ft)%root%tot(1)
-            daily_out(29,ft,mnth,day) = soilc(ft)
-            daily_out(30,ft,mnth,day) = soiln(ft)
-            daily_out(31,ft,mnth,day) = lch(ft)
-            daily_out(32,ft,mnth,day) = firec/360.0
-            daily_out(33,ft,mnth,day) = yield
+              daily_out(28,ft,mnth,day) = ssv(ft)%bio(2) + ssv(ft)%root%tot(1)
+              daily_out(29,ft,mnth,day) = soilc(ft)
+              daily_out(30,ft,mnth,day) = soiln(ft)
+              daily_out(31,ft,mnth,day) = lch(ft)
+              daily_out(32,ft,mnth,day) = firec/360.0
+              daily_out(33,ft,mnth,day) = yield
 
 !----------------------------------------------------------------------!
-            if ((ssv(ft)%bb==day+(mnth-1)*30).and.(budo(ft)==0)) &
+              if ((ssv(ft)%bb==day+(mnth-1)*30).and.(budo(ft)==0)) &
  budo(ft) = ssv(ft)%bb
-            if ((ssv(ft)%ss==day+(mnth-1)*30).and.(seno(ft)==0)) &
+              if ((ssv(ft)%ss==day+(mnth-1)*30).and.(seno(ft)==0)) &
  seno(ft) = ssv(ft)%ss
 
-          endif ! cov > 0
-          enddo
-!----------------------------------------------------------------------!
-! End of the cohort loop.                                              !
-!----------------------------------------------------------------------!
-        enddo
-!----------------------------------------------------------------------!
-! End of the daily loop.                                               !
-!----------------------------------------------------------------------!
-      enddo
-!----------------------------------------------------------------------!
-! End of the monthly loop.                                             !
-!----------------------------------------------------------------------!
+            endif
+!======================================================================!
+!                         END OF COVER IF                              !
+!======================================================================!
 
-  call growth(nft,lai,stembio,rootbio,check_closure)
+          enddo
+!======================================================================!
+!                         END OF COHORT LOOP                           !
+!======================================================================!
+
+        enddo
+!======================================================================!
+!                         END OF DAILY                                 !
+!======================================================================!
+
+      enddo
+!======================================================================!
+!                         END OF MONTHLY LOOP                          !
+!======================================================================!
+
+      call growth(nft,lai,stembio,rootbio,check_closure)
   
 !----------------------------------------------------------------------!
 ! Average outputs by cover proportions.                                !
 !----------------------------------------------------------------------!
-  avlai   = 0.0
-  avnpp   = 0.0
-  avnppst = 0.0
-  avrof   = 0.0
-  avtrn   = 0.0
-  avevt   = 0.0
-  avgpp   = 0.0
-  do ft=1,ssp%cohorts
-    avnppst = avnppst + ssv(ft)%cov*ssv(ft)%nppstore(1)
-    avrof   = avrof   + ssv(ft)%cov*rof(ft)
-    avtrn   = avtrn   + ssv(ft)%cov*trn(ft)
-    avevt   = avevt   + ssv(ft)%cov*evt(ft)
-    avgpp   = avgpp   + ssv(ft)%cov*gpp(ft)
-  enddo
+      avlai   = 0.0
+      avnpp   = 0.0
+      avnppst = 0.0
+      avrof   = 0.0
+      avtrn   = 0.0
+      avevt   = 0.0
+      avgpp   = 0.0
+      do ft=1,ssp%cohorts
+        avnppst = avnppst + ssv(ft)%cov*ssv(ft)%nppstore(1)
+        avrof   = avrof   + ssv(ft)%cov*rof(ft)
+        avtrn   = avtrn   + ssv(ft)%cov*trn(ft)
+        avevt   = avevt   + ssv(ft)%cov*evt(ft)
+        avgpp   = avgpp   + ssv(ft)%cov*gpp(ft)
+      enddo
 
 !----------------------------------------------------------------------!
-  sumbio = 0.0
-  bioind = 0
-  covind = 0
-  maxbio = 0.0
-  maxcov = 0.0
-  leafper = 0.0
-  stemper = 0.0
-  rootper = 0.0
+      sumbio = 0.0
+      bioind = 0
+      covind = 0
+      maxbio = 0.0
+      maxcov = 0.0
+      leafper = 0.0
+      stemper = 0.0
+      rootper = 0.0
 
-  do ft=1,nft
-    bioo(ft) = 0.0
-    covo(ft) = 0.0
-    if (ssp%co2ftmap(ft,1) > 0) then
-      budo(ft) = ssv(ssp%co2ftmap(ft,2))%bb
-      seno(ft) = ssv(ssp%co2ftmap(ft,2))%ss
-    else
-      budo(ft) = 0
-      seno(ft) = 0
-    endif
-    do j=1,ssp%co2ftmap(ft,1)
-      co = ssp%co2ftmap(ft,j+1)
-      do mnth=1,12
-        do day=1,no_days(year,mnth,thty_dys)
-          bioo(ft) = bioo(ft) + (daily_out(26,co,mnth,day) + &
+      do ft=1,nft
+        bioo(ft) = 0.0
+        covo(ft) = 0.0
+        if (ssp%co2ftmap(ft,1) > 0) then
+          budo(ft) = ssv(ssp%co2ftmap(ft,2))%bb
+          seno(ft) = ssv(ssp%co2ftmap(ft,2))%ss
+        else
+          budo(ft) = 0
+          seno(ft) = 0
+        endif
+        do j=1,ssp%co2ftmap(ft,1)
+          co = ssp%co2ftmap(ft,j+1)
+          do mnth=1,12
+            do day=1,no_days(year,mnth,thty_dys)
+              bioo(ft) = bioo(ft) + (daily_out(26,co,mnth,day) + &
  daily_out(27,co,mnth,day) + daily_out(28,co,mnth,day))*ssv(co)%cov
+            enddo
+          enddo
+          covo(ft) = covo(ft) + ssv(co)%cov
+          leafper = leafper + ssv(co)%npl*ssv(co)%cov
+          stemper = stemper + ssv(co)%nps*ssv(co)%cov
+          rootper = rootper + ssv(co)%npr*ssv(co)%cov
         enddo
+        bioo(ft) = bioo(ft)/360.0
+        sumbio = sumbio + bioo(ft)
+        if (covo(ft)>maxcov) then
+          maxcov = covo(ft)
+          covind = ft
+        endif
+        if (bioo(ft)>maxbio) then
+          maxbio = bioo(ft)
+          bioind = ft
+        endif
       enddo
-      covo(ft) = covo(ft) + ssv(co)%cov
-      leafper = leafper + ssv(co)%npl*ssv(co)%cov
-      stemper = stemper + ssv(co)%nps*ssv(co)%cov
-      rootper = rootper + ssv(co)%npr*ssv(co)%cov
-    enddo
-    bioo(ft) = bioo(ft)/360.0
-    sumbio = sumbio + bioo(ft)
-    if (covo(ft)>maxcov) then
-      maxcov = covo(ft)
-      covind = ft
-    endif
-    if (bioo(ft)>maxbio) then
-      maxbio = bioo(ft)
-      bioind = ft
-    endif
-  enddo
 
 !----------------------------------------------------------------------!
 ! Write outputs.                                                       !
 !----------------------------------------------------------------------!
 ! General.                                                             !
 !----------------------------------------------------------------------!
-  if (iyear>=nyears-outyears+1) then
+      if (iyear>=nyears-outyears+1) then
 write(fun%get_id('lai.dat'),'('' '',f8.1)',advance='NO') outputs(daily_out,1,'Max')
 write(fun%get_id('npp.dat'),'('' '',f8.1)',advance='NO') outputs(daily_out,5,'Add')
 write(fun%get_id('scn.dat'),'('' '',f8.1)',advance='NO') outputs(daily_out,29,'Average')  !soil carbon
@@ -697,12 +710,10 @@ write(fun%get_id('hum.dat'),'('' '',f8.2)',advance='NO') outputs(daily_out,11,'A
 !----------------------------------------------------------------------!
 ! Write var in crop output file                                        !
 !----------------------------------------------------------------------!
-
 !    call crop_outputs(nft,3)
+      endif
 
-  endif
-
-  if (iyear==outyears) then
+      if (iyear==outyears) then
 write(fun%get_id('lai.dat'),*)
 write(fun%get_id('npp.dat'),*)
 write(fun%get_id('scn.dat'),*)
@@ -730,21 +741,21 @@ write(fun%get_id('trn.dat'),*)
 write(fun%get_id('fab.dat'),*)
 write(fun%get_id('tmp.dat'),*)
 write(fun%get_id('hum.dat'),*)
-  endif
+      endif
 
 
 !----------------------------------------------------------------------!
 ! Write optional cov bio bud sen.                                      !
 !----------------------------------------------------------------------!
-  iofn = iofngft
-  if (iyear>=nyears-outyears2+1) then
-    do ft=1,nft
-      if (out_cov) then
+      iofn = iofngft
+      if (iyear>=nyears-outyears2+1) then
+        do ft=1,nft
+          if (out_cov) then
 write(fun%get_id('cov_'//trim(pft_tab(ft)%tag)//'.dat'),'('' '',f8.6)',advance='NO') covo(ft)
-      endif
-      if (out_bio) then
+          endif
+          if (out_bio) then
 write(fun%get_id('bio_'//trim(pft_tab(ft)%tag)//'.dat'),'('' '',f8.6)',advance='NO') bioo(ft)
-      endif
+          endif
       if (out_bud) then
 write(fun%get_id('bud_'//trim(pft_tab(ft)%tag)//'.dat'),'('' '',f8.6)',advance='NO') budo(ft)
       endif
@@ -1004,12 +1015,10 @@ write(fun%get_id('daily_'//trim(otags(imap))//'.dat'),ofmt_daily(imap)) (ans(mnt
     endif
   endif
 
-!----------------------------------------------------------------------!
-enddo ! year loop
-!----------------------------------------------------------------------!
-
-!print'(f8.2)',outputs(daily_out,26,'Average') + &
-! outputs(daily_out,27,'Average') + outputs(daily_out,28,'Average')
+    enddo
+!======================================================================!
+!                         END OF YEARLY LOOP                           !
+!======================================================================!
 
 !----------------------------------------------------------------------!
 !                      End record for default output files             !
@@ -1068,27 +1077,28 @@ if (inp%run%output_state) then
  ,ssp%xnew_rln(1:nft),ssp%xnew_cov(1:nft),ssp%mnthtmp,ssp%mnthprc &
  ,ssp%mnthhum,ssp%emnthtmp,ssp%emnthprc,ssp%emnthhum,ssp%iseas &
  ,ssp%cohorts,ssp%co2ftmap(1:nco,1:nco),ssp%ftcov(1:nft)
-endif
+    endif
 
-else
+  else
   write(fun%get_id('diag.dat'),*) &
  '                  clm stt ssc blk wfs dep lus'
   write(fun%get_id('diag.dat'),'(f7.3,f9.3,1x,20L4)') &
  lat,lon,l_clim,l_stats,l_soil(1),l_soil(3),l_soil(5),l_soil(8),l_lu
 
-!----------------------------------------------------------------------!
-! Driving data exists 'if' statement.                                  !
-!----------------------------------------------------------------------!
-endif
+  endif
+!======================================================================!
+!                         END OF DRIVING DATA EXISTS IF                !
+!======================================================================!
 
 !----------------------------------------------------------------------!
 ! Skip line in crop output files.                                      !
 !----------------------------------------------------------------------!
 !call crop_outputs(nft,4)
 
-!***********************************************************************
-enddo ! site loop
-!***********************************************************************
+enddo
+!======================================================================!
+!                         END OF SITE LOOP                             !
+!======================================================================!
 
 
 !----------------------------------------------------------------------!

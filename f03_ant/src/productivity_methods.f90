@@ -794,13 +794,13 @@ do i=1,lai
     can2g = can2g + gs(i)
     canrd = canrd + rd(i)
     apar  = apar  + fsunlit(i)*qsunlit(i)+fshade(i)*qshade(i)
-  ELSE
+  else
     can2a = can2a + a(i)*rem
     can2g = can2g + gs(i)*rem
     canrd = canrd + rd(i)*rem
     apar  = apar + rem*(fsunlit(i)*qsunlit(i)+fshade(i)*qshade(i))
-  endIF
-endDO
+  endif
+enddo
 
 ! calculate fapar
 fpr    = apar/(qdiff+qdirect)

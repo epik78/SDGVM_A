@@ -260,7 +260,6 @@ if ((bb>0).and.(bbgs<gs).and.(ssv(co)%nppstore(1)>0.0)) then
 ! budburst isn't implemented here. In his version, for a crop, the lai keeps
 ! increasing though the end of the year but the nppstore gets reset.
 !    laiinc = lairat*(ssv(co)%nppstore(1))/msv%mv_leafmol/12.0*2.0
-!    print*,'laiinc ',laiinc,ssv(co)%nppstore(2)/12.0
   endif
   if (rlai+laiinc>maxlai)  laiinc = maxlai - rlai
   if (rlai+laiinc>11.5)  laiinc = 11.5 - rlai
@@ -940,12 +939,12 @@ endif
 ! Age leaves by one day, kill any which have died of old age,
 ! adjust by laiinc (+ or -), and then sum to get 'rlai'.
 !----------------------------------------------------------------------!
-call LAI_ADD(laiinc,leaflit)
+call lai_add(laiinc,leaflit)
 
 !----------------------------------------------------------------------!
 ! leaf death not through age mortality 
 !----------------------------------------------------------------------!
-call LAI_DIST(lmor_sc,leaflit)
+call lai_dist(lmor_sc,leaflit)
 
 ! Deals with crop harvest.Needs the harvest flag and a positive lai.
 ! lit is the C litter that is produced after harvest and yielit is the C yield.
@@ -955,10 +954,11 @@ call LAI_DIST(lmor_sc,leaflit)
 ! before it was harvested as it can be seen in the harv sub
 lit=0.
 yielit=0.
-if(pft(co)%phen==3.and.ssv(co)%harvest(1)==1.and.ssv(co)%lai%tot(1)>0.) THEN
-  CALL HARV(lit,yielit)
-endIF
-leaflit=leaflit+lit
+if (pft(co)%phen==3.and.ssv(co)%harvest(1)==1.and. &
+ ssv(co)%lai%tot(1)>0.0) THEN
+  call harv(lit,yielit)
+endif
+leaflit = leaflit + lit
 
 !----------------------------------------------------------------------!
 ! Check carbon closure.
@@ -997,7 +997,7 @@ rootnpp = yy
 !----------------------------------------------------------------------!
 ! Age roots and add todays root npp.
 !----------------------------------------------------------------------!
-call ROOT_ADD(yy,root_fixed)
+call root_add(yy,root_fixed)
 ssv(co)%bio(2) = ssv(co)%bio(2) + root_fixed
 
 !----------------------------------------------------------------------!
@@ -1005,7 +1005,7 @@ ssv(co)%bio(2) = ssv(co)%bio(2) + root_fixed
 !----------------------------------------------------------------------!
 ! Calculates root respiration.msv%mv_respref is a function of soil moisture
 ! and temperature and its calculated daily in SET_MISC_VALUES
-call ROOT_DIST(msv%mv_respref,resp_r)
+call root_dist(msv%mv_respref,resp_r)
 resp = resp + resp_r
 rootnpp = rootnpp - resp_r
 
@@ -1037,7 +1037,7 @@ stemnpp = yy
 !----------------------------------------------------------------------!
 ! Age stems and add todays stem npp.
 !----------------------------------------------------------------------!
-call STEM_ADD(yy,stem_fixed)
+call stem_add(yy,stem_fixed)
 ssv(co)%bio(1) = ssv(co)%bio(1) + stem_fixed
 
 !----------------------------------------------------------------------!
@@ -1045,7 +1045,7 @@ ssv(co)%bio(1) = ssv(co)%bio(1) + stem_fixed
 !----------------------------------------------------------------------!
 ! Calculates stem respiration.msv%mv_respref is a function of soil moisture
 ! and temperature and its calculated daily in SET_MISC_VALUES
-call STEM_DIST(msv%mv_respref,resp_s)
+call stem_dist(msv%mv_respref,resp_s)
 resp = resp + resp_s
 stemnpp = stemnpp - resp_s
 
@@ -1084,16 +1084,16 @@ ssv(co)%nppstore(1) = ssv(co)%nppstore(1) + daygpp - resp_l
 endif
 
 if (ssp%cohort == 1) then
-      if ((ssp%day == 1).and.(ssp%mnth == 1)) then
-        sumsr=0.0
-        sumrr=0.0
-        sumlr=0.0
-        summr=0.0
-      endif
-      sumsr = sumsr + resp_s
-      sumrr = sumrr + resp_r
-      sumlr = sumlr + resp_l
-      summr = summr + resp_m
+  if ((ssp%day == 1).and.(ssp%mnth == 1)) then
+    sumsr = 0.0
+    sumrr = 0.0
+    sumlr = 0.0
+    summr = 0.0
+  endif
+  sumsr = sumsr + resp_s
+  sumrr = sumrr + resp_r
+  sumlr = sumlr + resp_l
+  summr = summr + resp_m
 endif
 
 
