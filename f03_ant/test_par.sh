@@ -47,7 +47,7 @@ do
 done
 
 #Launch the jobs
-for i in $(seq 33 33)
+for i in $(seq 1 $nprocesses)
 do
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
@@ -57,7 +57,7 @@ do
   done
   echo submitting job $i
   qsub $tmpdir/batch-$i 1> $tmpdir/output-$i 2> $tmpdir/error-$i
-  sleep 2
+  sleep 1
 done 
 
 #Wait for final job to finish
