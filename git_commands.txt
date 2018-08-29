@@ -3,10 +3,24 @@ GENERAL
 ====================================
 Set up a new git directory
   git init
-Make a new branch
+
+====================================
+BRANCHES
+====================================
+Maek a new branch
+  git branch [branch_name]
+Make a new branch and move to it
   git checkout -b [branch_name]
-Switch Branch
+Switch branch
   git checkout [branch_name]
+View branches
+  git branch
+
+Delete a branch
+Locally
+  git branch -d [branch_name]
+Remote
+  git push origin :[branch_name]
 
 
 ====================================
@@ -15,7 +29,10 @@ INFO
 Look at the history of commits
   git log
 See branches
-  git branch -a
+  git branch -v
+See configuration
+  git config --list
+
 
 ====================================
 MERGING
@@ -48,6 +65,7 @@ To merge a branch with master.
        git commit -m 'New stuff'
        git push
 
+
 ====================================
 CONFIG
 ====================================
@@ -55,29 +73,8 @@ See settings
   git config --list
   git config --global user.name [markus]
   git config --global user.email [markus@gmail.com]
-  git config --global core.editor gedit
-
-
-====================================
-DELETE a BRANCH
-====================================
-Locally
-  git branch -d [branch_name]
-Remote
-  git push origin :[branch_name]
-
-
-====================================
-CREDENTIALS
-====================================
-Store password and username in a file (git-credentials) on disc.
-If not supplied, this will be placed in $HOME/.config/git/credentials
-or ~/.git-credentials.
-  git config credential.helper store --file
-
-
-
-
+  git config --global core.editor [gedit]
+  git config --global merge.tool [kdiff3]
 
 ====================================
 CREDENTIALS
@@ -85,9 +82,55 @@ CREDENTIALS
 To store username and password in plain text locally.
   git config credential.helper store
 The credentials are stored in a file called .git-credentials which
-can be found in ~/.git-credentials by default.
+can be found in ~/.git-credentials by default or 
+$HOME/.config/git/credentials.
 
 
+====================================
+STAGING AREA
+====================================
+There is only one staging area which is independent of whatever 
+branch you are on. The info of which is stored in .git/index, and is
+updated whenever you alter the git-status ie with a git-add or if you
+edit a tracked file. It matters which branch you are on only when you 
+commit.
+
+List tracked/staged files
+  git ls-tree [branch_name]
+  git ls-files
+  git ls-files --stage
+
+
+====================================
+PLUMBING
+====================================
+The objects directory stores all the content for your
+database (blobs, trees and commits), the refs directory stores 
+pointers into commit objects in that data (branches, tags, remotes 
+and more), the HEAD file points to the branch you currently have 
+checked out, and the index file is where Git stores 
+your staging area information.
+
+  $ find .git/objects -type f
+  .git/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4
+  $ git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+  test content
+
+Tree objects map the hashes to the filenames
+  $ git cat-file -p master^{tree}
+  tree
+  $ git cat-file -p master^{tree}
+  100644 blob a906cb2a4a904a152e80877d4088654daad0c859 README
+  100644 blob 8f94139338f9404f26296befa88755fc2598c289 Rakefile
+  040000 tree 99f1a6d12cb4b6f19c8655fca46c3ecf317074e0 lib
+
+Commits contain meta-data and a pointer to a tree object,
+which is the snapshot.
+
+Look at latest commits
+  ls .git/objects/*/* -lt | head 5
+  git cat-file -t dd3e
+  git cat-file -p dd3e
 
 
 
