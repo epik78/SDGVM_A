@@ -59,14 +59,14 @@ enddo
 ! Compute the likelyhood of fire in the current year 'fprob'.          !
 ! 'find' is the fire index                                             !
 !----------------------------------------------------------------------!
-call FIRE(prc,tmp,fri,fprob)
+call fire(prc,tmp,fri,fprob)
 
 !----------------------------------------------------------------------!
 ! Take off area burnt by fire together with plants past there sell by  !
 ! date and put this as bare ground ready for new growth 'ngrowth'.     !
 ! Also shift cover and biomass arrays one to the right.                !
 !----------------------------------------------------------------------!
-call NEWGROWTH(fprob,npp,nps,fireres,firec)
+call newgrowth(fprob,npp,nps,fireres,firec)
 
 !----------------------------------------------------------------------!
 ! Set cover arrays to adjust to ftprop as best they can.               !
@@ -102,7 +102,7 @@ endif
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  call SUM_CARBON(total_carbon,.false.)
+  call sum_carbon(total_carbon,.false.)
   if (abs(total_carbon+firec-old_total_carbon) > 1.0e-6) then
     write(*,*) 'Breach of carbon closure in COVER:',total_carbon+firec-old_total_carbon,' g/m^2.'
   endif
@@ -132,7 +132,7 @@ end subroutine COVER
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine INITIALISE_NEW_COHORTS(nft,ftprop,check_closure)
+subroutine initialise_new_cohorts(nft,ftprop,check_closure)
 !**********************************************************************!
 real(dp) :: ftprop(max_cohorts),sumc,sumftprop,total_carbon,old_total_carbon
 integer ft,nft,i,cohort,ierase
@@ -151,21 +151,28 @@ integer :: loop_check(max_cohorts),adjust_check
   if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
 !----------------------------------------------------------------------!
 
-sumftprop = 0.0
-do ft=1,nft
-  sumftprop = sumftprop + ftprop(ft)
+!----------------------------------------------------------------------!
+! Check that the soil isn't barren by containing too little soil       !
+! carbon. If barren, then set new cover (ftprop) to bare ground for    !
+! each pft.                                                            !
+!----------------------------------------------------------------------!
+do ft=2,nft
+  sumc = 0.0
+  do i=1,8
+    sumc = sumc + ssp%xnew_c(ft,i)
+  enddo
+  if (sumc<1000.0) then
+    ftprop(1) = ftprop(1) + ftprop(ft)
+    ftprop(ft) = 0.0
+  endif
 enddo
 
 !----------------------------------------------------------------------!
 ! Set cover arrays for this years ft proportions, take carbon from     !
 ! litter to provide nppstore and canopy.                               !
 !----------------------------------------------------------------------!
-cohort = ssp%cohorts
-
-sumc = 0.0
 sumslc = 0.0
 do ft=1,nft
-  sumc = sumc + ssp%xnew_c(ft,1)
   sumslc = sumslc + ssp%xnew_slc(ft)
 enddo
 
@@ -173,6 +180,11 @@ enddo
 ! Make the averaged extraC pool. This is made up from any pfts where   !
 ! the new proportions (ftprop) are less than the old ssp%new_cov.      !
 !----------------------------------------------------------------------!
+sumftprop = 0.0
+do ft=1,nft
+  sumftprop = sumftprop + ftprop(ft)
+enddo
+
 extras_c = 0.0
 extras_n = 0.0
 extras_minn = 0.0
@@ -281,15 +293,13 @@ sum_prop_taken
 enddo
 !endif
 
-sumc = 0.0
 sumslc = 0.0
 do ft=1,nft
-  sumc = sumc + ssp%xnew_c(ft,1)
   sumslc = sumslc + ssp%xnew_slc(ft)
 enddo
 
 !----------------------------------------------------------------------!
-
+cohort = ssp%cohorts
 do ft=1,nft
   if (ftprop(ft)>0.0) then
 !    ierase=1
@@ -311,7 +321,7 @@ do ft=1,nft
 !----------------------------------------------------------------------!
 ! Set initial values of the system state.
 !----------------------------------------------------------------------!
-    call INITIALISE_STATE_COHORT(cohort)
+    call initialise_state_cohort(cohort)
 
     ssv(cohort)%stemfr = ssv(1)%stemfr
 
@@ -331,8 +341,8 @@ do ft=1,nft
     ssv(cohort)%hgt = 0.004
     ssv(cohort)%age = 0.5
     ssv(cohort)%age = 1.0
-    call SET_NEW_SOIL_RES(cohort,ftprop(ft)/sumftprop)
-!    call SET_NEW_SOIL_RES2(cohort,ft,ftprop(ft)/sumftprop)
+    call set_new_soil_res(cohort,ftprop(ft)/sumftprop)
+!    call set_new_soil_res2(cohort,ft,ftprop(ft)/sumftprop)
 
 !----------------------------------------------------------------------!
 ! Take carbon from litter to balance the storage.
@@ -357,20 +367,20 @@ do ft=1,nft
   endif
 enddo
 ssp%cohorts = cohort
-call RESET_SOIL_RES()
+call reset_soil_res()
 
 !----------------------------------------------------------------------!
 ! Check carbon closure.
 !----------------------------------------------------------------------!
 if (check_closure) then
-  call SUM_CARBON(total_carbon,.false.)
+  call sum_carbon(total_carbon,.false.)
   if (abs(total_carbon-old_total_carbon) > 1.0e-3) then
     write(*,*) 'Breach of carbon closure in INITIALISE_NEW_COHORTS:', &
  total_carbon-old_total_carbon,' g/m^2.'
   endif
 endif
 
-end subroutine INITIALISE_NEW_COHORTS
+end subroutine initialise_new_cohorts
 
 
 

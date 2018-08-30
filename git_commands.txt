@@ -81,6 +81,12 @@ CREDENTIALS
 ====================================
 To store username and password in plain text locally.
   git config credential.helper store
+Then do a push and the [username] and [password] will be stored
+in plain text in probably $HOME/.git-credentials.
+ie
+https://[username]:[password]%21-2@github.com
+not sure what the '21-2' is about???
+
 The credentials are stored in a file called .git-credentials which
 can be found in ~/.git-credentials by default or 
 $HOME/.config/git/credentials.
@@ -89,11 +95,13 @@ $HOME/.config/git/credentials.
 ====================================
 STAGING AREA
 ====================================
-There is only one staging area which is independent of whatever 
-branch you are on. The info of which is stored in .git/index, and is
-updated whenever you alter the git-status ie with a git-add or if you
-edit a tracked file. It matters which branch you are on only when you 
-commit.
+There is only one staging area which is defined by the file .git/index.
+The file gets contians a time stamp, file mode, hash, integer, and the
+filename of the files being staged. The integer is generally 0, but if
+say there was a merge conflict with file1 then there might be three
+entries named file1 with integer=1,2 and 3.
+The index file gets updated with a 'git add' or switching branch or a 
+'git commit' etc.
 
 List tracked/staged files
   git ls-tree [branch_name]

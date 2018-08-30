@@ -239,10 +239,10 @@ endif
 !----------------------------------------------------------------------!
 !  Read co2 file.                                                      !
 !----------------------------------------------------------------------!
-call READCO2 (yr0,yrf,co2,daily_co2,nyears)
+call readco2(yr0,yrf,co2,daily_co2,nyears)
 !----------------------------------------------------------------------!
 
-call SET_GOUD_PARAMS()
+call set_goud_params()
 
 site_dat = 0
 
@@ -269,7 +269,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
 !----------------------------------------------------------------------!
-  call READ_CLIMATE(lat,lon,xlatf, &
+  call read_climate(lat,lon,xlatf, &
  xlatres,xlatresn,xlon0,xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv, &
  xcldv,xswrv,isite,xyear0,xyearf,du,seed1,seed2,seed3,l_clim,l_stats, &
  siteno,day_mnth,thty_dys,sit_grd,withcloudcover)
@@ -277,7 +277,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in soil parameters.                                             !
 !----------------------------------------------------------------------!
-  call READ_SOIL(lat,lon,soil_chr,soil_chr2,du,l_soil)
+  call read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)
   soilCtoN = soil_chr2(9)
   soilp = soil_chr2(10)
 
@@ -295,12 +295,12 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in soil parameters.                                             !
 !----------------------------------------------------------------------!
-  call READ_LANDUSE(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,luse,&
+  call read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,luse,&
  cluse,l_lu)
 
-  call READ_FERTILIZERS(du,yr0,yrf,lat,lon,nft,cfert)
+  call read_fertilizers(du,yr0,yrf,lat,lon,nft,cfert)
   
-  call READ_IRRIGATION(du,yr0,yrf,lat,lon,nft,cirr)
+  call read_irrigation(du,yr0,yrf,lat,lon,nft,cirr)
   
 !======================================================================!
 !                         DRIVING DATA IF                              !
@@ -313,7 +313,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write lat & lon for output files.                                    !
 !----------------------------------------------------------------------!
-    call WRITE_LAT_LON(lat,lon,nft,out_cov,out_bio,out_bud,out_sen, &
+    call write_lat_lon(lat,lon,nft,out_cov,out_bio,out_bud,out_sen, &
  oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)
 
 !----------------------------------------------------------------------!
@@ -366,7 +366,7 @@ do site=1,sites
       call set_co2(ca,iyear,speedc,co2,year,yr0)
 
       if (mod(iyear,max(sop%year_out,1))==min(1,sop%year_out)-1) then
-        write(*,'('' Year no. '',i0,'' '',i0,'', ca = '',f6.2,'', cohorts = '', i0,''.'')') &
+        write(*,'('' Year no. '',i3,'' '',i4,'', ca = '',f6.2,'', cohorts = '', i0,''.'')') &
  iyear,year,ca,ssp%cohorts
       endif
 
