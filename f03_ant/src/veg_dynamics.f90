@@ -161,9 +161,11 @@ do ft=2,nft
   do i=1,8
     sumc = sumc + ssp%xnew_c(ft,i)
   enddo
-  if (sumc<1000.0) then
-    ftprop(1) = ftprop(1) + ftprop(ft)
-    ftprop(ft) = 0.0
+  if (ftprop(ft)>0.0) then
+    if (sumc/ftprop(ft)<1000.0) then
+      ftprop(1) = ftprop(1) + ftprop(ft)
+      ftprop(ft) = 0.0
+    endif
   endif
 enddo
 
