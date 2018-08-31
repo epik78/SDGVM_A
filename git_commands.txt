@@ -3,6 +3,17 @@ GENERAL
 ====================================
 Set up a new git directory
   git init
+Clone an existing remote repository
+  git clone https://github.com/marklomas60/test
+
+
+Amend a commit
+  git commit -m 'initial commit'
+  git add forgotten_file
+  git commit --amend -m 'New commit message'
+This removes the last commit from the branch, though it
+will not be deleted ie. it still exists in 'objects'.
+
 
 ====================================
 BRANCHES
@@ -61,7 +72,7 @@ To merge a branch with master.
      If confilicts then use the mergetool to resolve
        git mergetool 
   3. Add and commit then push.
-       git add -a
+       git add -A           % think a slight shortcut is 'git add .'
        git commit -m 'New stuff'
        git push
 
@@ -139,6 +150,23 @@ Look at latest commits
   ls .git/objects/*/* -lt | head 5
   git cat-file -t dd3e
   git cat-file -p dd3e
+
+
+
+====================================
+REMOTE REPOSITORY
+====================================
+To push a branch you need to include the remote and the branch in the 
+push.
+  git push origin [branch_name]
+
+Add a remote
+  git remote add origin https://github.com/marklomas60/test
+
+Add a progect to git hub. Initialise git. Add a remote as above.
+Though, of course this only works if the repo exists. I don't know
+how to create one remotely from the command line.
+  git push --set-upstream origin master
 
 
 
