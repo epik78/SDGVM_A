@@ -1068,6 +1068,7 @@ else
     co20 = co2(year-yr0+1)
   endif
 endif
+
 iyear = nyears
 year = yearv(iyear)
 if ((inp%run%spinup_length>0).and.(iyear>inp%run%spinup_length)) then

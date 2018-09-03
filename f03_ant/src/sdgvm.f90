@@ -117,7 +117,7 @@ ce_maxlight    = 1.0e-3
 !----------------------------------------------------------------------!
 ! Get input filename from the command line.                            !
 !----------------------------------------------------------------------!
-call GET_INPUT_FILENAME(buff1)
+call get_input_filename(buff1)
 
 !----------------------------------------------------------------------!
 ! Read internal parameters from "param.dat" file, and io               !
@@ -140,7 +140,7 @@ call command_line_argument_check()
 ! Process the input file data.                                         !
 !----------------------------------------------------------------------!
 call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
- speedc,xspeedc,crand,outyears,nyears, yr0,yrf,yearind,idum,yearv, &
+ speedc,xspeedc,crand,outyears,nyears,yr0,yrf,yearind,idum,yearv, &
  nomdos,otags,omav,ofmt_daily,ofmt_monthly,ofmt_yearly,outyears1, &
  outyears2,oymd,otagsn,otagsnft,snpshts,snp_no,out_cov, &
  out_bio,out_bud,out_sen,lutab,grassrc,barerc,fireres,luse,l_b_and_c, &
@@ -713,7 +713,7 @@ write(fun%get_id('hum.dat'),'('' '',f8.2)',advance='NO') outputs(daily_out,11,'A
 !    call crop_outputs(nft,3)
       endif
 
-      if (iyear==outyears) then
+      if (iyear==nyears) then
 write(fun%get_id('lai.dat'),*)
 write(fun%get_id('npp.dat'),*)
 write(fun%get_id('scn.dat'),*)
