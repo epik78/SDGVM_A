@@ -544,7 +544,23 @@ xspeedc = speedc
 !  write(*,*) 'Line 17 must contain 2-7 fields'
 !  stop
 !endif
-nyears = inp%run%spinup_length + inp%run%yearf - inp%run%year0 + 1
+if ((inp%run%yearf<inp%run%year0).or.(inp%run%yearf.eq.0).or. &
+ (inp%run%year0.eq.0)) then
+  inp%run%year0 = 0
+  inp%run%yearf = 0
+  nyears = inp%run%spinup_length
+else
+  nyears = inp%run%spinup_length + inp%run%yearf - inp%run%year0 + 1
+endif
+
+! Set nyears if it hasn't been set.
+if (inp%output%nyears.eq.0) then
+  if (inp%run%year0.gt.0) then
+    inp%output%nyears = inp%run%yearf - inp%run%year0 + 1
+  else
+    inp%output%nyears = inp%run%spinup_cycle_length + 1
+  endif
+endif
 outyears = min(nyears,inp%output%nyears)
 
 !yrfp = 0
@@ -599,8 +615,13 @@ endif
 ! for the run. And check that the climate exists in the climate        !
 ! database                                                             !
 !----------------------------------------------------------------------!
-      yr0 = min(inp%run%spinup_year0,inp%run%year0)
-      yrf = max(inp%run%spinup_year0+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1,inp%run%yearf)
+      if (inp%run%year0>0) then
+        yr0 = min(inp%run%spinup_year0,inp%run%year0)
+        yrf = max(inp%run%spinup_year0+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1,inp%run%yearf)
+      else
+        yr0 = inp%run%spinup_year0
+        yrf = inp%run%spinup_year0+min(inp%run%spinup_length,inp%run%spinup_cycle_length)-1
+      endif
       yr0m = yr0
       yrfm = yrf
 if(met_seq) yr0m = min(yr0s,yr0ms)
@@ -609,7 +630,6 @@ if ((yr0m<xyear0).or.(yrfm>xyearf)) then
   write(*,'('' PROGRAM TERMINATED'')')
   write(*,'('' Trying to use '',i4,''-'',i4,'' climate.'')') yr0m,yrfm 
   write(*,'('' Climate database runs from '',i4,''-'',i4,''.'')') xyear0,xyearf
-  stop
 endIF
 
 !----------------------------------------------------------------------!
