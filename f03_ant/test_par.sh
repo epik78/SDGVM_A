@@ -2,7 +2,7 @@
 #$ -l h_rt=48:00:00
 
 #How many qsubs
-nprocesses=100
+nprocesses=200
 dir=/fastdata-sharc/sm1epk/SDGVM_runs
 #Input file for run.Several values should be set to ARGUMENT
 inputfile=/home/sm1epk/SDGVM/SDGVM_ant/input_f/glob_run.dat
@@ -52,7 +52,7 @@ do
   prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   while [ $prunning -ge $nprocesses ]
   do
-    sleep 2
+    sleep 1
     prunning=`Qstat | grep 'batch-'|grep 'sm1epk'| wc -l`
   done
   echo submitting job $i
