@@ -1,6 +1,6 @@
 ! ==================================================================== !
 ! Name        : sdgvm.f90
-! Author      : Mark Lomas
+! Author      : Mark Lomas good
 ! Version     : 0.1 Comments
 ! Copyright   : Your copyright notice
 ! Description : sdgvm
