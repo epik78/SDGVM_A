@@ -1513,9 +1513,9 @@ end function n7
 ! subroutine get_input_filename(st1)                                   !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
-!! @details
+!> @brief Reads the 2nd argument from the command line which should be
+!! the path of the input file
+!! @details EPK changed the getarg to get_command_argument
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -1526,7 +1526,7 @@ integer :: iargc
 !----------------------------------------------------------------------!
 
 if (IARGC()>0) then
-  call getarg(1,st1)
+  call get_command_argument(1,st1)
 else
   write(*,'('' PROGRAM TERMINATED'')')
   write(*,*) ' Input file must be given as an argument.'
