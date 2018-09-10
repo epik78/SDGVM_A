@@ -116,6 +116,7 @@ ce_maxlight    = 1.0e-3
 
 !----------------------------------------------------------------------!
 ! Get input filename from the command line.                            !
+! buff1 is the path to the input file name
 !----------------------------------------------------------------------!
 call get_input_filename(buff1)
 
@@ -126,7 +127,9 @@ call get_input_filename(buff1)
 call read_param(stver)
 
 !----------------------------------------------------------------------!
-! Read the input file.                                                 !
+! Read the input file.inp is a variable of Type Input declared in      !
+! input_file.f90.From there it reads the input file and assigns values !
+! to type(Input) inp.                                                  !
 !----------------------------------------------------------------------!
 call inp%read_input_file(trim(buff1))
 
