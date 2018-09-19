@@ -202,11 +202,14 @@ st2 = 'DAILY'
 st3 = 'MONTHLY'
 st4 = 'SITED'
 st5 = 'SITEM'
-sit_grd = 0
+
 if (stcmp(st1,st2)==1) then
   !1 for daily data 0 for monthly
   day_mnth = 1
+  !0 for daily site run 1 for all else
   thty_dys = 1
+  !1 for site run 0 for non-site run
+  sit_grd = 0
   read(fid,*)
   !Upper left lat and long
   read(fid,*) xlatf,xlon0
@@ -222,6 +225,7 @@ if (stcmp(st1,st2)==1) then
 elseif (stcmp(st1,st3)==1) then
   day_mnth = 0
   thty_dys = 1
+  sit_grd = 0
   read(fid,*)
   read(fid,*) xlatf,xlon0
   read(fid,*)
@@ -1382,7 +1386,7 @@ real(dp), dimension(500,12) :: xcldv
 integer :: read_par
 logical :: l_clim,l_stats,withcloudcover
 !----------------------------------------------------------------------!
-
+!Daily climate drivers
 if ((day_mnth==1).and.(thty_dys==1)) then
   call EX_CLIM(lat,lon,xlatf,xlatres,xlatresn,xlon0,xlonres, &
  xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,isite,xyear0,xyearf,siteno,du, &
@@ -1390,6 +1394,7 @@ if ((day_mnth==1).and.(thty_dys==1)) then
   withcloudcover=.false.
   ssp%latres = xlatres
   ssp%lonres = xlonres
+!Monthly climate drivers for non-site
 elseif ((day_mnth==0).and.(thty_dys==1).and.(sit_grd==0)) then
   call EX_CLIM_WEATHER_GENERATOR(lat,lon,xlatf,xlatres,xlatresn,xlon0, &
  xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,xcldv,xswrv,isite,xyear0, &
@@ -1397,6 +1402,7 @@ elseif ((day_mnth==0).and.(thty_dys==1).and.(sit_grd==0)) then
   withcloudcover=.true.
   ssp%latres = xlatres
   ssp%lonres = xlonres
+!Daily climate drivers for single site
 elseif ((day_mnth==1).and.(thty_dys==0)) then
   call EX_CLIM_SITE(yr0,yrf,xtmpv,xhumv,xprcv,xyear0,xyearf)
   withcloudcover=.false.

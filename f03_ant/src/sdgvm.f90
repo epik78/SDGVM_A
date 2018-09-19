@@ -40,7 +40,7 @@ real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
  nppstoreold,trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
  leafnpp,stemnpp,rootnpp,bioleaf
 
-real(dp) :: lat,lon,ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
+real(dp) :: ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
  hum(12,31),cld(12),latdel,londel,leafper,stemper,rootper,avnpp,avgpp, &
  avlai,co20,co2f,avrof,infix,avnppst,sum1,oscale,yield,co2(max_years), &
  sumcov,maxcov,maxbio,barerc,avtrn,firec,pet2,f2,f3,avevt,sumbio,kd, &
@@ -256,10 +256,8 @@ do site=1,sites
 
   ssp%jday = 5000
   speedc = xspeedc
-  lat = lat_lon(site,1)
-  ssp%lat=lat
-  lon = lat_lon(site,2)
-  ssp%lon=lon
+  ssp%lat=lat_lon(site,1)
+  ssp%lon=lat_lon(site,2)
   seed1 = inp%run%random_seed
   seed2 = 2*seed1
   seed3 = 3*seed1
@@ -272,7 +270,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
 !----------------------------------------------------------------------!
-  call read_climate(lat,lon,xlatf, &
+  call read_climate(ssp%lat,ssp%lon,xlatf, &
  xlatres,xlatresn,xlon0,xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv, &
  xcldv,xswrv,isite,xyear0,xyearf,du,seed1,seed2,seed3,l_clim,l_stats, &
  siteno,day_mnth,thty_dys,sit_grd,withcloudcover)
@@ -280,7 +278,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in soil parameters.                                             !
 !----------------------------------------------------------------------!
-  call read_soil(lat,lon,soil_chr,soil_chr2,du,l_soil)
+  call read_soil(ssp%lat,ssp%lon,soil_chr,soil_chr2,du,l_soil)
   soilCtoN = soil_chr2(9)
   soilp = soil_chr2(10)
 
@@ -298,12 +296,12 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Read in soil parameters.                                             !
 !----------------------------------------------------------------------!
-  call read_landuse(ilanduse,yr0,yrf,du,nft,lat,lon,lutab,luse,&
+  call read_landuse(ilanduse,yr0,yrf,du,nft,ssp%lat,ssp%lon,lutab,luse,&
  cluse,l_lu)
 
-  call read_fertilizers(du,yr0,yrf,lat,lon,nft,cfert)
+  call read_fertilizers(du,yr0,yrf,ssp%lat,ssp%lon,nft,cfert)
   
-  call read_irrigation(du,yr0,yrf,lat,lon,nft,cirr)
+  call read_irrigation(du,yr0,yrf,ssp%lat,ssp%lon,nft,cirr)
   
 !======================================================================!
 !                         DRIVING DATA IF                              !
@@ -316,7 +314,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write lat & lon for output files.                                    !
 !----------------------------------------------------------------------!
-    call write_lat_lon(lat,lon,nft,out_cov,out_bio,out_bud,out_sen, &
+    call write_lat_lon(ssp%lat,ssp%lon,nft,out_cov,out_bio,out_bud,out_sen, &
  oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)
 
 !----------------------------------------------------------------------!
@@ -332,14 +330,14 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Extract the country/state corresponding to the site.                 !
 !----------------------------------------------------------------------!
-    call country(lat,lon,country_name,country_id,l_regional)
+    call country(ssp%lat,ssp%lon,country_name,country_id,l_regional)
 
 !----------------------------------------------------------------------!
 ! Write site info to 'site_info.dat'.                                  !
 !----------------------------------------------------------------------!
     fid = fun%get_id('site_info.dat')
     write(fid,'(a15,i6,f9.3,f9.3,1x,2f6.1,1x,2f7.1,f7.3,1x,3f7.3,f7.1,1x,200(2f6.1,1x))') &
- country_name,country_id,lat,lon,co20,co2f,ssp%sand,ssp%silt,ssp%bulk,ssp%wilt, &
+ country_name,country_id,ssp%lat,ssp%lon,co20,co2f,ssp%sand,ssp%silt,ssp%bulk,ssp%wilt, &
  ssp%field,ssp%sat,ssp%soil_depth, &
  (cluse(ft,yearv(1)-yr0+1),cluse(ft,yearv(nyears)-yr0+1),ft=1,nft)
 
@@ -349,7 +347,7 @@ do site=1,sites
     call initialise_state(nft,cluse,xtmpv,soilt)
 
     if (mod(site_dat,max(site_out,1))==min(1,site_out)-1) &
- write(*,'( '' Site no. '',i0,'', Lat ='',f6.2,'', Lon ='',f7.2,'' Cohorts = '',i0)') site_dat,lat,lon,ssp%cohorts
+ write(*,'( '' Site no. '',i0,'', Lat ='',f6.2,'', Lon ='',f7.2,'' Cohorts = '',i0)') site_dat,ssp%lat,ssp%lon,ssp%cohorts
 
 !======================================================================!
 !                         YEARLY LOOP                                  !
@@ -462,10 +460,10 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Radiation calculation.                                               !
 !----------------------------------------------------------------------!
-          hrs = dayl(lat,no_day(year,mnth,day,thty_dys))
+          hrs = dayl(ssp%lat,no_day(year,mnth,day,thty_dys))
 !          call PFD(lat,no_day(year,mnth,day,thty_dys),hrs,cld(mnth), &
 !     qdirect,qdiff,q)
-          call pfd_ant(lat,no_day(year,mnth,day,thty_dys),hrs, &
+          call pfd_ant(ssp%lat,no_day(year,mnth,day,thty_dys),hrs, &
  cld(mnth),qdirect,qdiff,q,swr(mnth,day),inp%run%read_par,.false., &
  t,total_t,inp%run%calc_zen,cos_zen)
 
@@ -504,7 +502,7 @@ do site=1,sites
  pet,ht(ft),ft,lmor_sc(:,pft(ft)%itag),nleaf,leaflitter,hrs,q,qdirect, &
  qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn,ce_light(:,:,ft),ce_ci(:,:,ft), &
  ce_t,ce_maxlight(:,:,ft),ce_ga(:,:,ft),ce_rh,check_closure, &
- par_loops,lat,year,mnth,day,thty_dys,inp%run%gs_func,swr(mnth,day))
+ par_loops,ssp%lat,year,mnth,day,thty_dys,inp%run%gs_func,swr(mnth,day))
 
               call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
               pet = eemm
@@ -1006,13 +1004,13 @@ write(fun%get_id('daily_'//trim(otags(imap))//'.dat'),ofmt_daily(imap)) (ans(mnt
       if (year==snpshts(snp_year)) then
         fno = 100 + (snp_year-1)*4
         write(fno+1,'(F7.3,F9.3,4500F9.1)')  &
- lat,lon,(((ssv(ft)%bio(j),j=1,2),ft=1,pft(k)%mort),k=1,nft)
+ ssp%lat,ssp%lon,(((ssv(ft)%bio(j),j=1,2),ft=1,pft(k)%mort),k=1,nft)
         write(fno+2,'(F7.3,F9.3,1500F12.9)') &
- lat,lon,((ssv(ft)%cov,ft=1,pft(j)%mort),j=1,nft)
+ ssp%lat,ssp%lon,((ssv(ft)%cov,ft=1,pft(j)%mort),j=1,nft)
         write(fno+3,'(F7.3,F9.3,1500F12.7)') &
- lat,lon,((ssv(ft)%ppm,ft=1,pft(j)%mort),j=1,nft)
+ ssp%lat,ssp%lon,((ssv(ft)%ppm,ft=1,pft(j)%mort),j=1,nft)
         write(fno+4,'(F7.3,F9.3,1500F8.3)')  &
- lat,lon,((ssv(ft)%hgt,ft=1,pft(j)%mort),j=1,nft)
+ ssp%lat,ssp%lon,((ssv(ft)%hgt,ft=1,pft(j)%mort),j=1,nft)
         snp_year = snp_year + 1
       endif
     endif
@@ -1086,7 +1084,7 @@ if (inp%run%output_state) then
   write(fun%get_id('diag.dat'),*) &
  '                  clm stt ssc blk wfs dep lus'
   write(fun%get_id('diag.dat'),'(f7.3,f9.3,1x,20L4)') &
- lat,lon,l_clim,l_stats,l_soil(1),l_soil(3),l_soil(5),l_soil(8),l_lu
+ ssp%lat,ssp%lon,l_clim,l_stats,l_soil(1),l_soil(3),l_soil(5),l_soil(8),l_lu
 
   endif
 !======================================================================!

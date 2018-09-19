@@ -443,7 +443,8 @@ end subroutine ex_clu
 !----------------------------------------------------------------------!
 !> @brief Reads co2 values for each year
 !! @details It will read from the co2 file the concentration vector 
-!! with starting and end year as produced by the read_input_file sub.
+!! with starting (yr0) and end year (yrf) of the run as produced by the 
+!! read_input_file sub.
 !! If the co2 file has only one value then it will be used for all the
 !! years meaning constant co2 concentrations.
 !! @author Mark Lomas
@@ -479,6 +480,7 @@ goto 10
 99 continue
 close(98)
 
+!If it has found a single value in the co2 file then use it for all years
 if (const==1) then
   do year=yr0,yrf
     co2(year-yr0+1) = ca
