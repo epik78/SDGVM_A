@@ -220,7 +220,7 @@ if (stcmp(st1,st2)==1) then
   !Number of pixels (north to south, east to west)
   read(fid,*) xlatresn,xlonresn
   read(fid,*)
-  !Initial and final years of the climate dataset
+  !Initial and final year of the climate dataset
   read(fid,*) xyear0,xyearf
 elseif (stcmp(st1,st3)==1) then
   day_mnth = 0
@@ -1394,7 +1394,7 @@ if ((day_mnth==1).and.(thty_dys==1)) then
   withcloudcover=.false.
   ssp%latres = xlatres
   ssp%lonres = xlonres
-!Monthly climate drivers for non-site
+!Monthly climate drivers
 elseif ((day_mnth==0).and.(thty_dys==1).and.(sit_grd==0)) then
   call EX_CLIM_WEATHER_GENERATOR(lat,lon,xlatf,xlatres,xlatresn,xlon0, &
  xlonres,xlonresn,yr0,yrf,xtmpv,xhumv,xprcv,xcldv,xswrv,isite,xyear0, &
