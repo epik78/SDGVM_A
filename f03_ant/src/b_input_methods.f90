@@ -1404,7 +1404,7 @@ elseif ((day_mnth==0).and.(thty_dys==1).and.(sit_grd==0)) then
   ssp%lonres = xlonres
 !Daily climate drivers for single site
 elseif ((day_mnth==1).and.(thty_dys==0)) then
-  call EX_CLIM_SITE(yr0,yrf,xtmpv,xhumv,xprcv,xyear0,xyearf)
+  call EX_CLIM_SITE(yr0,yrf,xtmpv,xhumv,xprcv,xswrv,xyear0,xyearf)
   withcloudcover=.false.
   siteno = 1
 else

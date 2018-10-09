@@ -184,12 +184,12 @@ end subroutine ex_clim
 !!            recl = 728          recl = 730     for binary climate
 !!            recl = 577          recl = 578     for text map
 !! @author Mark Lomas
-!! @date Feb 2006
+!! @date Feb 2018
 !----------------------------------------------------------------------!
-subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,year0,yearf)
+subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,swrv,year0,yearf)
 !----------------------------------------------------------------------!
-real(dp) :: tmp,prc,hum
-real(dp) :: tmpv(300,12,31),humv(300,12,31),prcv(300,12,31)
+real(dp) :: tmp,prc,hum,swr
+real(dp) :: tmpv(300,12,31),humv(300,12,31),prcv(300,12,31),swrv(300,12,31)
 integer :: year,year0,yearf,yr0,mnth,day,yrf,iyear,imnth,iday
 !**********************************************************************!
 
@@ -198,7 +198,7 @@ open(91,file=trim(inp%dirs%climate)//'/site.dat')
 do year=year0,yearf
   do mnth=1,12
     do day=1,no_days(year,mnth,0)
-      read(91,*) iyear,imnth,iday,tmp,prc,hum
+      read(91,*) iyear,imnth,iday,tmp,prc,hum,swr
       if ((iday/=day).or.(imnth/=mnth).or.(iyear/=year)) then
         write(*,'('' PROGRAM TERMINATED'')')
         write(*,*) 'Error in climate data file',year,mnth,day
@@ -206,9 +206,10 @@ do year=year0,yearf
       endif
 
       if ((year<=yrf).and.(year>=yr0)) then
-        tmpv(year-yr0+1,mnth,day) = tmp*100.0
-        prcv(year-yr0+1,mnth,day) = prc*10.0
-        humv(year-yr0+1,mnth,day) = hum*100.0
+        tmpv(year-yr0+1,mnth,day) = tmp
+        prcv(year-yr0+1,mnth,day) = prc
+        humv(year-yr0+1,mnth,day) = hum
+        swrv(year-yr0+1,mnth,day) = swr
       endif
     enddo
   enddo
