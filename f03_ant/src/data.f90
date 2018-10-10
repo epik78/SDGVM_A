@@ -168,7 +168,7 @@ end subroutine ex_clim
 !                          --------------------                        !
 !                                                                      !
 !                                                                      !
-! subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,year0,yearf)  !
+! subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,year0,swrv,yearf)     !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Extract climate data from the climate database for the
@@ -183,14 +183,16 @@ end subroutine ex_clim
 !!                                        records
 !!            recl = 728          recl = 730     for binary climate
 !!            recl = 577          recl = 578     for text map
-!! @author Mark Lomas
-!! @date Feb 2018
+!! @author Mark Lomas,EPK added swrv,l_clim,l_stats flags
+!! @date Oct 2018
 !----------------------------------------------------------------------!
-subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,swrv,year0,yearf)
+subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,swrv,year0,yearf, &
+ l_clim,l_stats)
 !----------------------------------------------------------------------!
 real(dp) :: tmp,prc,hum,swr
 real(dp) :: tmpv(300,12,31),humv(300,12,31),prcv(300,12,31),swrv(300,12,31)
 integer :: year,year0,yearf,yr0,mnth,day,yrf,iyear,imnth,iday
+logical :: l_clim,l_stats
 !**********************************************************************!
 
 open(91,file=trim(inp%dirs%climate)//'/site.dat')
@@ -215,6 +217,9 @@ do year=year0,yearf
   enddo
 enddo
 
+!Flags that the climate has been read.Checked in sdgvm.f90
+l_clim=.true.
+l_stats=.true.
 close(91)
 
 end subroutine ex_clim_site
