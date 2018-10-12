@@ -206,7 +206,7 @@ do year=year0,yearf
         write(*,*) 'Error in climate data file',year,mnth,day
         stop
       endif
-
+       
       if ((year<=yrf).and.(year>=yr0)) then
         tmpv(year-yr0+1,mnth,day) = tmp
         prcv(year-yr0+1,mnth,day) = prc
