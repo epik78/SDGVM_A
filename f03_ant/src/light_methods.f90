@@ -211,7 +211,7 @@ if (hrs>1E-6) then
 
     total  = toa*(beta-sigma*cloud*10.0) - alpha
   endif
-
+  
   if (subd_par) then
 ! sub-daily variation in SWR 
 
@@ -284,7 +284,7 @@ if (hrs>1E-6) then
   total   = 4.6d-6*total
   diffuse = 4.6d-6*diffuse
   direct  = total - diffuse
-
+  
 else
 
   total   = 0.0

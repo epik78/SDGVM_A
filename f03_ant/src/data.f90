@@ -183,14 +183,14 @@ end subroutine ex_clim
 !!                                        records
 !!            recl = 728          recl = 730     for binary climate
 !!            recl = 577          recl = 578     for text map
-!! @author Mark Lomas,EPK added swrv,l_clim,l_stats flags
+!! @author Mark Lomas,EPK added swrv,l_clim,l_stats flags,300->500
 !! @date Oct 2018
 !----------------------------------------------------------------------!
 subroutine ex_clim_site(yr0,yrf,tmpv,humv,prcv,swrv,year0,yearf, &
  l_clim,l_stats)
 !----------------------------------------------------------------------!
 real(dp) :: tmp,prc,hum,swr
-real(dp) :: tmpv(300,12,31),humv(300,12,31),prcv(300,12,31),swrv(300,12,31)
+real(dp) :: tmpv(500,12,31),humv(500,12,31),prcv(500,12,31),swrv(500,12,31)
 integer :: year,year0,yearf,yr0,mnth,day,yrf,iyear,imnth,iday
 logical :: l_clim,l_stats
 !**********************************************************************!

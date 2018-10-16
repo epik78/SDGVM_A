@@ -379,7 +379,7 @@ do site=1,sites
  yearv,iyear,tmp,prc,hum,cld,swr,thty_dys,yr0,year,nyears,nn1)
         call seasonality(tmp,prc,cld,thty_dys,nft,year,nn1)
       enddo
-
+            
       do ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
         pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
@@ -456,7 +456,7 @@ do site=1,sites
             ssp%tmem(301-i) = ssp%tmem(300-i)
           enddo
           ssp%tmem(1) = tmp(mnth,day)
-
+          
 !----------------------------------------------------------------------!
 ! Radiation calculation.                                               !
 !----------------------------------------------------------------------!
@@ -466,7 +466,7 @@ do site=1,sites
           call pfd_ant(ssp%lat,no_day(year,mnth,day,thty_dys),hrs, &
  cld(mnth),qdirect,qdiff,q,swr(mnth,day),inp%run%read_par,.false., &
  t,total_t,inp%run%calc_zen,cos_zen)
-
+ 
 !----------------------------------------------------------------------!
 ! Mix water resources.                                                 !
 !----------------------------------------------------------------------!
