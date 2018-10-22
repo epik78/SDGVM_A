@@ -2,10 +2,10 @@ clear;dir1=pwd;
 
 %INPUTS
 %Directory where the SDGVM run is
-dir_data = '/fastdata-sharc/sm1epk/SDGVM_runs/fin_outs';
+dir_data = '/fastdata-sharc/sm1epk/SDGVM_runs/';
 %Variable I want to read.It does the yearly/monthly/daily outputs
 %Not the default outputs
-var = 'daily_npp';
+var = 'daily_gpp';
 
 
 %Reads file and outputs locs and data
