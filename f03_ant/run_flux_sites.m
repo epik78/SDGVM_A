@@ -1,0 +1,126 @@
+function run_flux_sites(site_num)
+    site_num
+    dirr{1}=pwd;
+    %Directory where the runs are going
+    dirr{2}='/fastdata-sharc/sm1epk/';
+    dirr{3}='/home/sm1epk/SDGVM/SDGVM_ant/input_f/';
+    
+    %Folder name where each site run will be saved
+    str{1}='site_';
+    %Folder where the SDGVM outputs will be saved
+    str{2}='/outs';
+    %SDGVM setup file for the site
+    str{3}='model_run.dat';
+
+    cd(dirr{1})
+    %For each site
+    for ii=1:site_num
+        
+        %Remove directory for the site if it exists
+        system(['rm -Rf ',dirr{2},str{1},num2str(ii)]);
+        %Create site directory
+        system(['mkdir ',dirr{2},str{1},num2str(ii)]);
+        %Create folder in the folder above where the SDGVM outputs will be kept
+        system(['mkdir ',dirr{2},str{1},num2str(ii),str{2}]);        
+           
+        cd /data/sm1epk/fluxnet/
+        %For each site,gets from the function lat/lon and the driving data
+        %This function reads the fluxnet data and its in the fluxnet folder
+	%[lat,lon]=a_site_drivers(ii,[dirr{2},str{1},num2str(ii)]);
+        [lat,lon,dat_all]=a_site_drivers(ii);
+        
+        %Writes the driving data in the folder of the site
+        cd([dirr{2},str{1},num2str(ii)])
+        %Write in file
+        fid=fopen('site.dat','w');
+        fprintf(fid,'%2.0u %2.0u %4.0u %5.0f %5.0f %5.0f %5.0f\n',dat_all');
+        fclose(fid);
+    
+        %Initial and final year of the climate drivers
+        y(1)=1901;y(2)=2015;     
+        cd([dirr{2},str{1},num2str(ii)])
+        %Writes the readme.dat file which holds the info of the climate drivers
+        %of the SDGVM run in this case the fluxnet data
+        fid=fopen('readme.dat','w');        
+        fprintf(fid,'SITED\n');
+        fprintf(fid,'upper left lat and long\n');
+        fprintf(fid,'%6.2f %6.2f',[lat lon]);
+        fprintf(fid,'\n');   
+        fprintf(fid,'initial and final years of the dataset\n');
+        fprintf(fid,'%4.0u %4.0u',[y(1) y(2)]);
+        fclose(fid);
+
+
+        %Here it copies the SDGVM setup file for single site runs
+        %and holds it in cell A.It will then replace specific lines
+        cd(dirr{3})
+        fid=fopen('flux_sites.dat','r');
+        
+        coun=1;
+        A{coun} = fgetl(fid);        
+        while ischar(A{coun})
+            coun=coun+1;
+            A{coun} = fgetl(fid);
+        end
+        A=A(1:end-1);
+        fclose(fid);
+
+        %Goes into the site folder and opens the setup file for the run
+        cd([dirr{2},str{1},num2str(ii)])
+        fid=fopen(str{3},'w');
+
+        %For each line of the file        
+        for jj=1:size(A,2)
+            %Splits the line in before and after '::'
+            [C,matches]=strsplit(A{jj},'::','DelimiterType','RegularExpression');
+            %If there is no '::' write the line as is
+            if(isempty(matches))
+                fprintf(fid,[A{jj},'\n']);
+            else
+                %If the word climate exists before '::' then write the directory
+                %where the climate file is
+                if(~isempty(strfind(C{1},'climate')))
+                    fprintf(fid,[C{1},':: ',[dirr{2},str{1},num2str(ii)],'\n']);
+                %If the word year0 exists before '::' then write the starting year
+                %for the run
+                elseif(~isempty(strfind(C{1},'year0')))
+                    fprintf(fid,[C{1},':: ',num2str(y(1)),'\n']); 
+                %If the word yearf exists before '::' then write the ending year
+                %for the run 
+                elseif(~isempty(strfind(C{1},'yearf')))
+                    fprintf(fid,[C{1},':: ',num2str(y(2)),'\n']); 
+                %If the word list exists before '::' then write the lats and lons
+                %for the run 
+                elseif(~isempty(strfind(C{1},'list')))
+                    fprintf(fid,[C{1},':: ']);
+                    fprintf(fid,'%6.2f',lat);
+                    fprintf(fid,'% 6.2f\n',lon);
+                %If the word output exists before '::' then write the output folder
+                %for the run 
+                elseif(~isempty(strfind(C{1},'output')))
+                    fprintf(fid,[C{1},':: ',[dirr{2},str{1},num2str(ii),str{2}],'\n']);
+                %If none of the keywords exist before '::' then just write as is
+                else               
+                    fprintf(fid,[A{jj},'\n']);
+                end
+            end 
+        end
+        fclose(fid); 
+
+        %Writes the sge
+        cd(dirr{1})
+        fid=fopen(['site_',num2str(ii),'.sge'],'w');
+
+        fprintf(fid,'#!/bin/bash\n');
+        fprintf(fid,'#$ -l rmem=8G\n');
+        fprintf(fid,'#$ -l h_rt=1:00:00\n');
+        fprintf(fid,'\n'); 
+        fprintf(fid,'module load compilers/gcc/5.2');
+        fprintf(fid,'\n');
+        %Launches SDGVM pointing where the setup file is
+        fprintf(fid,['./bin/sdgvm.exe ',[dirr{2},str{1},num2str(ii),'/',str{3}]]);
+        fclose(fid); 
+    end
+
+    cd(dirr{1})
+end
