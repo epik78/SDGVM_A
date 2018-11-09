@@ -34,7 +34,7 @@ character(len=str_len), parameter :: stver = 'VERSION current'
 real(dp) :: defaulttopsl
 parameter(defaulttopsl = 5.0)
 logical :: check_closure
-parameter(check_closure = .true.)
+parameter(check_closure = .false.)
 
 real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
  nppstoreold,trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &

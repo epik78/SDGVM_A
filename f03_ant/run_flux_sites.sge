@@ -1,8 +1,8 @@
 #!/bin/bash
-#$ -l h_rt=01:00:00
+#$ -l h_rt=03:00:00
 #$ -l rmem=12G
 
-sites=6
+sites=114
 
 module load apps/matlab/2017b
 matlab -nosplash -nodesktop -r "run_flux_sites($sites)"

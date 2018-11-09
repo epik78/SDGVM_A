@@ -1,5 +1,5 @@
 function run_flux_sites(site_num)
-    site_num
+    
     dirr{1}=pwd;
     %Directory where the runs are going
     dirr{2}='/fastdata-sharc/sm1epk/';
@@ -27,8 +27,8 @@ function run_flux_sites(site_num)
         %For each site,gets from the function lat/lon and the driving data
         %This function reads the fluxnet data and its in the fluxnet folder
 	%[lat,lon]=a_site_drivers(ii,[dirr{2},str{1},num2str(ii)]);
-        [lat,lon,dat_all]=a_site_drivers(ii);
-        
+        [lat,lon,cov_flx,dat_all]=a_site_drivers(ii);
+        cov_flx
         %Writes the driving data in the folder of the site
         cd([dirr{2},str{1},num2str(ii)])
         %Write in file
@@ -69,6 +69,15 @@ function run_flux_sites(site_num)
         cd([dirr{2},str{1},num2str(ii)])
         fid=fopen(str{3},'w');
 
+        for jj=1:size(A,2)
+            if(~isempty(strfind(A{jj},'<land_use>')))
+                land_ind=jj;
+            end
+            if(~isempty(strfind(A{jj},'<sites>')))
+                sites_ind=jj;
+            end
+        end
+
         %For each line of the file        
         for jj=1:size(A,2)
             %Splits the line in before and after '::'
@@ -89,12 +98,22 @@ function run_flux_sites(site_num)
                 %for the run 
                 elseif(~isempty(strfind(C{1},'yearf')))
                     fprintf(fid,[C{1},':: ',num2str(y(2)),'\n']); 
+                %If the word read_from_landuse_dir exists before '::' then write false
+                %for the run 
+                elseif(~isempty(strfind(C{1},'read_from_landuse_dir')))
+                    fprintf(fid,[C{1},':: ','false','\n']); 
                 %If the word list exists before '::' then write the lats and lons
                 %for the run 
                 elseif(~isempty(strfind(C{1},'list')))
-                    fprintf(fid,[C{1},':: ']);
-                    fprintf(fid,'%6.2f',lat);
-                    fprintf(fid,'% 6.2f\n',lon);
+                    if(abs(sites_ind-jj)<abs(land_ind-jj))
+                        fprintf(fid,[C{1},':: ']);
+                        fprintf(fid,'%6.2f',lat);
+                        fprintf(fid,' ');
+                        fprintf(fid,'% 6.2f\n',lon);
+                    else
+                        fprintf(fid,[C{1},':: ']);
+                        fprintf(fid,'%4.0u %2.0u\n',[1901 trans_cov(cov_flx)]); 
+                    end
                 %If the word output exists before '::' then write the output folder
                 %for the run 
                 elseif(~isempty(strfind(C{1},'output')))
@@ -123,4 +142,33 @@ function run_flux_sites(site_num)
     end
 
     cd(dirr{1})
+end
+
+function sd_cov=trans_cov(cov_flx)
+
+    switch cov_flx
+        case 'WSA'
+            sd_cov=1;
+        case 'WET'
+            sd_cov=2;
+        case 'SAV'
+            sd_cov=3;
+        case 'OSH'
+            sd_cov=4;
+        case 'MF'
+            sd_cov=5;
+        case 'GRA'
+            sd_cov=6;
+        case 'ENF'
+            sd_cov=7;
+        case 'EBF'
+            sd_cov=8;
+        case 'DBF'
+            sd_cov=9;
+        case 'CSH'
+            sd_cov=10;
+        case 'CRO'
+            sd_cov=11; 
+    end
+
 end
