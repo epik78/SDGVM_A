@@ -43,6 +43,7 @@ type, private :: Dirs
   character(len=str_len) :: land_mask
   character(len=str_len) :: fert
   character(len=str_len) :: irri
+  character(len=str_len) :: params 
 end type Dirs
 
 type, private :: Run
@@ -1285,6 +1286,8 @@ contains
           read(param_values,'(a)') this%dirs%fert
         case ('irri')
           read(param_values,'(a)') this%dirs%irri
+        case ('params')
+          read(param_values,'(a)') this%dirs%params
 
         case default
           write(*,*) 'Error in case dirs!!!'

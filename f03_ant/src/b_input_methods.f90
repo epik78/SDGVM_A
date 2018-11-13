@@ -979,8 +979,8 @@ end subroutine process_input_file
 !! with more details.
 !! It then reads the param.dat file in /inc with the tuning parameters
 !! and saves in structure tgp defined in tuning_parameters.f90.
-!! @author Mark Lomas
-!! @date Feb 2006
+!! @author Mark Lomas EPK added param.dat path
+!! @date Nov 2018
 !----------------------------------------------------------------------!
 subroutine read_param(stver)
 !**********************************************************************!
@@ -1010,7 +1010,8 @@ close(fid)
 !----------------------------------------------------------------------!
 ! Read internal parameters from "param.dat".                           !
 !----------------------------------------------------------------------!
-open(newunit=fid,file='inc/param.dat',status='OLD',iostat=kode)
+st1=trim(inp%dirs%params)//trim('/param.dat')
+open(newunit=fid,file=st1,status='OLD',iostat=kode)
 if (kode/=0) then
   write(*,'('' PROGRAM TERMINATED'')')
   write(*,*) ' File does not exist: "param.dat"'

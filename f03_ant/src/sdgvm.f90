@@ -121,12 +121,6 @@ ce_maxlight    = 1.0e-3
 call get_input_filename(buff1)
 
 !----------------------------------------------------------------------!
-! Read internal parameters from "param.dat" file, and io               !
-! parameters from "misc_params.dat".                                   !
-!----------------------------------------------------------------------!
-call read_param(stver)
-
-!----------------------------------------------------------------------!
 ! Read the input file.inp is a variable of Type Input declared in      !
 ! input_file.f90.From there it reads the input file and assigns values !
 ! to type(Input) inp.                                                  !
@@ -150,6 +144,12 @@ call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
  soil_chr,topsl,defaulttopsl,sites,latdel,londel,lat_lon,day_mnth, &
  thty_dys,xlatresn,xlonresn,ilanduse,nft,xyear0,xyearf,lmor_sc, &
  oymdft,iofnft,sit_grd,du,narg,fire_ant,harvest_ant,met_seq,par_loops)
+
+!----------------------------------------------------------------------!
+! Read internal parameters from "param.dat" file, and io               !
+! parameters from "misc_params.dat".                                   !
+!----------------------------------------------------------------------!
+call read_param(stver)
 
 !----------------------------------------------------------------------!
 ! set up mapping for output files for and place in inp%output%*%map.   !
@@ -253,7 +253,7 @@ site_dat = 0
 !                         SITE LOOP                                    !
 !======================================================================!
 do site=1,sites
-
+  
   ssp%jday = 5000
   speedc = xspeedc
   ssp%lat=lat_lon(site,1)
