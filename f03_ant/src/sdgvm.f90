@@ -486,7 +486,7 @@ do site=1,sites
               else
                 nfix=0.1*pft(ft)%fert(1)          
               endIF
-            
+              
               call set_misc_values(pft(ft)%sla,tmp(mnth,day))
 
 !----------------------------------------------------------------------!

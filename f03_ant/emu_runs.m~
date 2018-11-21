@@ -1,0 +1,264 @@
+function emu_runs(site_num)
+    
+    dirr{1} = pwd;
+    %Directory where the runs are going
+    dirr{2} = '/fastdata-sharc/sm1epk/';
+    %Directory where the setup file is
+    dirr{3} = '/home/sm1epk/SDGVM/SDGVM_ant/input_f/';
+    %Directory where the param_emu.dat is
+    dirr{4} = '/home/sm1epk/SDGVM/SDGVM_ant/source/f03_ant/inc/';
+    
+    %Folder name where each site run will be saved
+    str{1} = 'site_';
+    %Folder where the SDGVM outputs will be saved
+    str{2} = '/outs';
+    %SDGVM setup file for the site-run
+    str{3} = 'model_run.dat';
+    %Initial setup file for emulators
+    str{4} = 'emu_setup.dat';
+
+    %Finds permutations of the parameter values
+    params_comb = params_cell();
+
+    %Counter for she files
+    coun=0;    
+
+    cd(dirr{1})
+    %For each site
+    for ii = site_num
+        ii       
+        %Remove directory for the site if it exists
+        system(['rm -Rf ',dirr{2},str{1},num2str(ii)]);
+
+        cd /data/sm1epk/fluxnet/
+        %For each site,gets from the function lat/lon and the driving data
+        %This function reads the fluxnet data and its in the fluxnet folder
+    	%[lat,lon]=a_site_drivers(ii,[dirr{2},str{1},num2str(ii)]);
+        [lat,lon,cov_flx,dat_all]=a_site_drivers(ii);
+        cov_flx
+
+        %Create site directory
+        system(['mkdir ',dirr{2},str{1},num2str(ii)]);
+
+        %For each run        
+        for jj = 1:size(params_comb,1)
+            
+            %Create run-site directory
+            system(['mkdir ',dirr{2},str{1},num2str(ii),'/run_',num2str(jj)]);
+            %Create folder in the folder above where the SDGVM outputs will be kept
+            system(['mkdir ',dirr{2},str{1},num2str(ii),'/run_',num2str(jj),str{2}]);        
+           
+            %Writes the driving data in the folder of the site
+            cd([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)])
+            %Write in file
+            fid=fopen('site.dat','w');
+            fprintf(fid,'%2.0u %2.0u %4.0u %5.0f %5.0f %5.0f %5.0f\n',dat_all');
+            fclose(fid);
+    
+            %Initial and final year of the climate drivers
+            y(1)=1901;y(2)=2015;     
+            cd([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)])
+            %Writes the readme.dat file which holds the info of the climate drivers
+            %of the SDGVM run in this case the fluxnet data
+            fid=fopen('readme.dat','w');        
+            fprintf(fid,'SITED\n');
+            fprintf(fid,'upper left lat and long\n');
+            fprintf(fid,'%6.2f %6.2f',[lat lon]);
+            fprintf(fid,'\n');   
+            fprintf(fid,'initial and final years of the dataset\n');
+            fprintf(fid,'%4.0u %4.0u',[y(1) y(2)]);
+            fclose(fid);
+            
+            alterfile([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)],dirr{4},jj,params_comb,...
+              'param_emu.dat','param.dat')
+            
+            setupfile(dirr,str,ii,jj,y,lat,lon,cov_flx)
+
+            alterfile([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)],dirr{3},jj,params_comb,...
+              str{3},str{3})
+ 
+            %Writes the sge
+            cd(dirr{1})
+            %fid=fopen(['site_',num2str(ii),'_run_',num2str(jj),'.sge'],'w');
+            coun=coun+1; 
+            fid=fopen(['disrun_',num2str(coun),'.sge'],'w');
+
+            fprintf(fid,'#!/bin/bash\n');
+            fprintf(fid,'#$ -l rmem=8G\n');
+            fprintf(fid,'#$ -l h_rt=00:30:00\n');
+            fprintf(fid,'\n'); 
+            fprintf(fid,'module load compilers/gcc/5.2');
+            fprintf(fid,'\n');
+            %Launches SDGVM pointing where the setup file is
+            fprintf(fid,['./bin/sdgvm.exe ',[dirr{2},str{1},num2str(ii),'/run_',num2str(jj),'/',str{3}]]);
+            fclose(fid); 
+        end
+    end
+
+    cd(dirr{1})
+end
+
+function sd_cov=trans_cov(cov_flx)
+
+    switch cov_flx
+        case 'WSA'
+            sd_cov=1;
+        case 'WET'
+            sd_cov=2;
+        case 'SAV'
+            sd_cov=3;
+        case 'OSH'
+            sd_cov=4;
+        case 'MF'
+            sd_cov=5;
+        case 'GRA'
+            sd_cov=6;
+        case 'ENF'
+            sd_cov=7;
+        case 'EBF'
+            sd_cov=8;
+        case 'DBF'
+            sd_cov=9;
+        case 'CSH'
+            sd_cov=10;
+        case 'CRO'
+            sd_cov=11; 
+    end
+end
+
+
+function params_comb = params_cell()
+
+    %Name of each parameter
+    params{1,1} = 'Name 1';
+    params{2,1} = 'Name 2';
+    params{3,1} = 'Name 3';
+    params{4,1} = 'Name 4';
+    %Values of each parameter
+    params{1,2} = [2 3 4];
+    params{2,2} = [.2 .3];
+    params{3,2} = [100.125 1000 10000];
+    params{4,2} = [10 20 30 40];
+
+    %Permutations of parameters
+    params_comb = combvec(params{1,2},params{2,2},params{3,2},params{4,2})';    
+
+end
+
+function alterfile(dir1,dir2,nu_run,params_comb,file_s,file_e)
+
+    %Opens emulator parameter file
+    cd(dir2)
+    fid=fopen(file_s,'r');
+    
+    %Reads the whole file   
+    coun=1;
+    A{coun} = fgetl(fid);        
+    while ischar(A{coun})
+       coun = coun+1;
+       A{coun} = fgetl(fid);
+    end
+    A=A(1:end-1);
+    fclose(fid);
+
+    %Opens file in each run folder to write specific param.dat
+    cd(dir1)
+    fid=fopen(file_e,'w+');    
+
+    %For each line of the param.dat
+    for ii=1:size(A,2)
+        %For each parameter
+        for jj =1:size(params_comb,2)
+            %Finds the value of the specific parameter for the specific run
+            sub=num2str(params_comb(nu_run,jj)); 
+            %Replaces string "param_jj" with that value
+            newstr=strrep(A{ii},['param_',num2str(jj)],sub); 
+            A{ii}=newstr;
+        end
+        fprintf(fid,[newstr,'\n']);
+    end
+
+    fclose(fid);
+    
+end
+
+function setupfile(dirr,str,ii,jj,y,lat,lon,cov_flx)
+
+    %Here it copies the SDGVM setup file for single site runs
+    %and holds it in cell A.It will then replace specific lines
+    cd(dirr{3})
+    fid=fopen(str{4},'r');
+        
+    coun=1;
+    A{coun} = fgetl(fid);        
+    while ischar(A{coun})
+        coun=coun+1;
+        A{coun} = fgetl(fid);
+    end
+    A=A(1:end-1);
+    fclose(fid);
+
+    %Goes into the site-run folder and opens the setup file for the run
+    cd([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)])
+    cd(dirr{3})
+    fid=fopen(str{3},'w');
+
+    %Finds the indexes in the file for land_use and sites tags
+    for kk=1:size(A,2)
+        if(~isempty(strfind(A{kk},'<land_use>')))
+            land_ind=kk;
+        end
+        if(~isempty(strfind(A{kk},'<sites>')))
+            sites_ind=kk;
+        end
+    end
+
+    %For each line of the file        
+    for kk=1:size(A,2)
+        %Splits the line in before and after '::'
+        [C,matches]=strsplit(A{kk},'::','DelimiterType','RegularExpression');
+        %If there is no '::' write the line as is
+        if(isempty(matches))
+            fprintf(fid,[A{kk},'\n']);
+        else
+            %If the word climate exists before '::' then write the directory
+            %where the climate file is
+            if(~isempty(strfind(C{1},'climate')))
+                fprintf(fid,[C{1},':: ',[dirr{2},str{1},num2str(ii),'/run_',num2str(jj)],'\n']);
+            %If the word year0 exists before '::' then write the starting year
+            %for the run
+            elseif(~isempty(strfind(C{1},'year0')))
+                fprintf(fid,[C{1},':: ',num2str(y(1)),'\n']); 
+            %If the word yearf exists before '::' then write the ending year
+            %for the run 
+            elseif(~isempty(strfind(C{1},'yearf')))
+                fprintf(fid,[C{1},':: ',num2str(y(2)),'\n']); 
+            %If the word read_from_landuse_dir exists before '::' then write false
+            %for the run 
+            elseif(~isempty(strfind(C{1},'read_from_landuse_dir')))
+                fprintf(fid,[C{1},':: ','false','\n']); 
+            %If the word list exists before '::' then write the lats and lons
+            %for the run 
+            elseif(~isempty(strfind(C{1},'list')))
+                if(abs(sites_ind-kk)<abs(land_ind-kk))
+                    fprintf(fid,[C{1},':: ']);
+                    fprintf(fid,'%6.2f',lat);
+                    fprintf(fid,' ');
+                    fprintf(fid,'% 6.2f\n',lon);
+                else
+                    fprintf(fid,[C{1},':: ']);
+                    fprintf(fid,'%4.0u %2.0u\n',[1901 trans_cov(cov_flx)]); 
+                end
+            %If the word output exists before '::' then write the output folder
+            %for the run 
+            elseif(~isempty(strfind(C{1},'output')))
+                fprintf(fid,[C{1},':: ',[dirr{2},str{1},num2str(ii),'/run_',num2str(jj),str{2}],'\n']);
+            %If none of the keywords exist before '::' then just write as is
+            else               
+                fprintf(fid,[A{kk},'\n']);
+            end
+        end 
+    end
+    fclose(fid); 
+
+end
