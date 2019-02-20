@@ -5,8 +5,8 @@
 !----------------------------------------------------------------------!
 <dirs>
   input     :: .
-  output    :: /fastdata-sharc/sm1epk/site_109/run_3/outs
-  climate   :: /fastdata-sharc/sm1epk/site_109/run_3
+  output    :: /fastdata-sharc/sm1epk/site_17/run_20/outs
+  climate   :: /fastdata-sharc/sm1epk/site_17/run_20
   stats     :: /data/sm1epk/SDGVM_drivers_ant/data/stats/global/era40/30min
   soil      :: /data/sm1epk/SDGVM_drivers_ant/data/soil/global/islscp2/2deg_P/0-150_plus_CtoN_soilP
   land_use  :: /data/sm1epk/SDGVM_drivers_ant/data/land_use/global/glc2000/30min
@@ -14,7 +14,7 @@
   irri      :: /data/sm1epk/SDGVM_drivers_ant/data/crops/irrigation
   co2       :: /data/sm1epk/SDGVM_drivers_ant/data/co2/co2.dat
   land_mask :: /data/sm1epk/SDGVM_drivers_ant/data
-  params    :: /fastdata-sharc/sm1epk/site_109/run_3
+  params    :: /fastdata-sharc/sm1epk/site_17/run_20
 </dirs>
 !----------------------------------------------------------------------!
 
@@ -44,7 +44,7 @@
   gs_func          :: 0
   
   read_in_state    :: false
-  output_state     :: /fastdata-sharc/sm1epk/site_109/run_3/outs
+  output_state     :: /fastdata-sharc/sm1epk/site_17/run_20/outs
   random_seed      :: 1
   
   spinup_length       :: 500
@@ -125,7 +125,7 @@
 <land_use>
 read_from_landuse_dir :: false
 
-  list     :: 1901  6
+  list     :: 1901  5
 </land_use>
 !----------------------------------------------------------------------!
 
@@ -140,7 +140,7 @@ read_from_landuse_dir :: false
   create_land_sites_only :: false
   style    :: list
 
-  list     ::  38.41 -120.95
+  list     ::  50.31   6.00
   filename :: .
 
 </sites>

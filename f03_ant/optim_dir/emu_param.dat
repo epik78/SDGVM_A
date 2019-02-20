@@ -13,7 +13,7 @@ MINIMUM DAILY STEM NPP (p_stmin)
 LAI MEMORY (p_laimem)
 0.5
 PLANT RESPIRATION (p_resp)
-0.17
+param_1
 SOIL DECAY RATE MULTIPLIER (p_kscale)
 1.0
 NITROGEN UPTAKE p1*exp(p2*soilc)*(soil2g/wtfc)**p3*min(1,soiln*p4) (p_nu[1:4]))
@@ -21,7 +21,7 @@ NITROGEN UPTAKE p1*exp(p2*soilc)*(soil2g/wtfc)**p3*min(1,soiln*p4) (p_nu[1:4]))
 LEAF NITROGEN (p_nleaf)
 0.05
 DARK RESPIRATION (p_dresp)
-0.2
+param_2
 VMAX (p_vm)
 11.0
 MOISTURE DEPENDENCY MULTIPLER (p_kgw)

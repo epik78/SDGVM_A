@@ -1,5 +1,5 @@
 function emu_runs(site_num)
-    
+
     dirr{1} = pwd;
     %Directory where the runs are going
     dirr{2} = '/fastdata-sharc/sm1epk/';
@@ -20,7 +20,7 @@ function emu_runs(site_num)
     str{5} = 'emu_param.dat';
 
     %Finds permutations of the parameter values
-    params_comb = params_cell();
+    params_comb = params_cell(dirr);
 
     %Counter for the files
     coun=0;    
@@ -51,6 +51,7 @@ function emu_runs(site_num)
             system(['mkdir ',dirr{2},str{1},num2str(ii),'/run_',num2str(jj),str{2}]);        
            
             %Writes the driving data in the folder of the site
+            %that it got from the fluxnet m file
             cd([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)])
             %Write in file
             fid=fopen('site.dat','w');
@@ -60,6 +61,7 @@ function emu_runs(site_num)
             %Initial and final year of the climate drivers
             y(1)=1901;y(2)=2015;     
             cd([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)])
+
             %Writes the readme.dat file which holds the info of the climate drivers
             %of the SDGVM run in this case the fluxnet data
             fid=fopen('readme.dat','w');        
@@ -70,18 +72,23 @@ function emu_runs(site_num)
             fprintf(fid,'initial and final years of the dataset\n');
             fprintf(fid,'%4.0u %4.0u',[y(1) y(2)]);
             fclose(fid);
-            
+
+            %Writes the parameter values I will be using
+            fid=fopen('param_values.dat','w');         
+            fprintf(fid,'%7.4f\n',params_comb(jj,:));
+            fclose(fid);
+
+            %Changes parameter file by replacing param_*
             alterfile([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)],dirr{4},jj,params_comb,...
               str{5},'param.dat')
-            
+            %Sets up setup file
             setupfile(dirr,str,ii,jj,y,lat,lon,cov_flx)
-
+            %Changes setup file by replacing param_*
             alterfile([dirr{2},str{1},num2str(ii),'/run_',num2str(jj)],dirr{3},jj,params_comb,...
               str{3},str{3})
  
-            %Writes the sge
+            %Writes the sge for the run
             cd(dirr{1})
-            %fid=fopen(['site_',num2str(ii),'_run_',num2str(jj),'.sge'],'w');
             coun=coun+1; 
             fid=fopen(['disrun_',num2str(coun),'.sge'],'w');
 
@@ -129,16 +136,21 @@ function sd_cov=trans_cov(cov_flx)
 end
 
 
-function params_comb = params_cell()
+function params_comb = params_cell(dirr)
 
     %Name of each parameter
     params{1,1} = 'Name 1';
+    params{2,1} = 'Name 2';
     
     %Values of each parameter
-    params{1,2} = [0.0019 0.0049 0.0089];
+    params{1,2} = [0.02 0.17 0.40];
+    params{2,2} = [0.05 0.2 0.40];
     
     %Permutations of parameters
-    params_comb = combvec(params{1,2})';    
+    params_comb = combvec(params{1,2},params{2,2})';    
+
+    cd(dirr{1})
+    params_comb = dlmread('emu_lin_space.dat');
 
 end
 
