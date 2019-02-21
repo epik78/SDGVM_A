@@ -256,7 +256,7 @@ end subroutine open_tile_pft
 !                     ----------------------------                     !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Write lat & lon for output files.
+!> @brief Opens site_info.dat file and write header
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006

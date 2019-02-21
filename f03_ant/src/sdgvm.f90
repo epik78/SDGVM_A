@@ -115,21 +115,24 @@ ce_maxlight    = 1.0e-3
 
 
 !----------------------------------------------------------------------!
+! in b_input_methods.f90
 ! Get input filename from the command line.                            !
-! buff1 is the path to the input file name
+! buff1 is the path to the input file name                             !
 !----------------------------------------------------------------------!
 call get_input_filename(buff1)
 
 !----------------------------------------------------------------------!
-! Read the input file.inp is a variable of Type Input declared in      !
-! input_file.f90.From there it reads the input file and assigns values !
-! to type(Input) inp.                                                  !
+! Reads the input file.inp is a variable of Type Input declared in     !
+! input_file.f90.variable inp holds other Derived Data Type Variables  !
+! with the values read from the input file organized with them.        !
 !----------------------------------------------------------------------!
 call inp%read_input_file(trim(buff1))
 
 !----------------------------------------------------------------------!
+! in b_input_methods.f90
 ! Check the number of command line arguments are consistent with the   !
-! input file.                                                          !
+! input file.You can pass some variables from the command line or the  !
+! input file e.g. output directory.This checks that they are all there !
 !----------------------------------------------------------------------!
 call command_line_argument_check()
 
@@ -146,21 +149,28 @@ call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
  oymdft,iofnft,sit_grd,du,narg,fire_ant,harvest_ant,met_seq,par_loops)
 
 !----------------------------------------------------------------------!
+! in b_input_methods.f90                                               ! 
 ! Read internal parameters from "param.dat" file, and io               !
 ! parameters from "misc_params.dat".                                   !
 !----------------------------------------------------------------------!
 call read_param(stver)
 
 !----------------------------------------------------------------------!
+! in b_output_methods.f90
 ! set up mapping for output files for and place in inp%output%*%map.   !
 !----------------------------------------------------------------------!
 call output_mapping(nomdos,otags)
 
 !----------------------------------------------------------------------!
-! Open output files.                                                   !
+! in open_files.f90                                                    !
+! Opens default output files.                                          !
 !----------------------------------------------------------------------!
 call open_default()
 
+!----------------------------------------------------------------------!
+! in open_files.f90                                                    !
+! Opens site_info.dat file                                             !
+!----------------------------------------------------------------------!
 call open_site_info()
 
 if (inp%run%read_in_state) then

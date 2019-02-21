@@ -17,15 +17,18 @@ contains
 
 !**********************************************************************!
 !                                                                      !
-!                     write_lat_lon :: output_methods                  !
+!                     output_mapping :: output_methods                 !
 !                     -------------------------------                  !
 !                                                                      !
-! subroutine WRITE_LAT_LON(lat,lon,nft,out_cov,out_bio,out_bud,        !
-! out_sen,oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)             !
+! subroutine output_mapping(nomdos,otags)                              !
+!                                                                      !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Write lat & lon for output files.
-!! @details
+!> @brief 
+!! @details Checks that the variables requested for outputs exist
+!!          Also assigns to the output mapping variable the id of each
+!!          requested variable.nomdos is the number of default variables
+!!          and otags is a list with the names of the default variables
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -35,6 +38,13 @@ character(len=str_len), dimension(max_outputs) :: otags
 
 !----------------------------------------------------------------------!
 ! set up mapping for output files for and place in inp%output%*%map.   !
+!----------------------------------------------------------------------!
+
+!----------------------------------------------------------------------!
+! For each variable requested in the output for annual,monthly and     !     
+! daily inp%output%tile_vars_*%tag(i), loops through the list of       !
+! available variables (otags(j)) and assigns its id in                 !
+! inp%output%tile_vars_*%map(i).                                       ! 
 !----------------------------------------------------------------------!
 do i=1,inp%output%tile_vars_yearly%n
   do j=1,nomdos
@@ -117,8 +127,6 @@ do i=1,inp%output%pft_vars_daily%n
 enddo
 
 end subroutine output_mapping
-
-
 
 
 

@@ -48,7 +48,7 @@ call get_command_argument(i,arg)
   i = i + 1
 enddo
 
-! check number of additoinal args is as required by the input file.
+! check number of additional args is as required by the input file.
 if (additional_arguments/=i-2) then
   write(*,'(''There are'',i2,'' arguments to sdgvm,'',i2 &
  ,'' were expected.'')') i-1,additional_arguments+1
@@ -974,9 +974,8 @@ end subroutine process_input_file
 !> @brief Read internal parameters from "inc/param.dat" file, and io
 !! parameters from "inc/screen_output.dat.dat".
 !! @details First reads screen_output.dat which holds parameters on how
-!! to output on screen during run.
-!! Parameters are saved in sop structure defined in screen_output_parameters.f90
-!! with more details.
+!! to output on screen during run. Parameters are saved in sop structure
+!! defined in a_screen_output.f90 with more details.
 !! It then reads the param.dat file in /inc with the tuning parameters
 !! and saves in structure tgp defined in tuning_parameters.f90.
 !! @author Mark Lomas EPK added param.dat path

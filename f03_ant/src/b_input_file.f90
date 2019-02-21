@@ -1124,13 +1124,16 @@ contains
         case('nyears')
           read(param_values,*) this%output%nyears
 
+        !Gets the name of the variables to write yearly,monthly and daily
         case('tile_yearly')
           read(param_values,*) this%output%tile_yearly
         case('tile_monthly')
           read(param_values,*) this%output%tile_monthly
         case('tile_daily')
           read(param_values,*) this%output%tile_daily
-
+        
+        !Gets the number of variables to write yearly,monthly and daily
+        !Sets their names in the %tag
         case('tile_vars_yearly')
           i = nfields(param_values)
           if (i>0) then
@@ -1150,13 +1153,16 @@ contains
             read(param_values,*) (this%output%tile_vars_daily%tag(j),j=1,i)
           endif
 
+        !Gets the name of the variables to write yearly,monthly and daily per pft 
         case('pft_yearly')
           read(param_values,*) this%output%pft_yearly
         case('pft_monthly')
           read(param_values,*) this%output%pft_monthly
         case('pft_daily')
           read(param_values,*) this%output%pft_daily
-
+        
+        !Gets the number of variables to write yearly,monthly and daily
+        !Sets their names in the %tag
         case('pft_vars_yearly')
           i = nfields(param_values)
           if (i>0) then
