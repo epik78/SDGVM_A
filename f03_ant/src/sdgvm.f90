@@ -129,7 +129,7 @@ call get_input_filename(buff1)
 call inp%read_input_file(trim(buff1))
 
 !----------------------------------------------------------------------!
-! in b_input_methods.f90
+! in b_input_methods.f90                                               !
 ! Check the number of command line arguments are consistent with the   !
 ! input file.You can pass some variables from the command line or the  !
 ! input file e.g. output directory.This checks that they are all there !
@@ -137,6 +137,7 @@ call inp%read_input_file(trim(buff1))
 call command_line_argument_check()
 
 !----------------------------------------------------------------------!
+! ! in b_input_methods.f90                                             !
 ! Process the input file data.                                         !
 !----------------------------------------------------------------------!
 call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
@@ -187,9 +188,12 @@ if (outyears2>0) call open_optional(out_cov,out_bio,out_bud,out_sen)
 
 !call open_state()
 
+!----------------------------------------------------------------------!
+! in open_files.f90                                                    !
+! Opens state input files                                              !
+!----------------------------------------------------------------------! 
 call open_tile_pft()
 
-!----------------------------------------------------------------------!
 if(inp%run%gs_func==3) goudriaan_old = .TRUE.
 
 if (inp%run%s070607) then
@@ -250,7 +254,8 @@ if (.not.inp%run%read_clump) then
 endif
 
 !----------------------------------------------------------------------!
-!  Read co2 file.                                                      !
+! in data.f90
+! Read co2 file.                                                      !
 !----------------------------------------------------------------------!
 call readco2(yr0,yrf,co2,daily_co2,nyears)
 !----------------------------------------------------------------------!
@@ -304,7 +309,8 @@ do site=1,sites
 !      ENDIF
 
 !----------------------------------------------------------------------!
-! Read in soil parameters.                                             !
+! in data.f90                                                          !
+! Read land use.cluse(year,nft) the fraction of each ft per year       !
 !----------------------------------------------------------------------!
   call read_landuse(ilanduse,yr0,yrf,du,nft,ssp%lat,ssp%lon,lutab,luse,&
  cluse,l_lu)
@@ -389,7 +395,7 @@ do site=1,sites
  yearv,iyear,tmp,prc,hum,cld,swr,thty_dys,yr0,year,nyears,nn1)
         call seasonality(tmp,prc,cld,thty_dys,nft,year,nn1)
       enddo
-            
+      
       do ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
         pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)

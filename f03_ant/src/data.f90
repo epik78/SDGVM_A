@@ -247,6 +247,9 @@ end subroutine ex_clim_site
 !! Land use must be written per class per year in vector format (i3)
 !! 0-100 with 255 for water.Direction is West to East,North to South.
 !! lutab(landcover classes,nft) is read from setup file.
+!! classprop(landcover classes) The % of each landcover class in the grid
+!! ftprop(nft) the fraction of each ft in the gridcell
+!! cluse(year,nft) the fraction of each ft in the gridcell per year
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -263,7 +266,7 @@ logical :: l_lu
 !----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
-! read in the readme file 'readme.dat'.                                !
+! read the 'readme.dat' file in the directory where land use files are !
 !----------------------------------------------------------------------!
 open(99,file=trim(inp%dirs%land_use)//'/readme.dat',&
  status='old',iostat=kode)
@@ -1271,7 +1274,8 @@ end subroutine set_co2
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief
-!! @details
+!! @details ilanduse:0 reads from map file,1 from the input file
+!! 2 natural vegetation ;)
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
@@ -1292,16 +1296,19 @@ icontinuouslanduse = 1
 if (ilanduse==0) then
   if (icontinuouslanduse==0) then
     call EX_LU(lat,lon,luse,yr0,yrf,du)
-! Create the continuous land use (cluse)
+    ! Create the continuous land use (cluse)
     do year=yr0,yrf
       do ft=1,nft
         cluse(ft,year-yr0+1) = lutab(luse(year-yr0+1),ft)
       enddo
     enddo
   else
+    ! in data.f90
+    ! Reads landuse from data map
     call EX_CLU(lat,lon,nft,lutab,cluse,yr0,yrf,du,l_lu)
   endif
 elseif (ilanduse==1) then
+  ! Reads landuse from input file
   l_lu = .true.
   do year=yr0,yrf
     do ft=1,nft
