@@ -151,11 +151,12 @@ end subroutine pfd
 !                     pfd_ant :: light_methods                         !
 !                     ------------------------                         !
 !                                                                      !
-! SUBROUTINE pfd(lat,day,hrs,cloud,direct,diffuse,total)               !
+! SUBROUTINE pfd_ant(lat,day,hrs,cloud,direct,diffuse,total,swr, &     !
+!                    read_par,subd_par,t,total_t,calc_zen,cos_zen)     !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Calculates total,direct and diffuse radiation for the day
-!! @details Units oof outputs are mol/m2/sec
+!! @details Units of outputs are mol/m2/sec
 !! Needs interpolated daily values of cloud cover instead
 !! of the same one for all the days in the month
 !! @author Mark Lomas
@@ -174,6 +175,7 @@ real(dp) :: solar_const = 1370.0 ! solar constant (W/m2)
 logical :: read_par,subd_par,calc_zen
 !----------------------------------------------------------------------!
 
+! Calculates toa during the day
 if (hrs>1E-6) then
 ! declination angle
   del  = -23.4*cos(conv*360.0*(day+10.0)/365.0)
@@ -240,13 +242,15 @@ if (hrs>1E-6) then
 
   endif
 
+! Finds the clearness by dividing read SWR and the toa one.
+! The fraction will give a proxy of how clear the day was
   if (total<0.0) total=0.0
   if(toa<=0.0) then
     clearness = 0.0
   else
     clearness = total/toa
   endif
-
+  
 ! calculate diffuse irradiance (from Spitters etal 1986)
   if(subd_par) THEN
 ! hourly data
@@ -263,6 +267,10 @@ if (hrs>1E-6) then
     endIF
   ELSE
 ! daily data
+! The clearness factor defines diffprop which is the fraction
+! of the total radiation assigned to diffuse.The smaller the
+! clearness,the higher the proportion assigned to diffused
+! radiation
     if(clearness<0.07) THEN
       diffprop = 1.0
     ELSE IF(clearness<0.35) THEN

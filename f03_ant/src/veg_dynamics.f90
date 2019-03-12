@@ -30,7 +30,7 @@ contains
 !! also set ssv%cover to zero for those cases which means cover will be 
 !! available for use.It then proportianally assigns new cover to the fts that      
 !! need to make the biggest jump in cover from the previous year to the   
-!! current.ftprop(ft) now describes the new cover to be assigned to each 
+!! current.ftprop(ft) now describes the new cover to be ADDED to each 
 !! ft.
 !!
 !! @author Mark Lomas
@@ -62,7 +62,7 @@ enddo
 call fire(prc,tmp,fri,fprob)
 
 !----------------------------------------------------------------------!
-! Take off area burnt by fire together with plants past there sell by  !
+! Take off area burnt by fire together with plants past their sell by  !
 ! date and put this as bare ground ready for new growth 'ngrowth'.     !
 ! Also shift cover and biomass arrays one to the right.                !
 !----------------------------------------------------------------------!
@@ -79,19 +79,29 @@ do ft=1,nft
   ftprop0(ft) = 0.0
 enddo
 
+! Calculates total current cover for each type by summing cohorts
 do ft=1,ssp%cohorts
   ftprop0(pft(ft)%itag)=ftprop0(pft(ft)%itag) + ssv(ft)%cov
 enddo
 
+! Calculates ftprop(ft) which now stands for the cover it needs to ADD
+! to each ft.When it was read it,it meant something else.
 norm = 0.0d0
 do ft=1,nft           
   if (ftprop(ft)>0.0d0) then
+    ! Subtracts what I want for the new year from what I have.If its
+    ! positive it shows how much I want to add.norm adds up all the
+    ! additional cover I need for all covers
     ftprop(ft) = ftprop(ft) - ftprop0(ft)
     if (ftprop(ft)<0.0d0) ftprop(ft)=0.0d0 !can't remove cov
     norm = norm + ftprop(ft)
   endif
 enddo
 
+! It normalizes each cover I want to add for each ft by the total
+! cover I want to add and multiplies by the available new cover.
+! Each ft that wants to increase will get a fraction of the new
+! cover available
 if (ssp%new_cov > 0.0) then
   do ft=1,nft
     ftprop(ft) = ftprop(ft)/norm*ssp%new_cov

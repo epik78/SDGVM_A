@@ -1056,8 +1056,8 @@ end subroutine read_soil
 ! subroutine co2_0_f(co20,co2f,yearv,yr0,co2,nyears)                   !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
+!> @brief Extract initial and final C02 values
+!! 
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -1153,10 +1153,10 @@ end subroutine set_landuse
 ! iyear,tmp,prc,hum,cld,thty_dys,yr0,year)                             !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Set 'tmp' 'hum' 'prc' and 'cld'.
-!! @details Assign climate from the raw data which is help in 'x???v'
+!> @brief Set 'tmp' 'hum' 'prc' 'swr' and 'cld'.
+!! @details Assign climate from the raw data which is held in 'x???v'
 !! arrays.
-!! It also calculates the monthly average of temperature,precipitation
+!! It also calculates the average temperature,precipitation for a month
 !! and humidity.It uses that info to calculate the exponentially-weighted
 !! 20-year monthly means which are assigned to site structure
 !! variable ssp.Those values are required for the crop processes.
@@ -1192,8 +1192,10 @@ do mnth=1,12
     prc(mnth,day) = real(xprcv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/10.0
     hum(mnth,day) = real(xhumv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))/100.0
     swr(mnth,day) = real(xswrv(yearv(iyear+nn1+nn2)-yr0+1,mnth,day))
-    ssp%mnthtmp(mnth)=ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
-    ssp%mnthprc(mnth)=ssp%mnthprc(mnth)+prc(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    !Mean month temperature
+    ssp%mnthtmp(mnth) = ssp%mnthtmp(mnth)+tmp(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    !Mean month precipitation
+    ssp%mnthprc(mnth) = ssp%mnthprc(mnth)+prc(mnth,day)
     if (withcloudcover) then
       cld(mnth) = real(xcldv(yearv(iyear+nn1+nn2)-yr0+1,mnth))/1000.0
     else
@@ -1206,20 +1208,22 @@ do mnth=1,12
   do day=1,no_days(year+nn1+nn2,mnth,thty_dys)
     if (hum(mnth,day)<30.0)  hum(mnth,day) = 30.0
     if (hum(mnth,day)>95.0)  hum(mnth,day) = 95.0
-    ssp%mnthhum(mnth)=ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
+    !Mean month humidity
+    ssp%mnthhum(mnth) = ssp%mnthhum(mnth)+hum(mnth,day)/no_days(year+nn1+nn2,mnth,thty_dys)
   enddo
 enddo
 
-if(iyear==1) THEN
-  ssp%emnthtmp(:,nn1+1)=ssp%mnthtmp(:)
-  ssp%emnthprc(:,nn1+1)=ssp%mnthprc(:)
-  ssp%emnthhum(:,nn1+1)=ssp%mnthhum(:)
-ELSE
-  ssp%emnthtmp(:,nn1+1)=0.95*ssp%emnthtmp(:,nn1+1)+0.05*ssp%mnthtmp(:)
-  ssp%emnthprc(:,nn1+1)=0.95*ssp%emnthprc(:,nn1+1)+0.05*ssp%mnthprc(:)
-  ssp%emnthhum(:,nn1+1)=0.95*ssp%emnthhum(:,nn1+1)+0.05*ssp%mnthhum(:)
-endIF
 
+IF(iyear==1) THEN
+  ssp%emnthtmp(:,nn1+1) = ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1) = ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1) = ssp%mnthhum(:)
+ELSE
+  !Running averages for this year ssp%*(1:12,1) and the next ssp%*(1:12,2)
+  ssp%emnthtmp(:,nn1+1) = 0.95*ssp%emnthtmp(:,nn1+1)+0.05*ssp%mnthtmp(:)
+  ssp%emnthprc(:,nn1+1) = 0.95*ssp%emnthprc(:,nn1+1)+0.05*ssp%mnthprc(:)
+  ssp%emnthhum(:,nn1+1) = 0.95*ssp%emnthhum(:,nn1+1)+0.05*ssp%mnthhum(:)
+ENDIF
 
 end subroutine set_climate
 
@@ -1229,7 +1233,7 @@ end subroutine set_climate
 
 !**********************************************************************!
 !                                                                      !
-!                          set_co2 :: sdgvm1                           !
+!                          set_co2 :: data                             ! 
 !                          -----------------                           !
 !                                                                      !
 ! subroutine set_co2(ca,iyear,speedc,co2,year,yr0)                     !
@@ -1357,8 +1361,8 @@ end subroutine read_landuse
 ! subroutine country(lat,lon,country_name,country_id,l_regional)       !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
+!> @brief Gets country id for the gridcell
+!! 
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006

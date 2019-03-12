@@ -135,8 +135,7 @@ end subroutine output_mapping
 !                     write_lat_lon :: output_methods                  !
 !                     -------------------------------                  !
 !                                                                      !
-! subroutine WRITE_LAT_LON(lat,lon,nft,out_cov,out_bio,out_bud,        !
-! out_sen,oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)             !
+! subroutine WRITE_LAT_LON(lat,lon)                                    !
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Write lat & lon for output files.
@@ -144,13 +143,10 @@ end subroutine output_mapping
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine write_lat_lon(lat,lon,nft,out_cov,out_bio,out_bud,out_sen, &
- oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)
+subroutine write_lat_lon(lat,lon)
 !**********************************************************************!
-integer :: i,ft,nft,outyears1,outyears2,iofn,oymdft,oymd
-integer, dimension(max_outputs) :: otagsn,otagsnft
+integer :: i
 real(dp):: lat,lon
-logical :: out_cov,out_bio,out_bud,out_sen
 character(len=str_len) :: st1
 !----------------------------------------------------------------------!
 

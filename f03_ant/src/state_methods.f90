@@ -1305,7 +1305,9 @@ end subroutine FT_COVER
 ! subroutine SET_MISC_VALUES(sla,t)                                    !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief
+!> @brief Calculates leaf molecular weight and msv%mv_respref which is
+!! used in respiration calculations and is a function of temperature
+!! and soil moisture
 !! @details Structure msv is defined in misc_values
 !! @author Mark Lomas
 !! @date Feb 2006

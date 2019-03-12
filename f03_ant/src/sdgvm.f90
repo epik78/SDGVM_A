@@ -182,7 +182,7 @@ if (inp%run%output_state) then
   call fun%openu(trim(inp%dirs%output)//'/state.dat',fid_output_state)
 endif
 
-!call crop_outputs(nft,0)
+call crop_outputs(nft,0)
 
 if (outyears2>0) call open_optional(out_cov,out_bio,out_bud,out_sen)
 
@@ -280,7 +280,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! Write lat/lon in crop output file                                    !
 !----------------------------------------------------------------------!
-!  call crop_outputs(nft,2)
+  call crop_outputs(nft,2)
 
 !----------------------------------------------------------------------!
 ! Read in climate.                                                     !
@@ -310,15 +310,23 @@ do site=1,sites
 
 !----------------------------------------------------------------------!
 ! in data.f90                                                          !
-! Read land use.cluse(year,nft) the fraction of each ft per year       !
+! Read land use.cluse(nft,year) the fraction of each ft per year       !
 !----------------------------------------------------------------------!
   call read_landuse(ilanduse,yr0,yrf,du,nft,ssp%lat,ssp%lon,lutab,luse,&
  cluse,l_lu)
-
+  
+!----------------------------------------------------------------------!
+! in crops.f90                                                         !
+! Read fertilizers.cfert(nft,year,NPK).Units are kg/ha,scale is 0.1    !
+!----------------------------------------------------------------------!
   call read_fertilizers(du,yr0,yrf,ssp%lat,ssp%lon,nft,cfert)
-  
+
+!----------------------------------------------------------------------!
+! in crops.f90                                                         !
+! Read irrigation.cirr(nft,year).Units are %
+!----------------------------------------------------------------------!
   call read_irrigation(du,yr0,yrf,ssp%lat,ssp%lon,nft,cirr)
-  
+   
 !======================================================================!
 !                         DRIVING DATA IF                              !
 !======================================================================!
@@ -328,22 +336,24 @@ do site=1,sites
     site_dat = site_dat + 1
        
 !----------------------------------------------------------------------!
+! in b_output_methods
 ! Write lat & lon for output files.                                    !
 !----------------------------------------------------------------------!
-    call write_lat_lon(ssp%lat,ssp%lon,nft,out_cov,out_bio,out_bud,out_sen, &
- oymdft,otagsn,oymd,otagsnft,outyears1,outyears2)
 
+    call write_lat_lon(ssp%lat,ssp%lon)
 !----------------------------------------------------------------------!
 ! Computation of hydrological parameters.                              !
 !----------------------------------------------------------------------!
     call wsparam(l_b_and_c,nupc,awl,kd,kx,nci,infix,adp,topsl,sfc,sw,sswc)
 
 !----------------------------------------------------------------------!
+! in data.f90
 ! Extract initial and final C02 values.                                !
 !----------------------------------------------------------------------!
     call co2_0_f(co20,co2f,yearv,yr0,co2,nyears)
-
+    
 !----------------------------------------------------------------------!
+! in data.f90
 ! Extract the country/state corresponding to the site.                 !
 !----------------------------------------------------------------------!
     call country(ssp%lat,ssp%lon,country_name,country_id,l_regional)
@@ -371,13 +381,16 @@ do site=1,sites
     do iyear=1,nyears
 
       year = yearv(iyear)
- 
+
+      !The indexed year 
       ssp%iyear = iyear
+      !The calendar year
       ssp%year = year
            
       nfix = infix
 
 !----------------------------------------------------------------------!
+! in data.f90
 ! Set CO2 value 'ca' from 'co2' or 'co2const'.                         !
 !----------------------------------------------------------------------!
       call set_co2(ca,iyear,speedc,co2,year,yr0)
@@ -388,7 +401,11 @@ do site=1,sites
       endif
 
 !----------------------------------------------------------------------!
-! Set 'tmp' 'hum' 'prc' and 'cld', and calc monthly and yearly avs.    !
+! in data.f90                                                          !
+! Set 'tmp' 'hum' 'prc' 'swr' and 'cld', and calc monthly and yearly av!
+! in crops.f90                                                         !
+! Set sow day pft_tab(3:nft)%sowday and find an estimate of required   !
+! GDD for the grid cell and crop pft_tab(ft)%cropgdd(1,:)              !
 !----------------------------------------------------------------------!
       do nn1=1,0,-1
         call set_climate(xtmpv,xprcv,xhumv,xcldv,xswrv,withcloudcover, &
@@ -407,20 +424,39 @@ do site=1,sites
         pft_tab(ft)%fert(3)=10*cfert(ft,year-yr0+1,3)
       enddo
       
+!----------------------------------------------------------------------!
+! in crops.f90                                                         !
+! Figures the optimal crop lai pft_tab(ft)%optlai based on the applied !
+! fertilizer                                                           !
+!----------------------------------------------------------------------!
       call fert_crops(nft)
 
 !      call read_opt_par()
+
 !----------------------------------------------------------------------!
-! Set land use through ftprop.                                         !
+! in data.f90                                                          ! 
+! Set land use through ftprop.ftprop(nft) assumes the values of        !
+! cluse(nft,year) with the % for each class                            !
 !----------------------------------------------------------------------!
       call set_landuse(ftprop,tmp,prc,nat_map,nft,cluse,year,yr0)
-      
+    
+!----------------------------------------------------------------------!
+! in veg_dynamics.f90                                                  !
+! Calculates ftprop(nft) which now becomes the fraction of cover that  !
+! must be added for each pft                                           !
+!----------------------------------------------------------------------!      
       call cover(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
       call initialise_new_cohorts(nft,ftprop,check_closure)
  
+!----------------------------------------------------------------------!
+! in soil_methods.f90                                                  !
+!----------------------------------------------------------------------!
       call mkdlit()
 
+!----------------------------------------------------------------------!
+! in state_methods.f90                                                 !
+!----------------------------------------------------------------------!
       call restrict_cohort_numbers()
       
 !----------------------------------------------------------------------!
@@ -450,7 +486,9 @@ do site=1,sites
       do mnth=1,12
         
         ssp%mnth = mnth
-
+!----------------------------------------------------------------------!
+! in soil_methods.f90                                                  !
+!----------------------------------------------------------------------!
         call sum_soilcn(soilc,soiln,minn)
 
 !======================================================================!
@@ -458,11 +496,11 @@ do site=1,sites
 !======================================================================!
         do day=1,no_days(year,mnth,thty_dys)
 
-!      CALL HERBIVORY(daily_out)
-
+          !Day of the month
           ssp%day = day
+          !Counter that starts at 5000 for each site
           ssp%jday = ssp%jday + 1
-
+          
           fpr=0.0
 
 !----------------------------------------------------------------------!
@@ -479,6 +517,12 @@ do site=1,sites
           hrs = dayl(ssp%lat,no_day(year,mnth,day,thty_dys))
 !          call PFD(lat,no_day(year,mnth,day,thty_dys),hrs,cld(mnth), &
 !     qdirect,qdiff,q)
+
+!----------------------------------------------------------------------!
+! in light_methods.f90                                                 !
+! Calculates direct(qdirect),diffused(qdiff) and total(q) PAR radiation!
+! for day of the month in mol/m2/sec.                                  !
+!----------------------------------------------------------------------!
           call pfd_ant(ssp%lat,no_day(year,mnth,day,thty_dys),hrs, &
  cld(mnth),qdirect,qdiff,q,swr(mnth,day),inp%run%read_par,.false., &
  t,total_t,inp%run%calc_zen,cos_zen)
@@ -496,22 +540,31 @@ do site=1,sites
             ssp%cohort = ft
 
             if (ssv(ft)%cov>0.0) then
-          
+              
+              !Provisional nfert value linked to N fertilizer
               if(pft(ft)%fert(1)<=0.0) then
                 nfix=0.5
               else
                 nfix=0.1*pft(ft)%fert(1)          
               endIF
               
+!----------------------------------------------------------------------!
+! in state_methods.f90                                                 !
+! Calculates leaf molecular weight msv%mv_leafmol based on sla         !
+! and msv%mv_respref which is a variable used in respiration           !
+! calculations.                                                        !
+!----------------------------------------------------------------------!
               call set_misc_values(pft(ft)%sla,tmp(mnth,day))
 
 !----------------------------------------------------------------------!
 ! nppstore leafnpp stemnpp rootnpp leaflit stemlit rootlit in mols
 !----------------------------------------------------------------------!
-              soilt = 0.97*soilt + 0.03*tmp(mnth,day)
-            
+              soilt = 0.97*soilt + 0.03*tmp(mnth,day) !unused
+!----------------------------------------------------------------------!
+! in crops.f90                                                         !
+!----------------------------------------------------------------------!            
               call irrigate(ssp%cohort,sfc,sw) 
-
+              
               call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
  cld(mnth),ca,soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx, &
  daygpp,resp_l,lai(ft),evap,tran,roff,interc,evbs,flow1(ft),flow2(ft), &
@@ -727,7 +780,7 @@ write(fun%get_id('hum.dat'),'('' '',f8.2)',advance='NO') outputs(daily_out,11,'A
 !----------------------------------------------------------------------!
 ! Write var in crop output file                                        !
 !----------------------------------------------------------------------!
-!    call crop_outputs(nft,3)
+    call crop_outputs(nft,3)
       endif
 
       if (iyear==nyears) then
@@ -1110,7 +1163,7 @@ if (inp%run%output_state) then
 !----------------------------------------------------------------------!
 ! Skip line in crop output files.                                      !
 !----------------------------------------------------------------------!
-!call crop_outputs(nft,4)
+call crop_outputs(nft,4)
 
 enddo
 !======================================================================!
@@ -1212,7 +1265,7 @@ endif
 !----------------------------------------------------------------------!
 ! Close crop output files.                                             !
 !----------------------------------------------------------------------!
-!call crop_outputs(nft,1)
+call crop_outputs(nft,1)
 
 !call fun%print()
 

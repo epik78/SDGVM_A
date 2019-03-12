@@ -1377,8 +1377,8 @@ end subroutine wsparam
 ! subroutine mkdlit()                                                  !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
+!> @brief 
+!! 
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -1417,8 +1417,8 @@ end subroutine mkdlit
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief sum_soilcn
-!! @details ! Adds up carbon and nitrogen in the soil for each cohorts
-!!
+!! @details ! Adds up carbon and nitrogen in the soil for each cohort
+!! 
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
