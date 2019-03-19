@@ -41,10 +41,10 @@ subroutine nppcalc(npp_eff,c3,maxc,soilc,soiln,minn,soil2g,wtwp, &
 real(dp) :: suma,sumd,rlai,soilc,soil2g,wtfc,nmult,npp_eff,soiln,y1,y0,&
  x1,x0, mmult,minn,nup,t,tk,up,kc,ko,tau,nleaf_sum,rem,can(12),&
  vm(12),jmx(12),oi,canres,dresp(12),drespt(12),upt(12),nupw,vmx(12),rh,&
- c1,c2,canga,p,ga,q,qdiff,qdirect,cs,coeff,can2a,can2g,rn,wtwp,&
- kg,maxc,rht,tpav,tppcv,tpgsv,ca,rd(12),tpaj,tppcj,tpgsj,hrs,a(12),gs(12),&
- ci(12),tpac4,tppcc4,tpgsc4,xvmax,asunlit,ashade,pcsunlit,pcshade, &
- gssunlit,gsshade,jsunlit(12),jshade(12),qsunlit(12),qshade(12), &
+ canga,p,ga,q,qdiff,qdirect,cs,coeff,can2a,can2g,rn,wtwp,&
+ kg,maxc,ca,rd(12),hrs,a(12),gs(12),&
+ ci(12), &
+ jsunlit(12),jshade(12),qsunlit(12),qshade(12), &
  fsunlit(12),fshade(12),ax,amax,amx,gsum,lyr,qt,t154,xdvy,px,oitau1, &
  oitau2,gsmin,x,y,dv,kcoiko,qt1,qt2,vmxp1,jp1,fpr,apar,can_clump,cld,lat
 ! light-limited assimilation rate (j) and irradiance (q) for sunlit
@@ -56,7 +56,7 @@ real(dp), dimension(12) :: a_sd,ci_sd,gs_sd,fsunlit_sd,fshade_sd,qsunlit_sd, &
 real(dp) :: qdirect_sd,qdiff_sd,q_sd,swr,tleaf_n,tleaf_p
 
 real(dp) :: sd_scale(20),sd_scale2,cos_zen
-integer :: calc_zen,year,mnth,thty_dys,subd_par,read_par,gs_type
+integer :: year,mnth,thty_dys,subd_par,read_par,gs_type
 logical :: jfv
 integer :: i,lai,c3,day,ft,luna_calc_days,par_loops,ii
 real(dp) :: soilalbedo,leafalbedo,kbeam,kdiff,m,kbeamstar,canopyalbedo,&
@@ -75,7 +75,6 @@ integer :: s070607
 logical :: gold,hw_j
 !----------------------------------------------------------------------!
 
-      if ((day==100).and.(mnth==1).and.(year==1902)) stop
 !      print*
 !      print'(3i5,2f10.5)',year,mnth,day,soil2g,rlai
 !      print*,'age in nppstore',ssv(ssp%cohort)%age
@@ -226,7 +225,7 @@ if ((rlai>0.1).and.(q>0.0)) then
   nup = nupw*nmult
   up = nup
   if (up<0.0)  up = 0.0
-
+  
 !----------------------------------------------------------------------!
 ! canopy N scaling
 !----------------------------------------------------------------------!
@@ -294,7 +293,7 @@ if ((rlai>0.1).and.(q>0.0)) then
 ! calculate leaf N in canopy layer i
 !----------------------------------------------------------------------!
     if (inp%run%ncalc_type<=1) then 
-! default topleaf N 
+! default topleaf N
       nleaf(i) = up*can(i)*tgp%p_nleaf
     elseif (inp%run%ncalc_type==2) THEN
 ! based on trait regressions/specified top leaf N
@@ -567,7 +566,7 @@ if ((rlai>0.1).and.(q>0.0)) then
       nleaf_sum = nleaf_sum + nleaf(i)*rem
       canres    = canres + dresp(i)*rem
     endIF
-
+    
 ! initial LAI loop
   enddo
 

@@ -37,18 +37,20 @@ real(dp) :: ladp(4),lsfc(4),lsw(4),lsswc(4),s1in
 real(dp) :: eemm,etmm,pet2,dp2,t,rlai,evap,tran,roff,f2,f3
 real(dp) :: bst,kf,interc,ms,fs,rwc(4),w(4),rem,f1,ds,st,ws,sl,sf,sd
 real(dp) :: fav,ev,ss,sums,evbs,pet3,ans1,tfscale,prc
-integer :: lai,iter,ft,i
+integer :: lai,ft,i
 !----------------------------------------------------------------------!
 
-iter = 30
 
+! dp2 at this point holds precip
 dp2 = prc
 
 !----------------------------------------------------------------------!
 ! SET parameter for THROUGHFALL.                                       !
 !----------------------------------------------------------------------!
 ! tf will hold the parameters for canopy interception at
-! various lai values
+! various lai values.These values are subtracted from 1 to get canopy
+! interception so e.g. 1-tf(2)=0.05 would meen 5% of interception at
+! lai=2
 tf(1) = 1.0
 tf(2) = 0.95
 tf(3) = 0.935
@@ -106,66 +108,64 @@ else
 endif
 
 ! If temp<0 then precip becomes snow and added to the snow layer
-!----------------------------------------------------------------------!
 if (t<0.0) then
-!----------------------------------------------------------------------!
-! Snow calculation (mm day-1).                                         !
-!----------------------------------------------------------------------!
   ssv(ft)%snow = ssv(ft)%snow + dp2
   evap = 0.0
   interc = 0.0
 else
-!----------------------------------------------------------------------!
-! Interception water loss (evap mm day-1).                             !
-!----------------------------------------------------------------------!
-! There seems to be a problem with the conditionals in case
-! evap<interc.The intercepted water remains on the canopy and then it's
-! gone in the next iteration
+  ! Canopy interception water loss (evap mm day-1).                             
   if (rlai>0) then
-    ! Intercepted water as a function of temperature,why?
+    ! Water interception by the canopy based on lai parameters
     interc = dp2*(1.0 - (tf(lai) + rem*(tf(lai+1) - tf(lai))))
+    ! Intercepted water as a function of temperature,why?
+    ! At 15C, factor becomes 1.Otherwise its always smaller
     interc = interc*min(1.0,(0.5 + t/32.0))
+    ! evap holds canopy evaporation.At this point it is set equal to eemm
     evap = eemm
+    ! This if is always false cause pet2=3*eemm 
     if (evap>pet2) evap = pet2
+    ! Set canopy evap to intercept if it exceeds it.You can't have more canopy evap
+    ! if the water is not on the canopy
     if (evap>interc)  evap = interc
+    ! The remaining eemm when intercept evaporation is subtracted
     pet2 = pet2 - evap
+    ! The remaining precip after intercept evaporation is subtracted
+    ! This will move to the soil.It is assumed here that intercept is also moved
+    ! to the soil as only intercept evaporation is subtracted.
     dp2 = dp2 - evap
-    interc = evap
+    !interc = evap
   else
     evap = 0.0
     interc = 0.0
   endif
 
+  ! If t>0 but there is snow then add precip to liquid snow
   if (ssv(ft)%snow>0.0) then
     ssv(ft)%l_snow = ssv(ft)%l_snow + dp2
+  ! otherwise to first soil layer
   else
-!----------------------------------------------------------------------!
-! Soil water input 0-150mm (s1) from rain                              !
-!----------------------------------------------------------------------!
-! Evaporation of the canopy intercepted water has been subtracted from
-! dp2 just above.
     ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) + dp2
   endif
 endif
 
+! Snow sublimation and snow melt
 if (ssv(ft)%snow>0.0) then
-!----------------------------------------------------------------------!
-! Snow sublimination.                                                  !
-!----------------------------------------------------------------------!
+  ! Snow sublimation as a function of remaining eemm
   sl = 0.85*pet2/50.0
+  ! If it exceeds available snow
   if (sl>ssv(ft)%snow) then
     sl = ssv(ft)%snow
     pet2 = pet2 - sl
     ssv(ft)%snow = 0.0
+  ! If snow still exists after sublimation,update remaining
+  ! snow and eemm
   else
     ssv(ft)%snow = ssv(ft)%snow - sl
     pet2 = pet2 - sl
-!----------------------------------------------------------------------!
-! Liquid snow input (lsn - mm day-1).                                  !
-!----------------------------------------------------------------------!
     ms = 0.0
+    ! If temperature greater than 0,calculate snow melt
     if (t>0.0) then
-      ms = t*40.0/real(iter)
+      ms = t*40.0/real(30)
       if (ms>ssv(ft)%snow) then
         ms = ssv(ft)%snow
       endif
@@ -177,10 +177,9 @@ else
   sl = 0.0
 endif
 
-!----------------------------------------------------------------------!
-! Soil water input for first layer for snow.                           !
-!----------------------------------------------------------------------!
-! precip has been added to the first layer above.Here it adds melt
+
+! precip has already been added to the first soil layer above.
+! Here it adds snow melt
 fs = 0.0
 if ((ssv(ft)%l_snow>0.05*(ssv(ft)%l_snow + ssv(ft)%snow)).and.(t>0.0)) &
  then
@@ -226,7 +225,11 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) + f3
 ! Fill up to saturated water content from bottom up.                   !
 !----------------------------------------------------------------------!
 ! Also calculates runoff (roff)
+
 roff = 0.0
+! Threshold over which I have excess water for each layer
+! Move the excess from bottom up until you reach the first layer where
+! the excess becomes runoff
 ans1 = lsfc(4) + tgp%p_roff2*(lsswc(4) - lsfc(4))
 if (ssv(ft)%soil_h2o(4)>ans1) then
   ssv(ft)%soil_h2o(3) = ssv(ft)%soil_h2o(3) + ssv(ft)%soil_h2o(4) - ans1
@@ -273,6 +276,8 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) - sf - sd
 ! If the soil water content for each layer is greater than the wilting
 ! point then it calculates the relative water content for each layer
 ! fav is not used
+! Calculates relative water content for each layer except the 1st,
+! where we consider no water is removed from the plant for transpiration
 fav = 0.0
 
 if (ssv(ft)%soil_h2o(1)>lsw(1)) then
@@ -394,25 +399,18 @@ endif
 !----------------------------------------------------------------------!
 ! Calculation of bare soil evaporation 'evbs' (mm day-1).              !
 !----------------------------------------------------------------------!
-!        ev = (rwc(1) - 0.25)/0.75
-!        ev = (rwc(1) - 0.01)/0.75
+! evbs is a function of temperature and eemm
 ev = (ssv(ft)%soil_h2o(2) - lsw(2))/(lsfc(2) - lsw(2))
 if (ev<0.0)  ev = 0.0
 bst = 0.0
 if (t>0) bst = (t/16.0)
 evbs = ev*tgp%p_bs*0.33*pet3*1.3*bst
 
+! Subtracts from available eemm
 if (evbs>pet2)  evbs = pet2
 pet2 = pet2 - evbs
-!      IF (evbs>ssv(ft)%soil_h2o(1)) THEN
-!        IF (evbs>(ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2))) &
-! evbs = ssv(ft)%soil_h2o(1) + ssv(ft)%soil_h2o(2)
-!        ssv(ft)%soil_h2o(2) = ssv(ft)%soil_h2o(2) - &
-! evbs + ssv(ft)%soil_h2o(1)
-!        ssv(ft)%soil_h2o(1) = 0.0
-!      ELSE
-!        ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) - evbs
-!      ENDIF
+
+! Removes soil evaporation from 1st soil layer
 if (evbs>ssv(ft)%soil_h2o(1)) then
   evbs = ssv(ft)%soil_h2o(1)
   ssv(ft)%soil_h2o(1) = 0.0
@@ -420,15 +418,15 @@ else
   ssv(ft)%soil_h2o(1) = ssv(ft)%soil_h2o(1) - evbs
 endif
 
+! Sums evaporation from all sources. Canopy, sublimation and soil
 evap = evap + sl + evbs
+
 ! Update soil moisture trigger for budburst
 do i=1,29
   ssv(ssp%cohort)%sm_trig(31-i) = ssv(ssp%cohort)%sm_trig(30-i)
 enddo
 ssv(ssp%cohort)%sm_trig(1) = (s1in - 0.0*evbs)
 
-!print*,'evap,sl,evbs ',evap,sl,evbs
-!print*,'end   ',ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
 
 end subroutine hydrology
 

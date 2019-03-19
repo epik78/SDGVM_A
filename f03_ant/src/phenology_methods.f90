@@ -35,8 +35,7 @@ contains
 !                   phenology :: phenological_methods                  !
 !                   ---------------------------------                  !
 !                                                                      !
-! Used for grasses and crops. Lai being controlled by the available    !
-! npp storage.                                                         !
+! Lai being controlled by the available npp storage.                   !
 !                                                                      !
 ! SUBROUTINE phenology(yield,laiinc)                                   !
 !                                                                      !
@@ -56,10 +55,13 @@ co = ssp%cohort
 
 if (pft(co)%phen/=0) then
   if (pft(co)%phen==1) then
+    ! Grass
     call PHENOLOGY1(yield,laiinc)
   elseif (pft(co)%phen==2) then
+    ! Trees
     call PHENOLOGY2(yield,laiinc)
   elseif (pft(co)%phen==3) then
+    ! Crops
     call PHENOLOGY3(yield,laiinc)
   else
     write(*,*) 'No phenology defined for ',pft(co)%phen,pft(co)%tag
@@ -108,11 +110,16 @@ wtfc     = ssp%field
 ftagh    = pft(co)%crop
 ftdth    = pft(co)%d2h
 stemfr   = ssv(co)%stemfr
+! Day of budburst
 bb       = ssv(co)%bb
+! Day of senescence
 ss       = ssv(co)%ss
+! Days of growing season
 bbgs     = ssv(co)%bbgs
 dsbb     = ssv(co)%dsbb
+! Boolean chill
 chill    = ssv(co)%chill
+! Days of chill
 dschill  = ssv(co)%dschill
 leafls   = pft(co)%lls
 bbm      = pft(co)%bbmem
@@ -135,9 +142,10 @@ harvest = 0
 
 ss = 0
 
-!----------------------------------------------------------------------!
-! Check for chilling.                                                  !
-!----------------------------------------------------------------------!
+! Check for chilling.
+! If there is no chill,sum up the bbsum over last 20 days.
+! If it's value is less than -100,then call it chill.Also set days of
+! chill equal to 1 
 if (chill==0) then
   bbsum = 0.0
   do i=1,20
@@ -149,50 +157,54 @@ if (chill==0) then
     dschill = 1
   endif
 endif
+! If it is chill, then add to days of chill dschill
 if (chill==1) then
   dschill = dschill + 1
 endif
+! If days of chill exceed 260 then reset chill
 if (dschill>260) then
   chill = 0
   dschill = 0
 endif
 
-!----------------------------------------------------------------------!
-! Bubburst, if no budburst set, and sufficient soil moisture, then     !
-! check for  budburst.                                                 !
-!----------------------------------------------------------------------!
+! Three checks for budburst.First it checks the soil moisture for the
+! current day (soil2g) and whether budburst has already occured (bb).Then
+! it checks whether we had water input in the soil over the past month
+! (sm_trig).Finally,it calculates GDD (bbsum) and checks if it has
+! exceeded a limit. 
+
+! Finds relative water content soil2g
 soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
  ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
 soil2g = soilw/(ssp%soil_depth*10.0)
 
-!if (((bb==0).and.(msv%mv_soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
-! ((dsbb>bb2bbmax).and.(msv%mv_soil2g>wtwp+0.1*(wtfc-wtwp)))) then
-
-
+! If bb=0 which means that we don't have a day of budburst yet and
+! soil moisture on the day adequate OR the growing season days exceed a maximum
+! and soil moisture near adequate then
 if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
  ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
+  ! If soil moisture over the last 30 days adequate
   smtrig = 0.0
   do i=1,30
     smtrig = smtrig + ssv(co)%sm_trig(i)
   enddo
-  if ((smtrig>30.0).or.(dsbb>bb2bbmax)) then
 
-!----------------------------------------------------------------------!
-! Check for budburst using degree days.                                !
-!----------------------------------------------------------------------!
+  if ((smtrig>30.0).or.(dsbb>bb2bbmax)) then 
+   ! If all above happens, then count GDD in bbsum
     bbsum = 0.0
     do i=1,bbm
       if (ssp%tmem(i)>bb0)  bbsum = bbsum + min(bbmax,ssp%tmem(i)-bb0)
     enddo
 
-! If the bbsum exceeds the lim for budburst then
+    ! If the bbsum exceeds the lim for budburst or the growing season
+    ! has exceeded a limit then we have budburst
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
- .or.(dsbb>bb2bbmax)) then
-!----------------------------------------------------------------------!
-! Adjust proportion of gpp going into stem production based on suma.   !
-! This is essentially the LAI control.                                 !
-!----------------------------------------------------------------------!
+      .or.(dsbb>bb2bbmax)) then
+      !----------------------------------------------------------------------!
+      ! Adjust proportion of gpp going into stem production based on suma.   !
+      ! This is essentially the LAI control.                                 !
+      !----------------------------------------------------------------------!
       tsuma = ssv(co)%suma%tot
       maint = max(1.0,(real(leafls)/360.0)*1.0)
       tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
@@ -202,9 +214,7 @@ if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
 
       if (stemfr<120.0) stemfr = 120.0
 
-!----------------------------------------------------------------------!
-! Budburst occurance.                                                  !
-!----------------------------------------------------------------------!
+      ! Budburst occurance.When did it occur and reset season counters
       bb = (mnth-1)*30 + day
       bbgs = 0
       dsbb = 0
@@ -225,21 +235,21 @@ if (((bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))).or. &
       if (inp%run%s070607) then
         ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
       else
-! Ant's phenology correction (phen_cor), restricts the maximum amount 
-! of the npp store to be used for leaf growth to 62.5% 
-! (i.e. 50% ends up as leaf mass)
+        ! Ant's phenology correction (phen_cor), restricts the maximum amount 
+        ! of the npp store to be used for leaf growth to 62.5% 
+        ! (i.e. 50% ends up as leaf mass)
         ssv(co)%nppstore(2) = 0.625*ssv(co)%nppstore(1)
-
-! This does odd stuff with crops,
       endif
     endif
   endif
 endif
 
-!----------------------------------------------------------------------!
-! Compute length of growing season, and set to zero when equal to      !
-! growing season.                                                      !
-!----------------------------------------------------------------------!
+! Here it is out of the loop of checking for budburst.As long as bb
+! (the day of budburst) remains positive, it sums up the days of 
+! the growing season bbgs.
+! If the days of the growing season exceed a threshold then it sets
+! bb to zero.That is controlled by gs which is 30 for trees and 60
+! for grasses.
 if (bb>0)  bbgs = bbgs + 1
 if (bbgs-gs>bb2bbmin) then
   bb = 0
@@ -268,31 +278,22 @@ else
   laiinc = 0.0
 endif
 
-!----------------------------------------------------------------------!
-! Senescence, if rlai is greater than zero, compute senescence.        !
-!----------------------------------------------------------------------!
 if (rlai>1.0e-6) then
   if (abs(ftagh)<1.0e-6) then
+    ! Senescence event due to soil moisture.
     if (soil2g<wtwp*0.0) then
-!----------------------------------------------------------------------!
-! Senescence event due to soil moisture.                               !
-!----------------------------------------------------------------------!
       laiinc = -rlai
+      ! Day of senescence
       ss = day + (mnth - 1)*30
+    ! Senescence event due to temperature
     elseif (bbgs>100) then
-!----------------------------------------------------------------------!
-! Check for senescence, senescence occurs there are 'sss' days colder  !
-! than 'sslim' out of the last 'ssm' days.                             !
-!----------------------------------------------------------------------!
       sssum = 0
       do i=1,ssm
         if (ssp%tmem(i)<sslim)  sssum = sssum + 1
       enddo
       if (sssum>=sss) then
-!----------------------------------------------------------------------!
-! Senescence event due to temperature.                                 !
-!----------------------------------------------------------------------!
         laiinc =-rlai
+        ! Day of senescence
         ss = day + (mnth - 1)*30
       endif
     endif 
@@ -382,12 +383,10 @@ yield = 0.0
 
 ss = 0
 
-!----------------------------------------------------------------------!
-! Check for chilling.                                                  !
-!----------------------------------------------------------------------!
-! If there is no chill,sum up the bbsum over last 20 days
-! which here is not the GDD.
-! If it's value is less than -100,then call it chill. 
+! Check for chilling
+! If there is no chill,sum up the bbsum over last 20 days.
+! If it's value is less than -100,then call it chill.Also set days of
+! chill equal to 1  
 if (chill==0) then
   bbsum = 0.0
   do i=1,20
@@ -409,52 +408,47 @@ if (dschill>260) then
   dschill = 0
 endif
 
-!if (bb > 0) stop
 
-!----------------------------------------------------------------------!
-! Bubburst, if no budburst set, and sufficient soil moisture, then     !
-! check for  budburst.                                                 !
-!----------------------------------------------------------------------!
 ! Three checks for budburst.First it checks the soil moisture for the
 ! current day (soil2g) and whether budburst has already occured (bb).Then
 ! it checks whether we had water input in the soil over the past month
 ! (sm_trig).Finally,it calculates GDD (bbsum) and checks if it has
 ! exceeded a limit. 
 
+! Finds relative water content soil2g
 soilw = ssv(co)%soil_h2o(1) + ssv(co)%soil_h2o(2) + &
  ssv(co)%soil_h2o(3) + ssv(co)%soil_h2o(4)
 soil2g = soilw/(ssp%soil_depth*10.0)
 
 ! If bb=0 which means that we don't have a day of budburst yet and
-! soil mositure adequate,then look for budburst occurence
+! soil moisture adequate OR the growing season days exceed a maximum
+! then
 if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
  ((dsbb>bb2bbmax).and.(soil2g>wtwp+0.1*(wtfc-wtwp)))) then
 
+  ! If soil moisture over the last 30 days adequate
   smtrig = 0.0
   do i=1,30
     smtrig = smtrig + ssv(co)%sm_trig(i)
   enddo
 
   if ((smtrig>30.0).or.(dsbb>bb2bbmax)) then
-
-!----------------------------------------------------------------------!
-! Check for budburst using degree days.                                !
-!----------------------------------------------------------------------!
+    ! If all above happens, then count GDD in bbsum
     bbsum = 0.0
     do i=1,bbm
       if (ssp%tmem(i)>bb0)  bbsum = bbsum + min(bbmax,ssp%tmem(i)-bb0)
     enddo
     
-    ! If bbsum which here is GDD has exceeded the threshold then
-    ! we have budburst.
+    ! If the bbsum exceeds the lim for budburst or the growing season
+    ! has exceeded a limit then we have budburst
     if ((real(bbsum)>=real(bblim)*exp(-0.01*real(dschill))) &
       .or.(dsbb>bb2bbmax)) then
-!----------------------------------------------------------------------!
-! Adjust proportion of gpp going into stem production based on suma.   !
-! This is essentially the LAI control.                                 !
-!----------------------------------------------------------------------!
+      !----------------------------------------------------------------------!
+      ! Adjust proportion of gpp going into stem production based on suma.   !
+      ! This is essentially the LAI control.                                 !
+      !----------------------------------------------------------------------!
       ! Budburst has occured
-      ! ssv(co)%suma%tot is the total leaf carbon in all comp,probably
+      ! ssv(co)%suma%tot is the total leaf carbon in all compartments
       ! tgp%p_opt=1.5 and tgp%P_laimem=0.5
       ! leafls is the leaf life span which we have set for crops to 180!REVISE
       ! It assigns part of the suma to go to stem 
@@ -467,10 +461,7 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
 
       if (stemfr<120.0) stemfr = 120.0
 
-!----------------------------------------------------------------------!
-! Budburst occurance.                                                  !
-!----------------------------------------------------------------------!
-!     On what day did budburst occur
+      ! Budburst occurance.When did it occur and reset season counters
       bb = (mnth-1)*30 + day
       bbgs = 0
       dsbb = 0
@@ -490,15 +481,11 @@ if (((bb==0).and.(soil2g>wtwp+0.5*(wtfc-wtwp))).or. &
   endif
 endif
 
-!----------------------------------------------------------------------!
-! Compute length of growing season, and set to zero when equal to      !
-! growing season.                                                      !
-!----------------------------------------------------------------------!
 ! Here it is out of the loop of checking for budburst.As long as bb
 ! retains its value it sums up the days of the growing season.
 ! If the days of the growing season exceed a threshold then it sets
-! bb to zero.
-
+! bb to zero.That is controlled by gs which is 30 for trees and 60
+! for grasses.
 if (bb>0)  bbgs = bbgs + 1
 if (bbgs-gs>bb2bbmin) then
   bb = 0
@@ -510,8 +497,8 @@ if (dsbb < 500) dsbb = dsbb + 1
 !----------------------------------------------------------------------!
 ! Set LAI increase.                                                    !
 !----------------------------------------------------------------------!
-! Calculates laiinc (why is it calculated above as well?) and adds it
-! to rlai after converting it
+! If we have budburst and growing season counter less than gs (30 or 60)
+! calculates laiinc and adds it to rlai after converting it
 ! Every day adds laiinc until the growing season ends (bb=0) see above,
 ! or the nppsore is depleted below 60?
 
@@ -524,33 +511,21 @@ else
   laiinc = 0.0
 endif
 
-! It checks whether senescence has occured by checking both soil moisture
-! and temperature.If it has laiinc is set to -lai which I guess will
-! set rlai to zero later.Also keeps the julian day of senescence as ss
-!----------------------------------------------------------------------!
-! Senescence, if rlai is greater than zero, compute senescence.        !
-!----------------------------------------------------------------------!
 if (rlai>1.0e-6) then
+  ! Senescence event due to soil moisture.
   if (soil2g<wtwp*0.0) then
-!----------------------------------------------------------------------!
-! Senescence event due to soil moisture.                               !
-!----------------------------------------------------------------------!
     laiinc = -rlai
+    ! Day of senescence
     ss = day + (mnth - 1)*30
+  ! Senescence event due to temperature
   elseif (bbgs>100) then
-!----------------------------------------------------------------------!
-! Check for senescence, senescence occurs there are 'sss' days colder  !
-! than 'sslim' out of the last 'ssm' days.                             !
-!----------------------------------------------------------------------!
     sssum = 0
     do i=1,ssm
       if (ssp%tmem(i)<sslim)  sssum = sssum + 1
     enddo
     if (sssum>=sss) then
-!----------------------------------------------------------------------!
-! Senescence event due to temperature.                                 !
-!----------------------------------------------------------------------!
       laiinc =-rlai
+      ! Day of senescence
       ss = day + (mnth - 1)*30
     endif
   endif
@@ -617,7 +592,7 @@ integer :: ssm,sss,i
   sss      = pft(co)%sens
   sslim    = pft(co)%senlim
   lairat   = pft(co)%lrat
-
+  
   rlai = ssv(co)%lai%tot(1)
   
   yield = 0.0
@@ -905,6 +880,7 @@ save :: sumrr,sumsr,sumlr,summr
 
 co = ssp%cohort
 
+! Calculates npp in order to allocate
 daynpp = daygpp - resp_l
 
 if (pft(co)%phen/=0) then
@@ -919,17 +895,16 @@ if (check_closure) then
  ssv(co)%stem%tot(1) + ssv(co)%root%tot(1) + resp + ssv(co)%bio(1) + ssv(co)%bio(2)
 endif
 
+! Pay for new leaves.
 ! Subtracts carbon for new leaves of laiinc from nppstore(1) after converting
 ! from LAI to carbon.The reason it has the 1.25 is for the additional carbon
 ! cost of creating leaves.That cost is added as respiration by multiplying
 ! by 0.25.
-!----------------------------------------------------------------------!
-! Pay for new leaves.
-!----------------------------------------------------------------------!
 if (laiinc>0.0) then
   ssv(co)%nppstore(1) = ssv(co)%nppstore(1) - laiinc*msv%mv_leafmol*1.25*12.0
   ssv(co)%nppstore(2) = ssv(co)%nppstore(2) - laiinc*msv%mv_leafmol*1.25*12.0
   resp_m = 0.25*laiinc*msv%mv_leafmol*12.0
+  ! Adds to respiration
   resp = resp + resp_m
 else
   resp_m = 0.0
@@ -981,9 +956,7 @@ if (check_closure) then
   endif
 endif
 
-!----------------------------------------------------------------------!
-! Pay for days roots if veg exists
-!----------------------------------------------------------------------!
+
 ! A fraction of nppstore goes to the roots (yy) or rootnpp.
 ! The fraction is constant
 if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
@@ -991,18 +964,17 @@ if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
 else
   yy = 0.0
 endif
-
 ssv(co)%nppstore(1) = ssv(co)%nppstore(1) - yy
 rootnpp = yy
-!----------------------------------------------------------------------!
+
 ! Age roots and add todays root npp.
-!----------------------------------------------------------------------!
+! Adds yy to a root compartment similar to leaves.
+! Dead root carbon (root_fixed) gets added in %bio(2),not litter
 call root_add(yy,root_fixed)
 ssv(co)%bio(2) = ssv(co)%bio(2) + root_fixed
 
-!----------------------------------------------------------------------!
-! Root resperation
-!----------------------------------------------------------------------!
+
+! Root respiration
 ! Calculates root respiration.msv%mv_respref is a function of soil moisture
 ! and temperature and its calculated daily in SET_MISC_VALUES
 call root_dist(msv%mv_respref,resp_r)
@@ -1021,9 +993,7 @@ if (check_closure) then
   endif
 endif
 
-!----------------------------------------------------------------------!
-! Stem resperation, and NPP                                            !
-!----------------------------------------------------------------------!
+! Stem resperation and NPP
 ! A fraction of nppstore goes to the stem (yy) or stemnpp.
 ! The fraction is constant
 if ((ssv(co)%nppstore(1)>0.0).and.(daynpp>0.0)) then
@@ -1034,15 +1004,12 @@ else
 endif
 stemnpp = yy
 
-!----------------------------------------------------------------------!
 ! Age stems and add todays stem npp.
-!----------------------------------------------------------------------!
+! Dead stem carbon (stem_fixed) gets added in %bio(1),not litter
 call stem_add(yy,stem_fixed)
 ssv(co)%bio(1) = ssv(co)%bio(1) + stem_fixed
 
-!----------------------------------------------------------------------!
 ! Stem respiration.
-!----------------------------------------------------------------------!
 ! Calculates stem respiration.msv%mv_respref is a function of soil moisture
 ! and temperature and its calculated daily in SET_MISC_VALUES
 call stem_dist(msv%mv_respref,resp_s)
@@ -1342,15 +1309,16 @@ integer :: i,co,k
 !----------------------------------------------------------------------!
 
 co = ssp%cohort
-
+leaflit = 0.
 ! For each cohort there will be carbon compartments where the leaf LAI
-! is stored,several for the whole canopy.
-! These compartments can be found in ssv(co)%lai where
-! ssv(co)%lai%no is the number of available compartments,
+! is stored,several for the whole canopy. These compartments can be found 
+! in ssv(co)%lai where ssv(co)%lai%no is the number of available compartments,
 ! ssv(co)%lai%c(ssv(co)%lai%no)%age the julian day when the compartment
 ! was created and ssv(co)%lai%c(ssv(co)%lai%no)%val the lai
 ! in that compartment (not the carbon!)
 
+
+! Leaf death through old age.
 ! For old age it checks if the age of the first compartment which will always
 ! be the older one is greater than the leaf life span lls,usually 180 days.
 ! If that applies then the compartment will begin to senense which doesnt
@@ -1366,9 +1334,6 @@ co = ssp%cohort
 ! Even though the leaflit variable holds lai,in lai_dist sub it is finally
 ! converted to carbon before being send to the litter.
 
-!----------------------------------------------------------------------!
-! Leaf death through old age.
-!----------------------------------------------------------------------!
 if (ssv(co)%lai%no > 0) then
   if (ssp%jday-int(ssv(co)%lai%c(1,1)%age) > pft(co)%lls) then
     k = lai_comp_length-(ssp%jday-int(ssv(co)%lai%c(1,1)%age)-pft(co)%lls)+1
@@ -1388,13 +1353,12 @@ if (ssv(co)%lai%no > 0) then
   endif
 endif
 
+! Add on lai increase, create new compartment if necessary.
 ! Checks if laiinc>0.If there is no LAI compartment it will add one. 
 ! If the oldest compartment has reached a certain age it will create
 ! another one and add LAI to the younger compartment.
-! Carbon keeps getting added to each compartment.
-!----------------------------------------------------------------------!
 ! Add on lai increase, create new compartment if necessary.
-!----------------------------------------------------------------------!
+
 if (laiinc>0.0) then
   if (ssv(co)%lai%no == 0) then
     ssv(co)%lai%no = 1
@@ -1542,7 +1506,6 @@ co = ssp%cohort
 ! It is a function of the age of the compartment and its value can be found in
 ! lmor_sc.Here is not really implemented as the values it gives (ans) are close to
 ! 1 which will make the mortality (1-ans) 0.
-
 do i=1,ssv(ssp%cohort)%lai%no
   ans = lmor_sc(int(ssp%jday-ssv(co)%lai%c(i,1)%age+1.5))
   leaflit = leaflit + ssv(co)%lai%c(i,1)%val*(1.0 - ans)
@@ -1555,7 +1518,7 @@ do i=1,ssv(co)%lai%no
   ssv(co)%lai%tot(1) = ssv(co)%lai%tot(1) + ssv(co)%lai%c(i,1)%val
 enddo
 
-! Leaf litter
+! Leaf litter,here it is converted from lai to carbon
 leaflit = leaflit*12.0/pft(co)%sla/25.0
 
 end subroutine lai_dist

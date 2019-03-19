@@ -673,7 +673,7 @@ do ft=1,inp%npft
  pft_tab(ft)%mort = inp%pft(ft)%mort
  pft_tab(ft)%wden = inp%pft(ft)%wden
  pft_tab(ft)%xyl = inp%pft(ft)%xyl
- pft_tab(ft)%pdif = inp%pft(ft)%pdif
+ pft_tab(ft)%pdif = inp%pft(ft)%pdif 
  pft_tab(ft)%sla = inp%pft(ft)%sla
  pft_tab(ft)%lls = inp%pft(ft)%lls
  pft_tab(ft)%sls = inp%pft(ft)%sls
@@ -752,15 +752,15 @@ do ft=1,inp%npft
  pft_tab(ft)%optlai = inp%pft(ft)%optlai
  pft_tab(ft)%harvindx = inp%pft(ft)%harvindx
  pft_tab(ft)%limdharv = inp%pft(ft)%limdharv
-
+ 
  if (pft_tab(ft)%sla<0.0) then
    pft_tab(ft)%sla = 10.0**(2.35 - 0.39*log10(real(pft_tab(ft)%lls)/30.0))*2.0/10000.0
 !      pft_tab(ft)%sla = 10.0**(2.43-&
 ! 0.46*log10(real(pft_tab(ft)%lls)/30.0))*2.0/10000.0
  endif
-
+ 
  pft_tab(ft)%sla = pft_tab(ft)%sla/tgp%p_sla
-
+ 
  if (pft_tab(ft)%lls<0.0) then
    pft_tab(ft)%lls = int(10.0**((2.35 - log10(pft_tab(ft)%sla*&
  10000.0/2.0))/0.39)*30.0+0.5)

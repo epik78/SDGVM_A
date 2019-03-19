@@ -37,7 +37,7 @@ logical :: check_closure
 parameter(check_closure = .false.)
 
 real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
- nppstoreold,trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo,flow1,flow2, &
+ nppstoreold,trn,lch,bioo,ht,soilc,soiln,minn,ftcov,covo, &
  leafnpp,stemnpp,rootnpp,bioleaf
 
 real(dp) :: ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
@@ -136,6 +136,7 @@ call inp%read_input_file(trim(buff1))
 !----------------------------------------------------------------------!
 call command_line_argument_check()
 
+call read_param(stver)
 !----------------------------------------------------------------------!
 ! ! in b_input_methods.f90                                             !
 ! Process the input file data.                                         !
@@ -148,13 +149,12 @@ call process_input_file(buff1,xlatf,xlon0,xlatres,xlonres, &
  soil_chr,topsl,defaulttopsl,sites,latdel,londel,lat_lon,day_mnth, &
  thty_dys,xlatresn,xlonresn,ilanduse,nft,xyear0,xyearf,lmor_sc, &
  oymdft,iofnft,sit_grd,du,narg,fire_ant,harvest_ant,met_seq,par_loops)
-
 !----------------------------------------------------------------------!
 ! in b_input_methods.f90                                               ! 
 ! Read internal parameters from "param.dat" file, and io               !
 ! parameters from "misc_params.dat".                                   !
 !----------------------------------------------------------------------!
-call read_param(stver)
+!call read_param(stver)
 
 !----------------------------------------------------------------------!
 ! in b_output_methods.f90
@@ -339,8 +339,8 @@ do site=1,sites
 ! in b_output_methods
 ! Write lat & lon for output files.                                    !
 !----------------------------------------------------------------------!
-
     call write_lat_lon(ssp%lat,ssp%lon)
+
 !----------------------------------------------------------------------!
 ! Computation of hydrological parameters.                              !
 !----------------------------------------------------------------------!
@@ -555,7 +555,7 @@ do site=1,sites
 ! calculations.                                                        !
 !----------------------------------------------------------------------!
               call set_misc_values(pft(ft)%sla,tmp(mnth,day))
-
+              
 !----------------------------------------------------------------------!
 ! nppstore leafnpp stemnpp rootnpp leaflit stemlit rootlit in mols
 !----------------------------------------------------------------------!
@@ -564,26 +564,42 @@ do site=1,sites
 ! in crops.f90                                                         !
 !----------------------------------------------------------------------!            
               call irrigate(ssp%cohort,sfc,sw) 
-              
-              call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
- cld(mnth),ca,soilc(ft),soiln(ft),minn(ft),adp,sfc,sw,sswc,awl,kd,kx, &
- daygpp,resp_l,lai(ft),evap,tran,roff,interc,evbs,flow1(ft),flow2(ft), &
- pet,ht(ft),ft,lmor_sc(:,pft(ft)%itag),nleaf,leaflitter,hrs,q,qdirect, &
- qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn,ce_light(:,:,ft),ce_ci(:,:,ft), &
- ce_t,ce_maxlight(:,:,ft),ce_ga(:,:,ft),ce_rh,check_closure, &
- par_loops,ssp%lat,year,mnth,day,thty_dys,inp%run%gs_func,swr(mnth,day))
 
+!----------------------------------------------------------------------!
+! in daily_step.f90                                                    !
+! Outputs daygpp and resp_l which are daily gpp and leaf respiration.  !
+! Also canga and gsn which are the boundary and canopy conductance     !
+! which are used in evapotranspiration sub below.                      !
+!----------------------------------------------------------------------!              
+              call dailyStep(tmp(mnth,day),prc(mnth,day),hum(mnth,day), &
+ cld(mnth),ca,soilc(ft),soiln(ft),minn(ft),kd,kx,daygpp,resp_l,lai(ft), &
+ ht(ft),ft,nleaf,hrs,q,qdirect,qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn, &
+ ce_light(:,:,ft),ce_ci(:,:,ft),ce_t,ce_maxlight(:,:,ft),ce_ga(:,:,ft), &
+ ce_rh,check_closure,par_loops,ssp%lat,year,mnth,day,thty_dys, &
+ inp%run%gs_func,swr(mnth,day))
+
+!----------------------------------------------------------------------!
+! in daily_step.f90                                                    !
+! Calculates evapotransiration etmm and evaporation eemm.              !
+!----------------------------------------------------------------------!
               call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
               pet = eemm
               pet2 = pet
-            
+
+!----------------------------------------------------------------------!
+! in hydrology_methods.f90                                             !
+!----------------------------------------------------------------------!            
               call hydrology(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
      s1in,tmp(mnth,day),ssv(ft)%lai%tot(1),evap,tran,roff,interc,evbs,f2,f3,ft)
-              flow1(ft) = flow1(ft) + f2/10.0
-              flow2(ft) = flow2(ft) + f3/10.0
 
+!----------------------------------------------------------------------!
+! in phenology_methods.f90                                             !
+!----------------------------------------------------------------------!            
               call phenology(yield,laiinc)
-
+    
+!----------------------------------------------------------------------!
+! in phenology_methods.f90                                             !
+!----------------------------------------------------------------------!            
               call allocation(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
 

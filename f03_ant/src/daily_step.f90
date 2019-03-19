@@ -35,33 +35,32 @@ contains
 !! @author Mark Lomas
 !! @date Feb 2006
 !----------------------------------------------------------------------!
-subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn,adp,sfc,sw, &
- sswc,awl,kd,kx,daygpp,resp_l,rlai,evap,tran,roff,interc,evbs,flow1, &
- flow2,pet,ht,ft,lmor_sc,nleaf,leaflitter,hrs,q, &
+subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn, &
+ kd,kx,daygpp,resp_l,rlai,ht,ft,nleaf,hrs,q, &
  qdirect,qdiff,fpr,tleaf_n,tleaf_p,canga,gsn,rn,ce_light,ce_ci,ce_t, &
  ce_maxlight,ce_ga,ce_rh,check_closure,par_loops,lat,year,mnth,day, &
  thty_dys,gs_type,swr)
 !**********************************************************************!
 real(dp), parameter :: oi = 21000.0
-real(dp) :: bb0,bbmax,bblim,sslim,tmp,prc,hum,cld,ca,maxevap, &
- lairat,interc,evbs,t,suma,sum,laiinc, &
- soilc,soiln,rh,tk,rd(12),rn,pet,petmm,petv,q,qdiff,sla, &
- qdirect,hrs,vpd,canga,lam,rho,s,gam,amx,gsn,dp2,pet2,wtfc, &
- etwt,etmm,ftagh,soilw,maxc,soil2g,can2a,daygpp,daynpp, &
- gsum,sapresp,nppstorx,leafmol,ht,tf(13), &
- eemm,amax,respref,can2g,cangs,svp,rlai, &
- wtwp,p,nppstor2,canres,et,ee,flow1,flow2,tran,rem, &
- adp(4),evap,f2,sfc(4),sw(4),awl(4),kd, &
- kx,f3,minn,roff,windspeed,leaflit,resp_l, &
- npp_eff,eff_dec,eff_age,eff,nppstore,stemnpp, &
- rootnpp,leafnpp,tfscale,sswc(4),yield,yld,resp,fpr, &
- s1in,stemfr,lmor_sc(3600),nleaf,leaflitter,old_total_carbon, &
- total_carbon,can_clump,lat,tleaf_n,tleaf_p,swr
+real(dp) :: tmp,prc,hum,cld,ca,maxevap, &
+ t,suma,laiinc, &
+ soilc,soiln,rh,tk,rd(12),rn,q,qdiff, &
+ qdirect,hrs,vpd,canga,lam,rho,s,amx,gsn, &
+ soilw,maxc,soil2g,can2a,daygpp, &
+ gsum,ht, &
+ amax,can2g,cangs,rlai, &
+ p,canres,rem, &
+ kd, &
+ kx,minn,windspeed,resp_l, &
+ npp_eff,nppstore, &
+ fpr, &
+ nleaf,old_total_carbon, &
+ total_carbon,lat,tleaf_n,tleaf_p,swr
 real(dp), dimension(30,12) :: ce_light,ce_ci,ce_ga,ce_maxlight
 real(dp), dimension(30) :: ce_t,ce_rh
-integer leafls,stemls,rootls,bbm,ssm,sss,ftphen,c3c4,thty_dys,ft, &
- mnth,i,iter,ndsum(12),lai,day,year,bb,bbgs,ftdth,ss,dsbb, &
- chill,dschill,co,par_loops,gs_type
+integer c3c4,thty_dys,ft, &
+ mnth,i,lai,day,year, &
+ co,par_loops,gs_type
 logical veg,check_closure
 !----------------------------------------------------------------------!
 
@@ -77,58 +76,13 @@ if ((check_closure).and.(pft(co)%sla > 0.0)) then
 endif
 !----------------------------------------------------------------------!
 
-wtwp     = ssp%wilt
-wtfc     = ssp%field
-sla      = pft(ft)%sla
+
 if (pft(ft)%c3c4) then
   c3c4 = 1
 else
   c3c4 = 0
 endif 
-ftphen   = pft(ft)%phen
-ftagh    = pft(ft)%crop
-ftdth    = pft(ft)%d2h
-leafls   = pft(ft)%lls
-stemls   = pft(ft)%sls
-rootls   = pft(ft)%rls
-bbm      = pft(ft)%bbmem
-bb0      = pft(ft)%bb0
-bbmax    = pft(ft)%bbmax
-bblim    = pft(ft)%bblim
-ssm      = pft(ft)%senm
-sss      = pft(ft)%sens
-sslim    = pft(ft)%senlim
-lairat   = pft(ft)%lrat
 
-leaflitter = 0.0
-
-!----------------------------------------------------------------------!
-! SET parameter for THROUGHFALL.                                       !
-!----------------------------------------------------------------------!
-tf(1) = 1.0
-tf(2) = 0.95
-tf(3) = 0.935
-tf(4) = 0.92
-tf(5) = 0.905
-tf(6) = 0.89
-tf(7) = 0.875
-tf(8) = 0.86
-tf(9) = 0.845
-tf(10)= 0.83
-tf(11)= 0.815
-tf(12)= 0.80
-tf(13)= 0.785
-
-tfscale = 2.75
-do i=1,13
-  tf(i) = 1.0 - tfscale*(1.0 - tf(i))
-enddo
-
-!----------------------------------------------------------------------!
-! Data input for number of days for each month of the year 'ndays',    !
-! the mid julian day of each month 'ndsum'.                            !
-!----------------------------------------------------------------------!
-data ndsum/16,46,75,106,136,167,197,228,259,289,320,350/
 
 p = 101325.0
 
@@ -142,6 +96,7 @@ lai = int(rlai) + 1
 !----------------------------------------------------------------------!
 ! Night-time respiration ? CHECK
 rd = 0.82e-6
+
 ! maxc, moisture response parameter
 ! maxc is is the maximum influence of soil water on stomatal conductance.
 ! Goes into nppcalc
@@ -150,12 +105,7 @@ if (inp%run%s070607) then
 else
   maxc = 1.0
 endif
-! Leaf molecular weight.
-if (sla>0.0) then
-  leafmol = 1.0/(sla*25.0)
-else
-  leafmol =0.0
-endif
+
 
 ! initialisation a faire a chaque fois
 if (pft(ft)%phen == 0) then
@@ -163,11 +113,6 @@ if (pft(ft)%phen == 0) then
 else
    veg = .true.
 endif
-
-!----------------------------------------------------------------------!
-! Water model variables and rain generater.                            !
-!----------------------------------------------------------------------!
-iter = 30
 
 ! unsused anymore... so not important if set to this value every day. 
 ! Better: should be remove from nppcalc
@@ -195,49 +140,13 @@ rh = hum
 if (rh>95.0)  rh=95.0
 if (rh<30.0)  rh=30.0
 
-! These sapwood respiration  calculations don't make sense being here
-! and can be commented out since the variables are 
-! overwritten below
-! Sapwood respiration N.B. 8.3144 J/K/mol= Universal gas constant.
-! sapresp = exp(21.6 - 5.367e4/(8.3144*tk))
-! Similar but not the same to Eq.42
-! km=0.4 in units s^-1
-sapresp = 0.4*exp(0.06*t)*0.1
-sapresp = 0.4*exp(0.02*t)*0.35
-
-! Converted to a monthly figure (N.B. 24 hour day).
-! sapresp = (sapresp*3600.0*24.0*30.0)/1000000.0
-! Use daily value
-sapresp = (sapresp*3600.0*24.0)/1000000.0
-
-! Totalled for the year.
-if (soil2g>ssp%wilt) then
-  respref = sapresp*tgp%p_resp*((soil2g - ssp%wilt)/&
- min(1.0,(wtfc - ssp%wilt)))**tgp%p_kgw
-else
-  respref = 0.0
-endif
-
-if (t<0.0) then
-  respref = 0.0
-endif
 
 t = tmp
 lam = 2500.0 - (2.367*t)
 s = 48.7*exp(0.0532*t)
 rn = 0.96*(q*1000000.0/4.0 + 208.0 + 6.0*t)
 rn = rn*0.52
-! These pet calculations don't make sense being here
-! and can be commented out since the variables are 
-! overwritten below
-pet = (1.26*s*rn)/(s + 66.0)*tgp%p_pet
-petmm = (pet*3600.0)/(lam*1000.0)*10.0
-if (petmm>0.0) then
-  petv = petmm/1.0
-else
-  petv = 0.0
-endif
-pet = petv
+
 
 !----------------------------------------------------------------------!
 ! canga=k^2 u / (log[(z-d)/z0])^2
@@ -256,9 +165,10 @@ canga = 0.168*windspeed/log((200.0 - 0.7*ht)/(0.1*ht))**2
 !----------------------------------------------------------------------!
 
 npp_eff = 0.0
-sum = 0.0
-eff_dec = 0.75
-eff_age = 90.0
+!sum = 0.0
+!eff_dec = 0.75
+!eff_age = 90.0
+!leafls   = pft(ft)%lls
 !DO i=1,leafls
 !  IF (i<=eff_age) THEN
 !    eff = 1.0
@@ -282,8 +192,8 @@ eff_age = 90.0
 npp_eff = 1.0
 
 if (veg) then
-  call NPPCALC(npp_eff,c3c4,maxc,soilc,soiln,minn,soil2g,wtwp, &
- wtfc,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx, &
+  call NPPCALC(npp_eff,c3c4,maxc,soilc,soiln,minn,soil2g,ssp%wilt, &
+ ssp%field,rd,rlai,t,rh,ca,oi,rn,qdirect,qdiff,can2a,can2g,canres,suma,amx, &
  amax,gsum,hrs,canga/1.3,p,nleaf,fpr,tleaf_n,tleaf_p,ce_light,ce_ci,ce_t, &
  ce_maxlight,ce_ga,ce_rh,ft,par_loops,cld,lat,year,mnth,day,thty_dys,gs_type,swr)
 
@@ -305,32 +215,10 @@ endif
 
 call suma_add(suma)
 
-! These pets have no place here and can be removed
-dp2 = prc
-pet2 = petv
 
-pet = eemm
-pet2 = pet
-
-!----------------------------------------------------------------------!
-! Set switch 'stseas' to find when a new growing season has started.   !
-! 'stseas = 1' for the first day of a new growing season.              !
-!----------------------------------------------------------------------!
-
-soil2g = soilw/(ssp%soil_depth*10.0)
-
-!----------------------------------------------------------------------!
-!                         DAILY npp                                    !
-!----------------------------------------------------------------------!
-! The first two lines of daynpp do nothing,daynpp is calculated later
-daynpp = can2a*3600.0*hrs/1000000.0 - canres*3600.0*(24.0-hrs)/1000000.0
-daynpp = daynpp*12.0
 resp_l = canres*3600.0*(24.0-hrs)*12.0/1000000.0
 daygpp = can2a*3600.0*hrs*12.0/1000000.0
 
-!----------------------------------------------------------------------!
-! End of the DAILY LOOP.                                               !
-!----------------------------------------------------------------------!
 
 !----------------------------------------------------------------------!
 ! Check carbon closure.
@@ -385,7 +273,7 @@ gam = 101325.0*1.012/(0.622*lam)
 ! calculated in doly
 if ((ssv(ssp%cohort)%lai%tot(1)>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
   et = (s*rn + rho*1.012*canga*vpd)/(s + gam*(1.0 + canga/gsn))*tgp%p_et
-! watch dog ajoute par ghislain 
+ 
   if (et<0.0) then
     et=0.0
   endif
@@ -401,14 +289,12 @@ else
   etmm = 0.0
 endif
 
-! Evaporation,it is without the canopy conductance (gsn)
-! but is this potential?
+! Evaporation,it is similar with evapotranspiration but without
+! the canopy conductance factor
 ee = (s*rn + rho*1.012*canga*vpd)/(s + gam)
 eemm = (ee*3600.0*hrs)/(lam*1000.0)
 
-! added by Ghislain 20/10/03
 if (ee<0.0) then
-! WRITE(*,*) 'ee is negativ ee=',ee,rn
   ee=0.0
   eemm=0.0
 endif
