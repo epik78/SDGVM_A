@@ -1298,6 +1298,7 @@ INTEGER :: co,i
   ! Sends (1-hi) nppstore carbon to litter
   lit=lit+(1-hi)*ssv(co)%nppstore(1)
   ssv(co)%nppstore(1)=0.
+  ssv(co)%nppstore(2)=0.
   
   
   ! Sends (1-hi) dead stem to litter and all dead roots

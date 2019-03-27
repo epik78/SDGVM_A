@@ -606,19 +606,20 @@ integer :: ssm,sss,i
   ! cumulative added as in some years we might have two harvests
   if(mnth==1.and.day==1) ssv(co)%yield=0.
 
-
   if(mnth==1.and.day==1.and.ssv(co)%sown==1) THEN
       pft(co)%sowday(3)=pft(co)%sowday(2)
       pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)
   endIF
 
-
+  ! If we dont have crop sown
   if(ssv(co)%sown==0) THEN
+      ! Check if its the 1st sowday
       if((day+ (mnth-1)*30)==pft(co)%sowday(1)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
           pft(co)%sowday(3)=pft(co)%sowday(1)
           pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,1)
+      ! Check if its the 2nd sowday    
       elseif((day+ (mnth-1)*30)==pft(co)%sowday(2)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
@@ -644,49 +645,18 @@ integer :: ssm,sss,i
       RETURN
   endIF
   
-    
-  if (ssv(co)%sown==1.and.(bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))) then
-      !----------------------------------------------------------------------!
-      ! Check for budburst using degree days.                                !
-      !----------------------------------------------------------------------!
-
+  ! Checks for budburst
+  if (ssv(co)%sown==1.and.(bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))) then      
       bbsum = 0.0
       do i=1,ssv(co)%sowni+1
           if(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
       endDO 
- 
+      
       if(REAL(bbsum)>=REAL(bblim)) THEN
-      !----------------------------------------------------------------------!
-      ! Adjust proportion of gpp going into stem production based on suma.   !
-      ! This is essentially the LAI control.                                 !
-      !----------------------------------------------------------------------!
-      !tsuma = ssv(co)%suma%tot
-      !maint = max(1.0,(real(leafls)/360.0)*1.0)
-      !tsuma = tsuma - msv%mv_leafmol*1.25/maint*tgp%p_opt
-      !IF(tsuma>msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = msv%mv_leafmol*1.25/maint*tgp%p_opt
-      !IF(tsuma<-msv%mv_leafmol*1.25/maint*tgp%p_opt) tsuma = -msv%mv_leafmol*1.25/maint*tgp%p_opt
-      !stemfr = stemfr + tsuma*tgp%p_laimem*12.0
-      !IF(stemfr<120.0) stemfr = 120.0
-
-      !----------------------------------------------------------------------!
-      ! Budburst occurance.                                                  !
-      !----------------------------------------------------------------------!
           bb = (mnth-1)*30 + day
           bbgs = 0
     
-      !IF(stemfr<0.8*ssv(co)%nppstore(1)) THEN
-      !  ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
-      !ELSE
-      !  IF(stemfr<0.75*ssv(co)%nppstore(1)) THEN
-      !    ssv(co)%nppstore(3) = ssv(co)%nppstore(1) - stemfr
-      !  ELSE
-      !    ssv(co)%nppstore(3) = ssv(co)%nppstore(1)*0.25
-      !  ENDIF
-      !  stemfr = stemfr*0.8
-      !ENDIF !(stemfr<0.8*ssv(co)%nppstore(1))
-      !laiinc = (ssv(co)%nppstore(1) - 0.0*ssv(co)%nppstore(3))/msv%mv_leafmol/1.25/12.0
-      !ssv(co)%nppstore(2) = ssv(co)%nppstore(1)
-      endIF ! (REAL(bbsum)>=REAL(bblim))
+      endIF
   endIF
 
   if(bb>0)  bbgs = bbgs + 1
@@ -704,6 +674,7 @@ integer :: ssm,sss,i
   ! It also checks if we are in maturity stage (GT crophen(5)).In all 3 cases
   ! it calculates the phenological heat units by multiplying temperature by
   ! fv,ft and fp which are the vernalization,development and photoperiod functions
+
   if(bb>0.and.oldphen<1) THEN
       dft=0.0d0; dfp=0.0d0;fv=1.; 
       if(oldphen<pft(co)%cropphen(5)) THEN
@@ -731,10 +702,8 @@ integer :: ssm,sss,i
   ! for the specific crop and gridcell      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,3)
 
-  !IF(ssp%year==1991) THEN
-  !  WRITE(*,*)ssp%year,mnth,day,phen,rlai
-  !ENDIF
-
+  !WRITE(*,*)ssp%year,trim(pft(co)%tag),mnth,day,phen,pft(co)%optlai
+  
   ! If the days that it is sowed exceeds a limit then set phen straight to 1
   ! so it is harvested.For most crops the limit is set to 120 but for vern crops
   ! it is set to 210 to allow a much bigger growing cycle
@@ -871,6 +840,7 @@ subroutine allocation(laiinc,daygpp,resp_l,lmor_sc,resp,leaflit,&
 !**********************************************************************!
 real(dp) :: laiinc,leaflit,resp,ans,yy,stemnpp,total_carbon,old_total_carbon, &
  root_fixed,stem_fixed,lmor_sc(3600),daynpp,rootnpp,resp_s,resp_r,resp_l, &
+
  daygpp,resp_m,lit
 integer :: i,co,k
 logical :: check_closure
@@ -907,8 +877,16 @@ if (laiinc>0.0) then
   ! Adds to respiration
   resp = resp + resp_m
 else
+  !EPK add
+  if(abs(laiinc)>ssv(co)%lai%tot(1)) laiinc=-ssv(co)%lai%tot(1)
   resp_m = 0.0
 endif
+
+!if(trim(pft(co)%tag).EQ.'Maize') then
+!do i=1,ssv(ssp%cohort)%lai%no
+!  WRITE(*,*) ssp%mnth,ssp%day,i,laiinc,ssv(co)%lai%c(i,1)%val
+!enddo
+!endif
 
 !----------------------------------------------------------------------!
 ! Age leaves by one day, kill any which have died of old age,
@@ -933,6 +911,7 @@ if (pft(co)%phen==3.and.ssv(co)%harvest(1)==1.and. &
  ssv(co)%lai%tot(1)>0.0) THEN
   call harv(lit,yielit)
 endif
+
 leaflit = leaflit + lit
 
 !----------------------------------------------------------------------!
@@ -1049,6 +1028,7 @@ endif
 ssv(co)%nppstore(1) = ssv(co)%nppstore(1) + daygpp - resp_l
 
 endif
+
 
 if (ssp%cohort == 1) then
   if ((ssp%day == 1).and.(ssp%mnth == 1)) then
