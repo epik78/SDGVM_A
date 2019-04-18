@@ -124,7 +124,8 @@ type, private :: Pft_parameters
   real(dp),dimension(3)   :: irrig = 0.0
   real(dp),dimension(3)   :: sowday = 0.0
   real(dp),dimension(2,3) :: cropgdd = 0.0
-  real(dp),dimension(6)   :: fert = 0.0
+  real(dp),dimension(7)   :: fert = 0.0
+  real(dp),dimension(4)   :: harvip = 0.0 
   real(dp)                :: optlai = 0.0
   real(dp)                :: harvindx = 0.0
   real(dp)                :: limdharv = 0.0
@@ -1085,6 +1086,46 @@ contains
             read(param_values,*) (this%pft(pftind(j))%fert(6),j=1,pftn)
           else
             write(*,*) 'Wrong number of fields in ''fert(6)'''
+            stop
+          endif
+        case('fert(7)')
+          i = nfields(param_values)
+          if (i==pftn) then
+            read(param_values,*) (this%pft(pftind(j))%fert(7),j=1,pftn)
+          else
+            write(*,*) 'Wrong number of fields in ''fert(7)'''
+            stop
+          endif
+        case('harvip(1)')
+          i = nfields(param_values)
+          if (i==pftn) then
+            read(param_values,*) (this%pft(pftind(j))%harvip(1),j=1,pftn)
+          else
+            write(*,*) 'Wrong number of fields in ''harvip(1)'''
+            stop
+          endif
+        case('harvip(2)')
+          i = nfields(param_values)
+          if (i==pftn) then
+            read(param_values,*) (this%pft(pftind(j))%harvip(2),j=1,pftn)
+          else
+            write(*,*) 'Wrong number of fields in ''harvip(2)'''
+            stop
+          endif
+        case('harvip(3)')
+          i = nfields(param_values)
+          if (i==pftn) then
+            read(param_values,*) (this%pft(pftind(j))%harvip(3),j=1,pftn)
+          else
+            write(*,*) 'Wrong number of fields in ''harvip(3)'''
+            stop
+          endif
+        case('harvip(4)')
+          i = nfields(param_values)
+          if (i==pftn) then
+            read(param_values,*) (this%pft(pftind(j))%harvip(4),j=1,pftn)
+          else
+            write(*,*) 'Wrong number of fields in ''harvip(4)'''
             stop
           endif
         case('optlai')

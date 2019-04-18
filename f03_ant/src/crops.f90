@@ -877,10 +877,8 @@ do ft=3,nft
     ! 1g/m2=10kg/hc
     ! kg/ha = 1000g/10000m2 so 10 x g/m2 = kg/ha = g/10m2
     ! Make sure optlai remains in the range specified by cropphen
-    pft_tab(ft)%optlai=max(log10(pft_tab(ft)%fert(1))/log10(4.),0.0d0)+ &
-      pft_tab(ft)%cropphen(1)
     pft_tab(ft)%optlai=pft_tab(ft)%cropphen(1)+&
-      (pft_tab(ft)%cropphen(2)-pft_tab(ft)%cropphen(1))*(1-EXP(-0.007*pft_tab(ft)%fert(1)))
+      (pft_tab(ft)%cropphen(2)-pft_tab(ft)%cropphen(1))*(1-EXP(pft_tab(ft)%fert(7)*pft_tab(ft)%fert(1)))
     pft_tab(ft)%optlai=min(pft_tab(ft)%cropphen(2),pft_tab(ft)%optlai)
   endIF
 endDO
@@ -1232,37 +1230,48 @@ SUBROUTINE HARV(lit,yielit)
 !**********************************************************************!
 IMPLICIT NONE
 
-REAL(dp) :: lit,hi,yielit
+REAL(dp) :: lit,hi,yielit,frc
 INTEGER :: co,i
 
   co = ssp%cohort
 
   ! Calculates harvest index
-  hi=0.7*pft(co)%harvindx+0.3*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
-  hi=MIN(hi,pft(co)%harvindx)
+  !hi=0.9*pft(co)%harvindx+0.1*pft(co)%harvindx*pft(co)%fert(1)/pft(co)%fert(5)
+  !hi=MIN(hi,pft(co)%harvindx)
   ! Since you can have more than 2 yields in a calendar year,it is
   ! calculated here cumulative and is being reset to 0 at the start of each
   ! calendar year in phenology3 sub
   ! Roots which are bio(2) do not account in crop yield
+
+  frc = pft(co)%harvip(1)*pft(co)%harvip(3)
+
+  ssv(co)%yield=ssv(co)%yield+frc* &
+    (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+    ssv(co)%root%tot(1) + ssv(co)%stem%tot(1) + & 
+    ssv(co)%bio(1) + ssv(co)%bio(2))/(0.45*pft(co)%harvip(2))
+
+!  ! Finds yield by adding canopy,nppstore,stem and dead steam multiplied by hi
+!  ssv(co)%yield=ssv(co)%yield+hi* &
+!   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+!    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
   
-  ! Finds yield by adding canopy,nppstore,stem and dead steam multiplied by hi
-  ssv(co)%yield=ssv(co)%yield+hi* &
-   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
-    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
-  
-  !Same as above only gets its own variable
-  yielit=hi* &
-   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
-    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
+  yielit = frc* &
+    (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+    ssv(co)%root%tot(1) + ssv(co)%stem%tot(1) + & 
+    ssv(co)%bio(1) + ssv(co)%bio(2))
+
+!  !Same as above only gets its own variable
+!  yielit=hi* &
+!   (ssv(co)%lai%tot(1)*12.0/pft(co)%sla/25.0 + ssv(co)%nppstore(1) + &
+!    ssv(co)%stem%tot(1) + ssv(co)%bio(1))
 
   ! Adds up the carbon pools that will send to litter
   lit = 0.0
 
-  
-  ! Sends all root carbon to litter
+  ! Sends some root carbon to litter
   if (ssv(co)%root%no > 0) then
     do i=1,ssv(co)%root%no
-      lit=lit+ssv(co)%root%c(i,1)%val
+      lit=lit+(1-frc)*ssv(co)%root%c(i,1)%val
       ssv(co)%root%c(i,1)%val = 0.0
       ssv(co)%root%c(i,1)%age = 0.0
     endDO
@@ -1270,11 +1279,23 @@ INTEGER :: co,i
     ssv(co)%root%tot(1)=0.0
   endIF
 
+
+!  ! Sends all root carbon to litter
+!  if (ssv(co)%root%no > 0) then
+!    do i=1,ssv(co)%root%no
+!      lit=lit+ssv(co)%root%c(i,1)%val
+!      ssv(co)%root%c(i,1)%val = 0.0
+!      ssv(co)%root%c(i,1)%age = 0.0
+!    endDO
+!    ssv(co)%root%no=0
+!    ssv(co)%root%tot(1)=0.0
+!  endIF
+
   
   ! Sends (1-hi) stem carbon to litter
   if (ssv(co)%stem%no > 0) then
     do i=1,ssv(co)%stem%no
-      lit=lit+(1-hi)*ssv(co)%stem%c(i,1)%val
+      lit=lit+(1-frc)*ssv(co)%stem%c(i,1)%val
       ssv(co)%stem%c(i,1)%val = 0.0
       ssv(co)%stem%c(i,1)%age = 0.0
     endDO
@@ -1282,11 +1303,23 @@ INTEGER :: co,i
     ssv(co)%stem%tot(1)=0.0
   endIF
 
+  
+!  ! Sends (1-hi) stem carbon to litter
+!  if (ssv(co)%stem%no > 0) then
+!    do i=1,ssv(co)%stem%no
+!      lit=lit+(1-hi)*ssv(co)%stem%c(i,1)%val
+!      ssv(co)%stem%c(i,1)%val = 0.0
+!      ssv(co)%stem%c(i,1)%age = 0.0
+!    endDO
+!    ssv(co)%stem%no=0
+!    ssv(co)%stem%tot(1)=0.0
+!  endIF
+
  
   ! Sends (1-hi) leaf carbon to litter
   if (ssv(co)%lai%no > 0) then
     do i=1,ssv(co)%lai%no
-      lit=lit+(1-hi)*ssv(co)%lai%c(i,1)%val*12.0/pft(co)%sla/25.0
+      lit=lit+(1-frc)*ssv(co)%lai%c(i,1)%val*12.0/pft(co)%sla/25.0
       ssv(co)%lai%c(i,1)%val = 0.0
       ssv(co)%lai%c(i,1)%age = 0.0
     endDO
@@ -1294,17 +1327,43 @@ INTEGER :: co,i
     ssv(co)%lai%tot(1)=0.0
   endIF
 
+ 
+!  ! Sends (1-hi) leaf carbon to litter
+!  if (ssv(co)%lai%no > 0) then
+!    do i=1,ssv(co)%lai%no
+!      lit=lit+(1-hi)*ssv(co)%lai%c(i,1)%val*12.0/pft(co)%sla/25.0
+!      ssv(co)%lai%c(i,1)%val = 0.0
+!      ssv(co)%lai%c(i,1)%age = 0.0
+!    endDO
+!    ssv(co)%lai%no=0
+!    ssv(co)%lai%tot(1)=0.0
+!  endIF
+
   
   ! Sends (1-hi) nppstore carbon to litter
-  lit=lit+(1-hi)*ssv(co)%nppstore(1)
+  lit=lit+(1-frc)*ssv(co)%nppstore(1)
   ssv(co)%nppstore(1)=0.
   ssv(co)%nppstore(2)=0.
+
+
+  
+!  ! Sends (1-hi) nppstore carbon to litter
+!  lit=lit+(1-hi)*ssv(co)%nppstore(1)
+!  ssv(co)%nppstore(1)=0.
+!  ssv(co)%nppstore(2)=0.
   
   
   ! Sends (1-hi) dead stem to litter and all dead roots
-  lit=lit+(1-hi)*ssv(co)%bio(1)+ssv(co)%bio(2)  
+  lit=lit+(1-frc)*(ssv(co)%bio(1)+ssv(co)%bio(2))  
   ssv(co)%bio(1)=0.
   ssv(co)%bio(2)=0.
+
+
+  
+!  ! Sends (1-hi) dead stem to litter and all dead roots
+!  lit=lit+(1-hi)*ssv(co)%bio(1)+ssv(co)%bio(2)  
+!  ssv(co)%bio(1)=0.
+!  ssv(co)%bio(2)=0.
 
 !  IF(lit>50) THEN
 !    ssv(co)%nppstore(1)=50.

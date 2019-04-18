@@ -6,12 +6,11 @@ dir_data = '/fastdata-sharc/sm1epk/SDGVM_runs/fin_outs';
 %Directory where the map maker is
 map_d = '/data/sm1epk/EW/weath_emp_model/codes/iter_1';
 %Variable I want to read.It does the yearly/monthly/daily outputs
-var = 'yearly_lai_Dc_Bl';
+var = 'yearly_gpp';
 
 
 %Reads file and outputs locs and data
 [locs,dat] = readsdfiles(var,dir_data);
-
 
 cd(dir1)
 
@@ -74,8 +73,7 @@ function [locs,dat] = readsdfiles(str1,dir_data)
             sub = a(3:end,:);   
             sub = reshape(sub,361,[],no_grid);
             sub(1,:,:)=[]; dat=sub;
-    end
-    
+    end    
 end
 
 
@@ -90,6 +88,8 @@ function makessdmap(locs,dat,var,map_d,dir_data)
     %Initialize map
     mm = nan(180/res,360/res);    
     
+    [area_grid] = earth_area(res);
+
     %Finds the map space of the locs
     locz(1,:) = (90-res/2-locs(1,:))/res+1;    
     locz(2,:) = (180+res/2+(locs(2,:)))/res;   
@@ -109,10 +109,29 @@ function makessdmap(locs,dat,var,map_d,dir_data)
         mask=mask+s2r;
     end
     mask(mask>0)=1;
+    
+    nansum(nansum(area_grid.*mm))
+    
 
     %Does map
     cd(map_d)
     varr = strrep(var,'_',' ');
-    p7print(mm,varr,var,dir_data,400,'BrBG4',0,0,[0 4],20,mask,[-90 90],[-180 180],'Countries')
+    p7print(mm,varr,var,dir_data,400,'BrBG4',0,0,[0 3500],40,mask,[-90 90],[-180 180],'Countries')
+
+end
+
+function [area_grid] = earth_area(res_p)
+
+    p_lat = 90-res_p/2:-res_p:-90+res_p/2;
+    p_lon = -180+res_p/2:res_p:180-res_p/2;
+
+    area_grid = nan(size(p_lat,2),size(p_lon,2));
+
+    earthell = referenceSphere('earth','m');
+    for ii = 1:size(area_grid,1)
+        for jj = 1:size(area_grid,2)
+            area_grid(ii,jj) = areaquad(p_lat(ii)+res_p/2,p_lon(jj)-res_p/2,p_lat(ii)-res_p/2,p_lon(jj)+res_p/2,earthell);
+        end
+    end
 
 end

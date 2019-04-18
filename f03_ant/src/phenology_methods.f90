@@ -557,7 +557,7 @@ end subroutine phenology2
 !----------------------------------------------------------------------!
 !> @brief
 !! @details
-!! @author Lyla,EPK
+!! @author EPK,LLT
 !! @date Jan 2017
 !----------------------------------------------------------------------!
 subroutine phenology3(yield,laiinc)
@@ -604,68 +604,72 @@ integer :: ssm,sss,i
 
   ! If it's the start of the year set yield to zero.We do this because yield is
   ! cumulative added as in some years we might have two harvests
-  if(mnth==1.and.day==1) ssv(co)%yield=0.
+  IF(mnth==1.AND.day==1) ssv(co)%yield=0.
 
-  if(mnth==1.and.day==1.and.ssv(co)%sown==1) THEN
+  IF(mnth==1.AND.day==1.AND.ssv(co)%sown==1) THEN
       pft(co)%sowday(3)=pft(co)%sowday(2)
       pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)
-  endIF
+  ENDIF
 
   ! If we dont have crop sown
-  if(ssv(co)%sown==0) THEN
-      ! Check if its the 1st sowday
-      if((day+ (mnth-1)*30)==pft(co)%sowday(1)) THEN
+  IF(ssv(co)%sown==0) THEN
+      ! Check if its the 1st sowday.If it is then set flag to sown
+      ! and write the sowday and gdd
+      IF((day+ (mnth-1)*30)==pft(co)%sowday(1)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
           pft(co)%sowday(3)=pft(co)%sowday(1)
           pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,1)
-      ! Check if its the 2nd sowday    
-      elseif((day+ (mnth-1)*30)==pft(co)%sowday(2)) THEN
+      ! Similar if its the 2nd sowday    
+      ELSEIF((day+ (mnth-1)*30)==pft(co)%sowday(2)) THEN
           ssv(co)%sown=1
           ssv(co)%harvest(1)=0
           pft(co)%sowday(3)=pft(co)%sowday(2)
           pft(co)%cropgdd(:,3)=pft(co)%cropgdd(:,2)          
-      endIF
-  endIF
+      ENDIF
+  ENDIF
 
   
   ! Add up days that the crop has been sowed,set to zero if not
-  if(ssv(co)%sown==1) THEN
+  IF(ssv(co)%sown==1) THEN
       ssv(co)%sowni=ssv(co)%sowni+1
   ELSE
       ssv(co)%sowni=0
-  endIF
+  ENDIF
 
 
   ! If nothing is going to be sowed,return
-  if(ssv(co)%sown==0) THEN 
+  IF(ssv(co)%sown==0) THEN 
       ssv(co)%phu=0.
       laiinc=0.
       ssv(co)%vdays=0;
       RETURN
-  endIF
-  
-  ! Checks for budburst
-  if (ssv(co)%sown==1.and.(bb==0).and.(soil2g>wtwp+0.25*(wtfc-wtwp))) then      
+  ENDIF
+
+  ! Checks for budburst.If its sown and not have budburst yet(bb=0) and 
+  ! adequate soil moisture
+  IF (ssv(co)%sown==1.AND.(bb==0).AND.(soil2g>wtwp+0.25*(wtfc-wtwp))) THEN
       bbsum = 0.0
-      do i=1,ssv(co)%sowni+1
+      ! Add up
+      DO i=1,ssv(co)%sowni+1
           if(ssp%tmem(i)>bb0)  bbsum = bbsum + MIN(bbmax,ssp%tmem(i)-bb0)
-      endDO 
-      
-      if(REAL(bbsum)>=REAL(bblim)) THEN
+      ENDDO 
+      ! If it exceeds limit then we have budburst day set(bb) and set
+      ! growing days to 0
+      IF(REAL(bbsum)>=REAL(bblim)) THEN
           bb = (mnth-1)*30 + day
           bbgs = 0
-    
-      endIF
-  endIF
+      ENDIF
+  ENDIF
 
-  if(bb>0)  bbgs = bbgs + 1
+  ! Adds up growing days
+  IF(bb>0)  bbgs = bbgs + 1
 
   
   ! Previous value of phenology
   oldphen=ssv(co)%phu/pft(co)%cropgdd(1,3)
 
-
+  ! Hours od daylight
   hrs=dayl(ssp%lat,(mnth-1)*30+day)
 
   ! Calculates phen If we have budburst and phenology is less than 1
@@ -675,35 +679,37 @@ integer :: ssm,sss,i
   ! it calculates the phenological heat units by multiplying temperature by
   ! fv,ft and fp which are the vernalization,development and photoperiod functions
 
-  if(bb>0.and.oldphen<1) THEN
+  IF(bb>0.AND.oldphen<1) THEN
       dft=0.0d0; dfp=0.0d0;fv=1.; 
-      if(oldphen<pft(co)%cropphen(5)) THEN
-          if(pft(co)%croptype(2)==1) THEN
+      IF(oldphen<pft(co)%cropphen(5)) THEN
+          IF(pft(co)%croptype(2)==1) THEN
               CALL streck(pft(co)%cardinal(4), &
                 pft(co)%cardinal(5),pft(co)%cardinal(6), &
                 ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(3), &
                 pft(co)%photoperiod(4),hrs,ssv(co)%vdays,fv)
-          endIF
+          ENDIF
           CALL wangengel(pft(co)%cardinal(1),pft(co)%cardinal(2),pft(co)%cardinal(3) &
             ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(1),pft(co)%photoperiod(2) &
             ,hrs,dft,dfp)
           pft(co)%cropgdd(2,3)=pft(co)%cardinal(1)
-      elseif(oldphen>=pft(co)%cropphen(5)) THEN
+      ELSEIF(oldphen>=pft(co)%cropphen(5)) THEN
           CALL wangengel(pft(co)%cardinal(7),pft(co)%cardinal(8),pft(co)%cardinal(9) &
             ,ssp%tmem(1),pft(co)%croptype(1),pft(co)%photoperiod(5),pft(co)%photoperiod(6) &
             ,hrs,dft,dfp)
           pft(co)%cropgdd(2,3)=pft(co)%cardinal(7)
-      endIF
+      ENDIF
       ssv(co)%phu=ssv(co)%phu+ssp%tmem(1)*fv*dft*dfp
-  endIF ! (bb>0.and.oldphen<1)
+  ENDIF ! (bb>0.and.oldphen<1)
 
 
   ! Phenological index of maturity,PHU divided by the max PHU obtained from seasonality
   ! for the specific crop and gridcell      
   phen=ssv(co)%phu/pft(co)%cropgdd(1,3)
 
-  !WRITE(*,*)ssp%year,trim(pft(co)%tag),mnth,day,phen,pft(co)%optlai
-  
+  !IF(trim(pft(co)%tag)=='Maize'.AND.ssp%year>=1911) THEN
+  !    WRITE(*,*)ssp%year,trim(pft(co)%tag),mnth,day,phen,pft(co)%optlai
+  !ENDIF
+
   ! If the days that it is sowed exceeds a limit then set phen straight to 1
   ! so it is harvested.For most crops the limit is set to 120 but for vern crops
   ! it is set to 210 to allow a much bigger growing cycle
@@ -717,18 +723,18 @@ integer :: ssm,sss,i
       ssv(co)%harvest(2)=day + (mnth - 1)*30
       ssv(co)%sown=0
       ssv(co)%bb=0
-      ssv(co)%sowni=0
+      ssv(co)%sowni=0             
   elseif(phen>=pft(co)%cropphen(5)) THEN
       ! Senescence begins, start killing leaves based on PHU
       ! Here we follow Eqn 3 or 4 of Bondeau et al 2007
       
       !laiinc=((((1.-phen)/(1.-pft(co)%cropphen(5)))**pft(co)%cropphen(6))* &
+      
       !  (1-0.9)+0.9)*pft(co)%optlai
 
-      ! Placeholder.Removes 1% of the current LAI for senescence every day after
+      ! Placeholder.Removes 0% of the current LAI for senescence every day after
       ! phenology index exceeds pft(co)%cropphen(5)
-      laiinc=-0.01*rlai 
-      
+      laiinc=0.       
   ELSE 
       !Leaves are still allowed to grow
       !----------------------------------------------------------------------!
@@ -740,6 +746,11 @@ integer :: ssm,sss,i
           oldopt=oldphen/(oldphen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*oldphen))
           newopt=phen/(phen+exp(pft(co)%cropphen(3)-pft(co)%cropphen(4)*phen))
           optinc=(newopt-oldopt)*pft(co)%optlai
+
+          !IF(trim(pft(co)%tag)=='Maize'.AND.ssp%year>=1911) THEN
+          !    WRITE(*,*)ssp%year,trim(pft(co)%tag),mnth,day,oldphen,phen,oldopt,newopt,optinc
+          !ENDIF
+
           if(optinc*msv%mv_leafmol*12.0*1.25<0.5*ssv(co)%nppstore(1)) THEN
           !IF(optinc*12.0/pft(co)%sla/25.0<0.5*ssv(co)%nppstore(1)) THEN
               laiinc=optinc
@@ -771,8 +782,9 @@ integer :: ssm,sss,i
                   gddmix(3)=gddmix(3)+1
               endDO
           endIF
+                       
           if(rlai+laiinc>pft(co)%optlai) laiinc=pft(co)%optlai-rlai 
-          if((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0
+          if((rlai>0).and.(ssv(co)%nppstore(1)<0.0)) laiinc = 0.0             
       ELSE
           laiinc = 0.0
       endIF
@@ -808,8 +820,7 @@ integer :: ssm,sss,i
       endIF
     endIF
   endIF
-
-
+    
   ssv(co)%stemfr      = stemfr
   ssv(co)%bb          = bb
   ssv(co)%ss          = ss

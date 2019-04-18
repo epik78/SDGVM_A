@@ -206,7 +206,7 @@ if ((rlai>0.1).and.(q>0.0)) then
     nmult = soiln*tgp%p_nu4
     if (nmult>=1.0)  nmult = 1.0
   ELSE
-! nmult = soiln*tgp%p_nu4
+    !nmult = soiln*tgp%p_nu4
     nmult=pft(ft)%fert(6)+pft(ft)%fert(1)/pft(ft)%fert(4)
   endIF
 

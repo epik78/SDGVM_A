@@ -269,7 +269,7 @@ rho = 1288.4 - 4.103*t
 s = 48.7*exp(0.0532*t)
 gam = 101325.0*1.012/(0.622*lam)
 
-! Transpiration since it uses the canopy conductance (gsn) Eq.38
+! Evapotranspiration in mm since it uses the canopy conductance (gsn) Eq.38
 ! calculated in doly
 if ((ssv(ssp%cohort)%lai%tot(1)>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
   et = (s*rn + rho*1.012*canga*vpd)/(s + gam*(1.0 + canga/gsn))*tgp%p_et
@@ -289,8 +289,8 @@ else
   etmm = 0.0
 endif
 
-! Evaporation,it is similar with evapotranspiration but without
-! the canopy conductance factor
+! Evaporation,like evapotranspiration but without
+! the canopy conductance resistance factor
 ee = (s*rn + rho*1.012*canga*vpd)/(s + gam)
 eemm = (ee*3600.0*hrs)/(lam*1000.0)
 

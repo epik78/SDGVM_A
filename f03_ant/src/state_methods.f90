@@ -358,11 +358,17 @@ end subroutine COMBINE_COHORTS
 
 !**********************************************************************!
 !                                                                      !
-!                restrict_cohort_numbers :: make_co2ftmap              !
+!                    state_methods :: make_co2ftmap                    !
 !                ----------------------------------------              !
 !                                                                      !
 ! subroutine make_co2ftmap(show)                                       !
-!                                                                      !
+!> @brief Creates cohorts to functional type map                       !
+!! @details co2ftmap(functional type id,1) holds the number of cohorts !
+!  assigned to each plant functional type.                             !             
+!  co2ftmap(functional type id,2:end) holds the cohort number assigned !
+!  for each functional type id.                                        !
+!  The functional type id is the integer for each plant functional type!
+!  as read from the input file.1 BARE 2 CITY 3 C3 GRASS etc            !    
 !**********************************************************************!
 subroutine make_co2ftmap(show)
 !**********************************************************************!
@@ -370,7 +376,6 @@ integer :: ft
 logical :: show
 !----------------------------------------------------------------------!
 
-!print*,' max_pfts ', max_pfts
 do ft=1,max_pfts
   ssp%co2ftmap(ft,1) = 0
 enddo
@@ -391,8 +396,6 @@ if (show) then
 endif
 
 end subroutine make_co2ftmap
-
-
 
 
 
@@ -432,10 +435,11 @@ end subroutine REMOVE_COHORT
 
 !**********************************************************************!
 !                                                                      !
-!        restrict_cohort_numbers :: initialise_state_cohort            !
+!             state_methods :: initialise_state_cohort                 !
 !        --------------------------------------------------            !
 !                                                                      !
 ! subroutine initialise_state_cohort(cohort)                           !
+!> @brief Initilise all cohort variables                               ! 
 !                                                                      !
 !**********************************************************************!
 subroutine initialise_state_cohort(cohort)
@@ -657,15 +661,15 @@ end subroutine sum_carbon
 !----------------------------------------------------------------------!
 !**********************************************************************!
 !                                                                      !
-!          restrict_cohort_numbers :: accumulate_dist_soil_res         !
+!              state_methods :: accumulate_dist_soil_res               !
 !          ---------------------------------------------------         !
 !                                                                      !
 !> @brief accumulate_dist_soil_res                                     !
-!! @details ! Gets called when a cohort needs to die either by fire or !
-!! low NPP.Sends carbon and water pools linked with the specific cohort!
-!! to ssp%new... to be recycled later.Most importantly it calls        !
-!! INITIALISE_STATE_COHORT function which will set ssv parameters for  !
-!! this cohort to zero.
+!! @details ! Gets called when a cohort needs to be reduced by amount x!
+!! or removed completely (x=1). Sends carbon,nitrogen and water linked !
+!! with the specific cohort to ssp%new and ssp%xnew to be recycled     !
+!! It also calls INITIALISE_STATE_COHORT function which will set ssv   !
+!! parameters for this cohort to zero.
 !!
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -676,6 +680,7 @@ integer :: ft,i
 real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_cohorts)
 !----------------------------------------------------------------------!
 
+  ! Gets carbon in leaves, stem and roots
   if (pft(ft)%sla > 0.0) then
     active_leaf(ft) = ssv(ft)%lai%tot(1)*12.0/pft(ft)%sla/25.0
   else
@@ -684,6 +689,10 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
   active_stem(ft) = ssv(ft)%stem%tot(1)
   active_root(ft) = ssv(ft)%root%tot(1)
 
+  ! Sends carbon and nitrogen to ssp%new.It weighs that with the cover of the cohort
+  ! and the fraction x to be removed.
+  ! It does the same thing with xnew only it knows the itag or the id of the pft
+  ! that it came from.
   do i=1,8
     ssp%new_c(i) = ssp%new_c(i) + ssv(ft)%c(i)*ssv(ft)%cov*x
     ssp%new_n(i) = ssp%new_n(i) + ssv(ft)%n(i)*ssv(ft)%cov*x
@@ -701,10 +710,11 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
     ssp%new_soil_h2o(i) = ssp%new_soil_h2o(i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
     ssp%xnew_soil_h2o(pft(ft)%itag,i) = ssp%xnew_soil_h2o(pft(ft)%itag,i) + ssv(ft)%soil_h2o(i)*ssv(ft)%cov*x
   enddo
+
   ssp%new_snow = ssp%new_snow + ssv(ft)%snow*ssv(ft)%cov*x
   ssp%new_l_snow = ssp%new_l_snow + ssv(ft)%l_snow*ssv(ft)%cov*x
   ssp%new_slc = ssp%new_slc + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
- active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
+    active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
   ssp%new_rlc = ssp%new_rlc + ssv(ft)%bio(2)*ssv(ft)%cov*x + ssv(ft)%rlc*x
   ssp%new_sln = ssp%new_sln + ssv(ft)%sln*x
   ssp%new_rln = ssp%new_rln + ssv(ft)%rln*x
@@ -712,19 +722,22 @@ real(dp) :: x,active_leaf(max_cohorts),active_stem(max_cohorts),active_root(max_
   ssp%xnew_snow(pft(ft)%itag)   = ssp%xnew_snow(pft(ft)%itag) + ssv(ft)%snow*ssv(ft)%cov*x
   ssp%xnew_l_snow(pft(ft)%itag) = ssp%xnew_l_snow(pft(ft)%itag) + ssv(ft)%l_snow*ssv(ft)%cov*x
   ssp%xnew_slc(pft(ft)%itag)    = ssp%xnew_slc(pft(ft)%itag) + (ssv(ft)%bio(1) + active_leaf(ft) + active_stem(ft) + &
- active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
+    active_root(ft) + ssv(ft)%nppstore(1))*ssv(ft)%cov*x + ssv(ft)%slc*x
   ssp%xnew_rlc(pft(ft)%itag)    = ssp%xnew_rlc(pft(ft)%itag) + ssv(ft)%bio(2)*ssv(ft)%cov*x + ssv(ft)%rlc*x
   ssp%xnew_sln(pft(ft)%itag)    = ssp%xnew_sln(pft(ft)%itag) + ssv(ft)%sln*x
   ssp%xnew_rln(pft(ft)%itag)    = ssp%xnew_rln(pft(ft)%itag) + ssv(ft)%rln*x
 
+  ! If the removal fraction is 1 then it completely removes the cohort
   if (x > 0.99999) then
     ssp%new_cov = ssp%new_cov + ssv(ft)%cov
     ssp%xnew_cov(pft(ft)%itag) = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov
     call INITIALISE_STATE_COHORT(ft)
   else
+    ! Updates the new available cover
     ssp%new_cov    = ssp%new_cov + ssv(ft)%cov*x
     ssp%xnew_cov(pft(ft)%itag)    = ssp%xnew_cov(pft(ft)%itag) + ssv(ft)%cov*x
 
+    ! Updates the cover for the cohort and the soil and nitrogen pools
     ssv(ft)%cov    = ssv(ft)%cov*(1.0 - x)
     ssv(ft)%slc    = ssv(ft)%slc*(1.0 - x)
     ssv(ft)%rlc    = ssv(ft)%rlc*(1.0 - x)
@@ -1054,37 +1067,50 @@ integer :: ageFinal,nco
 !***********************************************************************
 
 ! Hardwire initialise with all cover for each pft in the first cohort
+! This would make all ft have a single cohort each at the start of the run
 singleCohort = .false.
 
+! Reads state from previous run
 if (.not.inp%run%read_in_state) then
 
+  ! Initialize temperature memory
   do day=1,200
     ssp%tmem(day) = real(xtmpv(1,(day-1)/30+1,mod(day-1,30)+1))/100.0
   enddo
 
+  ! Sets soil pools and snow pools to 0
   call RESET_SOIL_RES()
 
   cohort = 0
+  ! For each functional type
   do ft=1,nft
+    ! If there is cover in year 1
     if (cluse(ft,1)>0.0) then
+      ! Set variable to either 1 or the years in mortality for each pft
       if (singleCohort) then
         ageFinal = 1
       else
         ageFinal = pft_tab(ft)%mort
       endif
+      !For each functional type, initialize cohorts equal to its mortality
       do age=ageFinal,1,-1
         cohort = cohort + 1
+        ! pft_tab(ft) holds the parameters for each functional type
+        ! It passes them in pft which holds these parameters but for each
+        ! cohort and funcional type it is
         pft(cohort) = pft_tab(ft)
-        ssv(cohort)%age = age - 0.5
+        ! Initialize cohort age to 0
         ssv(cohort)%age = age - 0.0
+        ! The cover of each cohort is equally assigned
         ssv(cohort)%cov = cluse(ft,1)/100.0/real(ageFinal)
+        ! If the cover is not BARE or CITY initialize to non-zero
         if (ft>2) then
           ssv(cohort)%bio(1) = 1000.0
           ssv(cohort)%bio(2) = 100.0
           ssv(cohort)%ppm = 0.1
           ssv(cohort)%hgt = 5.0
           do i=1,3
-            ssv(ft)%nppstore(i) = pft(ft)%stemx
+            ssv(cohort)%nppstore(i) = pft(cohort)%stemx
           enddo
         else
           ssv(cohort)%bio(1) = 0.0
@@ -1092,7 +1118,7 @@ if (.not.inp%run%read_in_state) then
           ssv(cohort)%ppm = 0.0
           ssv(cohort)%hgt = 0.0
           do i=1,3
-            ssv(ft)%nppstore(i) = 0.0
+            ssv(cohort)%nppstore(i) = 0.0
           enddo
         endif
 
@@ -1145,6 +1171,7 @@ if (.not.inp%run%read_in_state) then
 
         ssv(cohort)%stemfr = 120.0
 
+        ! Initialize carbon and nitrogen pools
         do i=1,8
           ssv(cohort)%c(i) = 1000.0
           ssv(cohort)%n(i) = 100.0
@@ -1165,6 +1192,7 @@ if (.not.inp%run%read_in_state) then
         ssv(cohort)%dsln = 0.0
         ssv(cohort)%drln = 0.0
 
+        ! Initialize soil water and snow
         ssv(cohort)%soil_h2o(1) = 5.0
         ssv(cohort)%soil_h2o(2) = 50.0
         ssv(cohort)%soil_h2o(3) = 50.0
@@ -1174,6 +1202,8 @@ if (.not.inp%run%read_in_state) then
       enddo
     endif
   enddo
+
+  ! Hols the number of cohorts
   ssp%cohorts = cohort
 
 !----------------------------------------------------------------------!
@@ -1196,7 +1226,6 @@ if (.not.inp%run%read_in_state) then
 
   call MAKE_CO2FTMAP(.false.)
 
-!----------------------------------------------------------------------!
 
 else
 !----------------------------------------------------------------------!
@@ -1226,6 +1255,7 @@ else
  ,ssp%cohorts,ssp%co2ftmap(1:nco,1:nco),ssp%ftcov(1:nft)
 endif
 
+! Set soil temperature
 soilt = 10.0
 
 end subroutine INITIALISE_STATE

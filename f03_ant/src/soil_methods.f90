@@ -47,6 +47,7 @@ if ((ssp%iyear == 1).and.(ssp%mnth == 1).and.(ssp%day == 1)) then
   lch = 0.0
 endif
 
+
 mpet(co) = mpet(co) + pet
 mprc(co) = mprc(co) + prc
 mtmp(co) = mtmp(co) + tmp
@@ -78,6 +79,14 @@ if (ssp%day == 30) then
   sddel(co) = 0
 
 endif
+
+
+!  call SOIL_DYNAMICS(30*pet,30*prc,tmp,msv%mv_soilw,30*flow1,&
+! 30*flow2,nfix,nci,sresp,lch,ca,site,year,yr0,yrf,speedc,ft,&
+! check_closure)
+ 
+!  sresp = sresp/30.0
+!  lch = lch/30.0 
 
 end subroutine soil_dynamics2
 

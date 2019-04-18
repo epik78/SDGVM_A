@@ -47,7 +47,7 @@ dp2 = prc
 !----------------------------------------------------------------------!
 ! SET parameter for THROUGHFALL.                                       !
 !----------------------------------------------------------------------!
-! tf will hold the parameters for canopy interception at
+! tf holds the parameters for canopy interception at
 ! various lai values.These values are subtracted from 1 to get canopy
 ! interception so e.g. 1-tf(2)=0.05 would meen 5% of interception at
 ! lai=2
@@ -65,15 +65,16 @@ tf(11)= 0.815
 tf(12)= 0.80
 tf(13)= 0.785
 
+! Scale for interception parameter
 tfscale = 2.75
 do i=1,13
   tf(i) = 1.0 - tfscale*(1.0 - tf(i))
 enddo
 
-ds = 0.0
-st = 0.0
-
+! kd is the fraction of excess water flowing to deep storage
+! and kf the one that doesn't.kd defined in wsparam
 kf = 1.0 - kd
+
 rem = rlai - int(rlai)
 lai = int(rlai) + 1
 
@@ -118,7 +119,7 @@ else
     ! Water interception by the canopy based on lai parameters
     interc = dp2*(1.0 - (tf(lai) + rem*(tf(lai+1) - tf(lai))))
     ! Intercepted water as a function of temperature,why?
-    ! At 15C, factor becomes 1.Otherwise its always smaller
+    ! At 15C, factor becomes 1.O otherwise its always smaller
     interc = interc*min(1.0,(0.5 + t/32.0))
     ! evap holds canopy evaporation.At this point it is set equal to eemm
     evap = eemm
@@ -139,7 +140,7 @@ else
     interc = 0.0
   endif
 
-  ! If t>0 but there is snow then add precip to liquid snow
+  ! If there is still snpw then add precip to liquid snow
   if (ssv(ft)%snow>0.0) then
     ssv(ft)%l_snow = ssv(ft)%l_snow + dp2
   ! otherwise to first soil layer
@@ -227,7 +228,7 @@ ssv(ft)%soil_h2o(4) = ssv(ft)%soil_h2o(4) + f3
 ! Also calculates runoff (roff)
 
 roff = 0.0
-! Threshold over which I have excess water for each layer
+! Threshold over which I have saturation water for each layer
 ! Move the excess from bottom up until you reach the first layer where
 ! the excess becomes runoff
 ans1 = lsfc(4) + tgp%p_roff2*(lsswc(4) - lsfc(4))
@@ -262,9 +263,11 @@ if (ssv(ft)%soil_h2o(4)>lsfc(4)) then
   sf = kf*(ssv(ft)%soil_h2o(4) - lsfc(4))*tgp%p_roff
   sd = kd*(ssv(ft)%soil_h2o(4) - lsfc(4))*tgp%p_roff
   roff = roff + sf + sd
-!      ELSE
-!        roff = 0.0
 endif
+
+ds = 0.0
+st = 0.0
+
 ss = ds*kx
 ds = ds + sd - ss
 st = st + sf + ss

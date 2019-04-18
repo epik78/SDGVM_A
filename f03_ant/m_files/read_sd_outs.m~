@@ -1,0 +1,37 @@
+%function [locs,dat] = read_sd_outs(str1,dir_data)
+
+    %Goes in the directory where the SDGVM run is
+    cd(dir_data)
+    
+    %Opens and reads the file
+    %fid = fopen([str1,'.dat'],'rt');
+    %a = fscanf(fid,'%f');
+    %fclose(fid);
+    a = dlmread([str1,'.dat']);
+
+    %locs(lat/lon,grid cell)
+    locs = a(:,1:2);
+    %data(:,grid cell)
+    dat = a(:,3:end);   
+
+
+            %Finds lat and lon in pixel space
+        locsi = nan(size(locs,1),2);
+        for kk = 1:size(locs,1)
+            [ia,ib] = min(abs(latm-locs(kk,1)));
+            [ic,id] = min(abs(lonm-locs(kk,2)));
+            locsi(kk,1) = ib; locsi(kk,2) = id;    
+        end
+        
+        %Gets the year of data
+        sub_dat = dat(:,end);
+
+        %Puts the data in the indexes of the pixel space
+        sub = nan(size(latm,2),size(lonm,2));
+        ind = sub2ind([size(sub,1) size(sub,2)],locsi(:,1),locsi(:,2));
+        sub(ind) = sub_dat';
+        sub(sub==0) = NaN;
+
+
+
+%end

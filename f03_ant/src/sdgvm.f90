@@ -368,6 +368,7 @@ do site=1,sites
  (cluse(ft,yearv(1)-yr0+1),cluse(ft,yearv(nyears)-yr0+1),ft=1,nft)
 
 !----------------------------------------------------------------------!
+! in state_methods.f90
 ! Initialise the system state.                                         !
 !----------------------------------------------------------------------!
     call initialise_state(nft,cluse,xtmpv,soilt)
@@ -391,10 +392,10 @@ do site=1,sites
 
 !----------------------------------------------------------------------!
 ! in data.f90
-! Set CO2 value 'ca' from 'co2' or 'co2const'.                         !
+! Set CO2 value 'ca' from 'co2' or 'co2const'.In ppm/10                !
 !----------------------------------------------------------------------!
       call set_co2(ca,iyear,speedc,co2,year,yr0)
-
+      
       if (mod(iyear,max(sop%year_out,1))==min(1,sop%year_out)-1) then
         write(*,'('' Year no. '',i3,'' '',i4,'', ca = '',f6.2,'', cohorts = '', i0,''.'')') &
  iyear,year,ca,ssp%cohorts
@@ -415,7 +416,7 @@ do site=1,sites
       
       do ft=1,nft
         !Irrigation in fraction of gridcell that is irrigated per crop
-        pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1)
+        pft_tab(ft)%irrig(3)=0.01*cirr(ft,year-yr0+1) 
         !Nitrogen in kg/ha
         pft_tab(ft)%fert(1)=10*cfert(ft,year-yr0+1,1)
         !Phosphorus in kg/ha
@@ -443,7 +444,8 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! in veg_dynamics.f90                                                  !
 ! Calculates ftprop(nft) which now becomes the fraction of cover that  !
-! must be added for each pft                                           !
+! must be added for each pft.Kills cohorts for age,fire and low npp    !
+! and makes carbon and nitrogen pools availablein ssp%new and ssp%xnew !
 !----------------------------------------------------------------------!      
       call cover(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 
@@ -452,7 +454,7 @@ do site=1,sites
 !----------------------------------------------------------------------!
 ! in soil_methods.f90                                                  !
 !----------------------------------------------------------------------!
-      call mkdlit()
+!      call mkdlit()
 
 !----------------------------------------------------------------------!
 ! in state_methods.f90                                                 !
@@ -596,13 +598,13 @@ do site=1,sites
 ! in phenology_methods.f90                                             !
 !----------------------------------------------------------------------!            
               call phenology(yield,laiinc)
-              
+                          
 !----------------------------------------------------------------------!
 ! in phenology_methods.f90                                             !
 !----------------------------------------------------------------------!            
               call allocation(laiinc,daygpp,resp_l,lmor_sc(:,pft(ft)%itag),resp, &
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
-              
+                                        
               ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
 
               call soil_dynamics2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &

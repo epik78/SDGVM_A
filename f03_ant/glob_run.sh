@@ -9,7 +9,7 @@ inputfile=/home/sm1epk/SDGVM/SDGVM_ant/input_f/glob_run_new.dat
 #exe directory
 exedir=/home/sm1epk/SDGVM/SDGVM_ant/source/f03_ant/bin
 #Output final directory
-outputdir=$dir/fin_outs
+outputdir=$dir/fin_outs3
 #File with sites at resolution
 sites=/data/sm1epk/SDGVM_drivers_new/land_use/sage_isam/land_sites_1d.dat
 
@@ -43,7 +43,7 @@ do
     end=$count
   fi
   echo "#!/bin/bash">> $batchfile
-  echo "#$ -l h_rt=29:59:00">> $batchfile
+  echo "#$ -l h_rt=22:59:00">> $batchfile
   echo "module load compilers/gcc/5.2">> $batchfile
   echo "$exedir/sdgvm.exe $inputfile $outd $sites $start $end">> $batchfile
 done

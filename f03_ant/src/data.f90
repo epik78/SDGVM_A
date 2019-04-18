@@ -1104,14 +1104,10 @@ end subroutine co2_0_f
 ! year,yr0)                                                            !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Set landuse by allocating the cover of new ground.
-!! @details Assign gound available for new growth, through disturbance
-!! and mortality, given by ftprop. 
-!! For the specific year,check whether each ft can grow.
-!! If it can then ftprop(ft) acquires the value of cluse array which holds
-!! the desired cover for each ft and year as read from cover file.
-!! If ftprop(1)<0 then it sets it to 0 and proportionally reduced the 
-!! cover of the ofther fts to add up to 100.
+!> @brief Set prop cover for each plant functional type for the year.
+!! @details For the specific year,check whether each pft can grow.
+!! If it can then ftprop(pft) acquires the value of cluse array which holds
+!! the desired cover for each pft and year as read from cover file.
 !!
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -1126,6 +1122,7 @@ real(dp) :: ftprop(max_cohorts)
 
 ftprop(1) = 100.0
 do ft=2,nft
+  ! In func.f90
   if (check_ft_grow(tmp,ssv(1)%chill,ssv(1)%dschill,ft)==1) then
     ftprop(ft) = cluse(ft,year-yr0+1)
     ftprop(1) = ftprop(1) - ftprop(ft)

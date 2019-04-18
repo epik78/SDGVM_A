@@ -24,22 +24,22 @@ contains
 !                                                                      !                                                            
 !----------------------------------------------------------------------!
 !> @brief cover
-!! @details ! First it calculates empirical fire probability by calling
-!! FIRE subroutine. NEWGROWTH will kill cohorts that exceeded the permissible age   
-!! for the ft and do similar for cohorts with low NPP and fire.It will
-!! also set ssv%cover to zero for those cases which means cover will be 
-!! available for use.It then proportianally assigns new cover to the fts that      
-!! need to make the biggest jump in cover from the previous year to the   
-!! current.ftprop(ft) now describes the new cover to be ADDED to each 
-!! ft.
-!!
-!! @author Mark Lomas
-!! @date Feb 2006
+!! @details ! First it calculates empirical fire probability fprob by  !
+!! calling the FIRE subroutine. NEWGROWTH will kill cohorts that       !
+!! exceeded the permissible age for the ft and do similar for cohorts  !
+!! with low NPP and fire.It will also set ssv%cover to zero for those  !
+!! cases which means cover will be available for use.It then           !
+!! proportianally assigns new cover to the fts that need to make the   !
+!! biggest jump in cover from the previous year to the current.        !
+!! ftprop(ft) now describes the new cover to be ADDED to each ft.      !
+!!                                                                     !
+!! @author Mark Lomas                                                  ! 
+!! @date Feb 2006                                                      !
 !----------------------------------------------------------------------!
-subroutine COVER(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
+subroutine cover(nft,tmp,prc,firec,fireres,fprob,ftprop,check_closure)
 !**********************************************************************!
 real(dp) :: npp(max_cohorts),nps(max_cohorts),tmp(12,31),prc(12,31)
-real(dp) :: firec,fprob,ftprop(max_cohorts),fri,norm
+real(dp) :: firec,fprob,ftprop(max_cohorts),norm
 real(dp) ::ftprop0(max_cohorts),total_carbon,old_total_carbon,mtmp,mprc
 integer nft,ft,fireres
 logical check_closure
@@ -56,24 +56,19 @@ do ft=1,ssp%cohorts
 enddo
 
 !----------------------------------------------------------------------!
-! Compute the likelyhood of fire in the current year 'fprob'.          !
-! 'find' is the fire index                                             !
+! Compute the likelihood of fire in the current year 'fprob'.          !
 !----------------------------------------------------------------------!
-call fire(prc,tmp,fri,fprob)
+call fire(prc,tmp,fprob)
 
 !----------------------------------------------------------------------!
-! Take off area burnt by fire together with plants past their sell by  !
-! date and put this as bare ground ready for new growth 'ngrowth'.     !
-! Also shift cover and biomass arrays one to the right.                !
+! Take off cohorts past their age and fractions burnt by fire together !
+! with low npp.Save the carbon and nitrogen for redistribution.        !
 !----------------------------------------------------------------------!
 call newgrowth(fprob,npp,nps,fireres,firec)
 
-!----------------------------------------------------------------------!
-! Set cover arrays to adjust to ftprop as best they can.               !
-! ftprop contains the total proportion of that cover, not the          !
-! proportion of bare land to assign. Calculate the new ftprop.         !
-!----------------------------------------------------------------------!
-norm = 0.0
+! ftprop(ft) here holds the % of cover for each pft I want for this
+! year
+
 do ft=1,nft
   ftprop(ft) = ftprop(ft)/100.0
   ftprop0(ft) = 0.0
@@ -84,8 +79,8 @@ do ft=1,ssp%cohorts
   ftprop0(pft(ft)%itag)=ftprop0(pft(ft)%itag) + ssv(ft)%cov
 enddo
 
-! Calculates ftprop(ft) which now stands for the cover it needs to ADD
-! to each ft.When it was read it,it meant something else.
+! Calculates ftprop(ft) which here stands for the cover it needs to ADD
+! to each ft.
 norm = 0.0d0
 do ft=1,nft           
   if (ftprop(ft)>0.0d0) then
@@ -99,9 +94,11 @@ do ft=1,nft
 enddo
 
 ! It normalizes each cover I want to add for each ft by the total
-! cover I want to add and multiplies by the available new cover.
+! cover I want to add and multiplies by the available new cover
+! ssp%new_cov which originates from cohorts that died or burned.
 ! Each ft that wants to increase will get a fraction of the new
-! cover available
+! cover available.ftprop now stands for a fraction of ssp%new_cov
+! and should sum up to ssp%new_cov
 if (ssp%new_cov > 0.0) then
   do ft=1,nft
     ftprop(ft) = ftprop(ft)/norm*ssp%new_cov
@@ -134,7 +131,7 @@ end subroutine COVER
 !----------------------------------------------------------------------!
 !> @brief INITIALISE_NEW_COHORTS
 !! @details ! It gets ftprop(ft) which holds the cov it needs to add 
-!! for each ft for this year from the COVER subroutine.One new cohort 
+!! for each pft for this year from the COVER subroutine.One new cohort 
 !! for each ft will carry this cover.It will be initialised relatively 
 !! to its cover and depending on what was left in the pools from cohorts
 !! that died.
@@ -208,10 +205,22 @@ extras_rlc = 0.0
 extras_sln = 0.0
 extras_rln = 0.0
 
-loop_check = 0
-adjust_check = 0
 sum_prop_taken = 0.0
 prop_taken = 0.0
+
+loop_check = 0
+adjust_check = 0
+
+! ssp%xnew_cov(ft) is the cover available for each pft due to age,fire
+! or low npp removal and is ftprop(ft) the cover I want to add for this
+! year for the pft.sumftprop is the total cover that needs to be added for all pft.
+
+! If ssp%xnew_cov(ft) is greater than the one I want to
+! add for the pft, then their will be carbon,nitrogen and water from that
+! pfty available.These are added up in the extra_* variables and are 
+! subtracted from xnew_* which held how much was available from age,
+! fire and low npp removal.
+
 do ft=1,nft
   if (ssp%xnew_cov(ft)-ftprop(ft)>1e-6) then
     loop_check(ft) = 1
@@ -253,7 +262,6 @@ do ft=1,nft
 
     amount_taken = prop_taken*ssp%xnew_slc(ft)
     ssp%xnew_slc(ft) = ssp%xnew_slc(ft) - amount_taken
-
     extras_slc = extras_slc + amount_taken
 
     amount_taken = prop_taken*ssp%xnew_rlc(ft)
@@ -277,11 +285,15 @@ enddo
 !----------------------------------------------------------------------!
 !if (adjust_check==1) then
 prop_needed = 0.0
+
+! If for a pft the new available cover is smaller than the one I want to 
+! add then it gets carbon,nitrogen and water pools from the ones in
+! excess calculated above as extras_*
 do ft=1,nft
   if (ssp%xnew_cov(ft)-ftprop(ft)<-1.e-6) then
 !  if (loop_check(ft)==0) then
     prop_needed = (ftprop(ft) - ssp%xnew_cov(ft))/sumftprop/&
-sum_prop_taken
+      sum_prop_taken
 
     do i=1,8
       ssp%xnew_c(ft,i) = ssp%xnew_c(ft,i) + prop_needed*extras_c(i)
@@ -310,7 +322,7 @@ do ft=1,nft
   sumslc = sumslc + ssp%xnew_slc(ft)
 enddo
 
-!----------------------------------------------------------------------!
+! Add a cohort for all pfts with cover>0
 cohort = ssp%cohorts
 do ft=1,nft
   if (ftprop(ft)>0.0) then
@@ -325,14 +337,11 @@ do ft=1,nft
     cohort = cohort + 1
     ssp%co2ftmap(ft,1) = ssp%co2ftmap(ft,1) + 1
     ssp%co2ftmap(ft,ssp%co2ftmap(ft,1)+1) = cohort
-!----------------------------------------------------------------------!
+
 ! Set plant functional type parameterisation for the new cohorts.
-!----------------------------------------------------------------------!
     pft(cohort) = pft_tab(ft)
 
-!----------------------------------------------------------------------!
 ! Set initial values of the system state.
-!----------------------------------------------------------------------!
     call initialise_state_cohort(cohort)
 
     ssv(cohort)%stemfr = ssv(1)%stemfr
@@ -348,6 +357,7 @@ do ft=1,nft
       endif
     endif
 
+! Set new cohort cover
     ssv(cohort)%cov = ftprop(ft)
     ssv(cohort)%ppm = pft_tab(ft)%ppm0
     ssv(cohort)%hgt = 0.004
@@ -378,7 +388,11 @@ do ft=1,nft
 !ENDIF
   endif
 enddo
+
 ssp%cohorts = cohort
+
+! This resets the ssp%xnew_* since won't be needed any more down the
+! annual loop.
 call reset_soil_res()
 
 !----------------------------------------------------------------------!
@@ -1077,10 +1091,10 @@ end subroutine VEGMAT
 !                                                                      !
 !                            SUBROUTINE FIRE                           !
 !                            ***************                           !
-! Compute the fire return interval 'fri' and the probability of a fire !
-! in the current year 'fprob'.                                         !
+! Compute the fire return interval 'fri' and returns the probability   !
+! of a fire in the current year 'fprob'.                               !
 !----------------------------------------------------------------------!
-subroutine FIRE(dprc,dtmp,fri,fprob)
+subroutine FIRE(dprc,dtmp,fprob)
 !**********************************************************************!
 real(dp) :: fri,fprob,dtmp(12,31),dprc(12,31),prct(12),prco,lim1,lim2,maxfri
 real(dp) :: pow,tlim1,tlim2,totp,indexx,tadj,weight,tmp(12),prc(12)
@@ -1182,31 +1196,28 @@ real(dp) ::  fprob,npp(max_cohorts),nps(max_cohorts),tmor,tmor0,npp0,firec,xfpro
 integer ft,fireres
 !----------------------------------------------------------------------!
 xfprob = fprob
-
 firec = 0.0
-!----------------------------------------------------------------------!
-! Take away veg that has died of old age ie > than pft%mort, and       !
-! age the veg by one year.                                             !
-!----------------------------------------------------------------------!
+
 do ft=1,max_pfts
   ssp%co2ftmap(ft,1) = 0
 enddo
 
+!----------------------------------------------------------------------!
+! Take away veg that has died of old age ie > than pft%mort, and       !
+! age the veg by one year.                                             !
+!----------------------------------------------------------------------!
 do ft=1,ssp%cohorts
 !  IF (ssv(ft)%sown/=1) THEN 
     if (ssv(ft)%age > real(pft(ft)%mort)-0.1) then
       call ACCUMULATE_DIST_SOIL_RES(ft,1.0_dp)
     else
-!----------------------------------------------------------------------!
-! Age the state structure.                                             !
-!----------------------------------------------------------------------!
       ssv(ft)%age = ssv(ft)%age + 1.0
     endif
 !  ENDIF
 enddo
 
 !----------------------------------------------------------------------!
-! Remove dead cohorts: cover = 0.                                      !
+! Remove dead cohorts and rearranges the remaining ones                !
 !----------------------------------------------------------------------!
 call COMPRESS_STATE()
 
