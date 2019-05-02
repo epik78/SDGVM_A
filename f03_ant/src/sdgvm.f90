@@ -43,7 +43,7 @@ real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
 real(dp) :: ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
  hum(12,31),cld(12),latdel,londel,leafper,stemper,rootper,avnpp,avgpp, &
  avlai,co20,co2f,avrof,infix,avnppst,sum1,oscale,yield,co2(max_years), &
- sumcov,maxcov,maxbio,barerc,avtrn,firec,pet2,f2,f3,avevt,sumbio,kd, &
+ sumcov,maxcov,maxbio,barerc,avtrn,firec,f2,f3,avevt,sumbio,kd, &
  kx,stembio,rootbio,sum,lutab(255,100),awl(4),nci(4),gsn,eemm,etmm,rn, &
  xlatf,xlatres,xlon0,xlonres,lat_lon(max_sites,2),nleaf,canga,s1in,  &
  dp2,h2o,adp(4),sfc(4),sw(4),sswc(4),nupc,swc,swf,ssm,xfprob, &
@@ -582,16 +582,16 @@ do site=1,sites
               
 !----------------------------------------------------------------------!
 ! in daily_step.f90                                                    !
-! Calculates evapotransiration etmm and evaporation eemm.              !
+! Calculates potential evapotransiration etmm and potential evaporation!
+! eemm.                                                                !
 !----------------------------------------------------------------------!
               call evapotranspiration(tmp(mnth,day),hum(mnth,day),rn,canga,gsn,hrs,eemm,etmm)
               pet = eemm
-              pet2 = pet
 
 !----------------------------------------------------------------------!
 ! in hydrology_methods.f90                                             !
 !----------------------------------------------------------------------!            
-              call hydrology(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,pet2,prc(mnth,day), &
+              call hydrology2(adp,sfc,sw,sswc,awl,kd,kx,eemm,etmm,eemm,prc(mnth,day), &
      s1in,tmp(mnth,day),ssv(ft)%lai%tot(1),evap,tran,roff,interc,evbs,f2,f3,ft)
 
 !----------------------------------------------------------------------!

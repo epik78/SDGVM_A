@@ -29,8 +29,8 @@ contains
 ! qdirect,qdiff,fpr,canga,gsn,rn,check_closure)                        !
 !                                                                      !
 !----------------------------------------------------------------------!
-!> @brief Read internal parameters from "param.dat" file, and io
-!! parameters from "misc_params.dat".
+!> @brief
+!! 
 !! @details
 !! @author Mark Lomas
 !! @date Feb 2006
@@ -42,10 +42,10 @@ subroutine dailyStep(tmp,prc,hum,cld,ca,soilc,soiln,minn, &
  thty_dys,gs_type,swr)
 !**********************************************************************!
 real(dp), parameter :: oi = 21000.0
-real(dp) :: tmp,prc,hum,cld,ca,maxevap, &
+real(dp) :: tmp,prc,hum,cld,ca, &
  t,suma,laiinc, &
  soilc,soiln,rh,tk,rd(12),rn,q,qdiff, &
- qdirect,hrs,vpd,canga,lam,rho,s,amx,gsn, &
+ qdirect,hrs,canga,amx,gsn, &
  soilw,maxc,soil2g,can2a,daygpp, &
  gsum,ht, &
  amax,can2g,cangs,rlai, &
@@ -136,16 +136,21 @@ if (.not.(veg)) rlai = 0.0
 t = tmp
 tk = 273.0 + t
 rh = hum
-!      abmin = tmp(mnth,day)*1.29772 - 19.5362
+
 if (rh>95.0)  rh=95.0
 if (rh<30.0)  rh=30.0
 
 
 t = tmp
-lam = 2500.0 - (2.367*t)
-s = 48.7*exp(0.0532*t)
-rn = 0.96*(q*1000000.0/4.0 + 208.0 + 6.0*t)
-rn = rn*0.52
+! From Ziang et al., 2015 "Empirical estimation of daytine net radiation..."
+! Net radiation as a function of incoming shortwave radiation,temperature and
+! day of the year
+! q is the PAR in mol/m2/sec calculated in PFD_ant.Here it becomes shortwave ratiation in W/m2
+rn = 0.721*((1/0.48)*q/4.6d-6) + 0.777*t - 301.420*(1 + 0.033*cos(2*3.1415*no_day(year,mnth,day,thty_dys)/365)) + 296.842
+
+! Old method calculating rn
+!rn = 0.96*(q*1000000.0/4.0 + 208.0 + 6.0*t)
+!rn = rn*0.52
 
 
 !----------------------------------------------------------------------!
@@ -249,40 +254,58 @@ end subroutine dailyStep
 !                                                                      !
 !----------------------------------------------------------------------!
 !> @brief Calculate evapotranspiration
-!! @details etmm is transpiration,eemm evaporation
-!! @author Mark Lomas
+!! @details etmm is transpiration in mm ,eemm evaporation in mm
+!! @author Mark Lomas EPK
 !! @date Feb 2006
 !----------------------------------------------------------------------!
 subroutine evapotranspiration(t,rh,rn,canga,gsn,hrs,eemm,etmm)
 !**********************************************************************!
-real(dp) :: t,rh,rn,canga,gsn,eemm,etmm,et,svp,vpd,lam,rho,s,gam,hrs, &
- maxevap,etwt,ee
-
+real(dp) :: t,rh,rn,canga,gsn,eemm,etmm,et,hrs,etwt,ee,ra
+real(dp) :: Es_t,Delta,s_vp,vp_d
+! Monteith Principles 4th Ed. Eq.2.27
+real(dp), parameter :: lambda = 2.48*1000 ! Latent heat of vaporization J/g
+real(dp), parameter :: Mw = 18.01 ! Molecular weight of water g/mol
+real(dp), parameter :: R = 8.31 ! Gas constant J/K/mol
+real(dp), parameter :: Es_t1 = 611 ! Saturation vapour pressure at 273 K in Pa
+real(dp), parameter :: cp = 1012 ! Specific heat of air in J/Kg/K
+real(dp), parameter :: Pa = 101325 ! Absolute Pressure in Pa for 1 atm
+real(dp), parameter :: Rsp = 287.058 ! Specific gas constant in J/Kg/K
+real(dp), parameter :: gamma = 67.0 ! Psychrometer constant Pa/K
+real(dp), parameter :: c_k = 273.15 ! Conversion
 !----------------------------------------------------------------------!
 ! Penman-Monteith equation for evapotranspiration.                     !
-! Units of ET = W/m2  (CHECK) N.B. Conductances in moles.              !
 !----------------------------------------------------------------------!
-svp = 6.108*exp((17.269*t)/(237.3 + t))*100.0
-vpd = (1.0 - rh/100.0)*svp
-lam = 2500.0 - 2.367*t
-rho = 1288.4 - 4.103*t
-s = 48.7*exp(0.0532*t)
-gam = 101325.0*1.012/(0.622*lam)
 
-! Evapotranspiration in mm since it uses the canopy conductance (gsn) Eq.38
-! calculated in doly
+! Saturation vapour pressure at temperature t in Pa.Similar to Tetens eq
+! Monteith Principles 4th Ed. Eq.2.27
+Es_t = Es_t1*exp(17.27*(t+c_k-273.15)/(t+c_k-36))
+! Rate of change of saturation vapour pressure at temperature t in Pa/K
+! Monteith Principles 4th Ed. Eq.2.28
+Delta = lambda*Mw*Es_t/(R*(t+c_k)**2)
+! Delta can also be calculated as 48.7*exp(0.0532*t)
+
+!Dry air density in kg/m3 from wiki
+ra = Pa/(Rsp*(t+c_k))
+! Vapour pressure deficit in Pa
+vp_d = (1.0 - rh/100.0)*Es_t
+
+! rn in W/m2 (J/s/m2)
+! et here in J/s/m2
 if ((ssv(ssp%cohort)%lai%tot(1)>0.1).and.(msv%mv_soil2g>ssp%wilt)) then
-  et = (s*rn + rho*1.012*canga*vpd)/(s + gam*(1.0 + canga/gsn))*tgp%p_et
- 
+  et = (Delta*rn + ra*cp*canga*vp_d)/(Delta + gamma*(1.0 + canga/gsn))
+  
   if (et<0.0) then
-    et=0.0
+    et = 0.0
   endif
 
-  etwt = (et*3600.0*hrs)/lam
+  ! Units now become g/s/m2  
+  etwt = et/lambda
+  ! Multiplies by daylight hours in seconds and gets g/m2
+  etwt = etwt*3600*hrs
+  ! 1g of water is 10^-6 m3 so etwt is g/m2 but also 10^-6 m
+  ! or 10^-3 mm
   etmm = etwt/1000.0
-  if (etmm>0.0) then
-    if (etmm/hrs>maxevap)  maxevap = etmm/hrs
-  endif
+
 else
   et = 0.0
   etwt = 0.0
@@ -291,12 +314,13 @@ endif
 
 ! Evaporation,like evapotranspiration but without
 ! the canopy conductance resistance factor
-ee = (s*rn + rho*1.012*canga*vpd)/(s + gam)
-eemm = (ee*3600.0*hrs)/(lam*1000.0)
+ee = (Delta*rn + ra*cp*canga*vp_d)/(Delta + gamma)
+! Evaporation in mm as above
+eemm = (ee*3600.0*hrs)/(lambda*1000.0)
 
 if (ee<0.0) then
-  ee=0.0
-  eemm=0.0
+  ee = 0.0
+  eemm = 0.0
 endif
 
 end subroutine evapotranspiration

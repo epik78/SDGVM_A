@@ -123,7 +123,7 @@ real(dp) :: qdir,qdiff,q(12),pet(12) ! internal, for getwet
   IF (ssp%iseas==1) THEN ! If sowing depends on precipitation         
       ! Run four-month sums of precip/PET ratios 
       ! mnth is an output variable holding the first month of the wet season
-      CALL getwet(hrs,q,mnth,pet,nn1)      
+      CALL getwet(hrs,q,mnth,pet,nn1,year,thty_dys)      
       ! Find the first julian day of the first wet-season month which is wet enough
       ! All crops will be sown on the same day in this case
       DO day=1,no_days(year,mnth,thty_dys)
@@ -350,7 +350,7 @@ end subroutine seasonality
 !                         getwet :: crops                              !
 !                     ---------------------                            !
 !                                                                      !
-! subroutine getwet(hrs,q,wet,pet,nn1)                                 !
+! subroutine getwet(hrs,q,wet,pet,nn1,year,thty_dys)                   !
 !                                                                      !
 !----------------------------------------------------------------------!!
 !> @brief 
@@ -377,16 +377,17 @@ end subroutine seasonality
 !! @author LLT,EPK 
 !! @date Oct 2016
 !----------------------------------------------------------------------!!
-subroutine getwet(hrs,q,wet,pet,nn1)
+subroutine getwet(hrs,q,wet,pet,nn1,year,thty_dys)
 !**********************************************************************!    
 implicit none
 real(dp) :: hrs(12),q(12),pet(12)
-integer  :: wet,nn1
+integer  :: wet,nn1,year,dday,thty_dys
 
 real(dp) :: ht,windspeed,canga,t,rh,rn
 real(dp) :: svp,vpd,lam,rho,s,gam,ee,eemm,petsum(12)
 integer :: m    
 !*----------------------------------------------------------------------*
+  
   ! Always has this value in sdgvm0.f
   ht=25.1338
   ! In m/s
@@ -398,9 +399,11 @@ integer :: m
   do m=1,12
     if (ssp%emnthprc(m,nn1+1)<=0.0d0) CYCLE     
     t=ssp%emnthtmp(m,nn1+1); rh=ssp%mnthhum(m);
+    
     rn = 0.96d0*(q(m)*1000000.0d0/4.0d0 + 208.0d0 + 6.0d0*t)
     rn = rn*0.52d0
-
+    ! To be used with the new evt
+    !dday = no_day(year,m,15,thty_dys)
     !*----------------------------------------------------------------------*
     !* Penman-Monteith equation for evapotranspiration.                     *
     !* Units of ET = W/m2  (CHECK) N.B. Conductances in moles.              *
