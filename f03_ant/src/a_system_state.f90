@@ -23,6 +23,7 @@ module compartments
   type StemComps
     integer :: no
     type(ValAge), dimension(max_stem_comps,2) :: c
+    type(ValAge), dimension(max_stem_comps,2) :: n
     real(dp), dimension(2) :: tot
 !    contains
 !      function total()
@@ -33,6 +34,7 @@ module compartments
   type RootComps
     integer :: no
     type(ValAge), dimension(max_root_comps,2) :: c
+    type(ValAge), dimension(max_root_comps,2) :: n
     real(dp), dimension(2) :: tot
 !    contains
 !      function total()
@@ -43,6 +45,7 @@ module compartments
   type LaiComps
     integer :: no
     type(ValAge), dimension(max_lai_comps,2) :: c
+    type(ValAge), dimension(max_lai_comps,2) :: n
     real(dp), dimension(2) :: tot
 !    contains
 !      function total()
@@ -53,6 +56,7 @@ module compartments
   type SumaComps
     integer :: no
     type(ValAge), dimension(max_suma_comps) :: c
+    type(ValAge), dimension(max_suma_comps) :: n
     real(dp) :: tot
 !    contains
 !      function total()

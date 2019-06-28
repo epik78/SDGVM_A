@@ -1,5 +1,4 @@
 function [locs,mm] = read_sd_outs(str1,dir_data)
-
     %Goes in the directory where the SDGVM run is
     cd(dir_data)
     
@@ -22,7 +21,7 @@ function [locs,mm] = read_sd_outs(str1,dir_data)
     
     %Assign data to image
     for i=1:size(locz,2)     
-        mm(locz(1,i),locz(2,i))=dat(i);
+        mm(locz(1,i),locz(2,i))=dat(i,end);
     end
 
     mm(mm==0) = NaN;

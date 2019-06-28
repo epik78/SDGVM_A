@@ -42,7 +42,7 @@ real(dp), dimension(max_cohorts) :: lai,evt,sresp,rof,gpp,ftprop, &
 
 real(dp) :: ca,resp,soilt,grassrc,tmp(12,31),prc(12,31), &
  hum(12,31),cld(12),latdel,londel,leafper,stemper,rootper,avnpp,avgpp, &
- avlai,co20,co2f,avrof,infix,avnppst,sum1,oscale,yield,co2(max_years), &
+ avlai,co20,co2f,avrof,avnppst,sum1,oscale,yield,co2(max_years), &
  sumcov,maxcov,maxbio,barerc,avtrn,firec,f2,f3,avevt,sumbio,kd, &
  kx,stembio,rootbio,sum,lutab(255,100),awl(4),nci(4),gsn,eemm,etmm,rn, &
  xlatf,xlatres,xlon0,xlonres,lat_lon(max_sites,2),nleaf,canga,s1in,  &
@@ -61,11 +61,11 @@ real(dp), dimension(30,max_cohorts) :: ce_t,ce_rh
 
 integer :: sites,yr0,yrf,snp_no,snpshts(max_years),snp_year,day,d, &
  isite,du,otagsn(max_outputs),otagsnft(max_outputs),nft,nat_map(8), &
- ilanduse,siteno,iofn, iofnft,iofngft,nomdos,i,j,k,ft,site,year, &
+ ilanduse,siteno,iofn,iofnft,iofngft,nomdos,i,j,k,ft,site,year, &
  covind,bioind,xyearf,mnth,fireres,xyear0,omav(max_outputs),year_out, &
  luse(max_years),fno,iyear,oymd,oymdft,iargc,yearind(max_years),idum, &
  outyears,thty_dys,xlatresn,xlonresn,day_mnth,yearv(max_years),nyears, &
- narg,seed1,seed2,seed3,spinl,xseed1,site_dat,site_out, &
+ narg,seed1,seed2,seed3,site_dat,site_out, &
  country_id,outyears1,outyears2,budo(max_cohorts),seno(max_cohorts), &
  sit_grd,co,nn1,fid,kode,imap,par_loops,gs_type,nco
 
@@ -336,15 +336,16 @@ do site=1,sites
     site_dat = site_dat + 1
        
 !----------------------------------------------------------------------!
-! in b_output_methods
+! in b_output_methods                                                  ! 
 ! Write lat & lon for output files.                                    !
 !----------------------------------------------------------------------!
     call write_lat_lon(ssp%lat,ssp%lon)
 
 !----------------------------------------------------------------------!
+! in soil_methods                                                      !
 ! Computation of hydrological parameters.                              !
 !----------------------------------------------------------------------!
-    call wsparam(l_b_and_c,nupc,awl,kd,kx,nci,infix,adp,topsl,sfc,sw,sswc)
+    call wsparam(l_b_and_c,nupc,awl,kd,kx,nci,nfix,adp,topsl,sfc,sw,sswc)
 
 !----------------------------------------------------------------------!
 ! in data.f90
@@ -387,8 +388,6 @@ do site=1,sites
       ssp%iyear = iyear
       !The calendar year
       ssp%year = year
-           
-      nfix = infix
 
 !----------------------------------------------------------------------!
 ! in data.f90
@@ -490,8 +489,9 @@ do site=1,sites
         ssp%mnth = mnth
 !----------------------------------------------------------------------!
 ! in soil_methods.f90                                                  !
+! Moved at the bottom of the daily loop for daily time step            !
 !----------------------------------------------------------------------!
-        call sum_soilcn(soilc,soiln,minn)
+        !call sum_soilcn(soilc,soiln,minn)
 
 !======================================================================!
 !                         DAILY LOOP                                   !
@@ -547,8 +547,10 @@ do site=1,sites
               if(pft(ft)%fert(1)<=0.0) then
                 nfix=0.5
               else
+                ! Converts from kg/ha to g/m2
                 nfix=0.1*pft(ft)%fert(1)          
               endIF
+              nfix=0.5
               
 !----------------------------------------------------------------------!
 ! in state_methods.f90                                                 !
@@ -606,10 +608,11 @@ do site=1,sites
      leaflitter,stemnpp(ft),rootnpp(ft),resp_s,resp_r,resp_m,check_closure)
                                         
               ssv(ft)%slc = ssv(ft)%slc + leaflitter*ssv(ft)%cov
-
-              call soil_dynamics2(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
+              
+              call soil_dynamics3(pet,prc(mnth,day),tmp(mnth,day),f2/10.0,f3/10.0,nfix, &
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
-    
+              
+              call sum_soilcn(soilc,soiln,minn)    
 !----------------------------------------------------------------------!
               swc = ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
               swf = (swc-sw(1)-sw(2)-sw(3)-sw(4))/(sfc(1)+sfc(2)+sfc(3)+sfc(4)-sw(1)-sw(2)-sw(3)-sw(4))

@@ -2,14 +2,14 @@ clear;
 
 dirr{1} = pwd;
 %Where the run is
-dirr{2} = '/fastdata-sharc/sm1epk/SDGVM_runs/fin_outs3';
+dirr{2} = '/fastdata-sharc/sm1epk/SDGVM_glob_run/fin_outs';
 %Where the map print is
 dirr{3} = '/data/sm1epk/EW/weath_emp_model/codes/iter_1';
 
 
-fig_id = [2];
+fig_id = [1];
 
-crid = [1];
+crid = [1,2,3,4,5,6,7,8];
     
 countr = {'Argentina','Brazil','Canada','China','Ethiopia','France','Germany',...
   'India','Italy','Kenya','Mexico','Indonesia','Nigeria','Russian Federation',...

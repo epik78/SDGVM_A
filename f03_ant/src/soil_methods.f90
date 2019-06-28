@@ -47,7 +47,6 @@ if ((ssp%iyear == 1).and.(ssp%mnth == 1).and.(ssp%day == 1)) then
   lch = 0.0
 endif
 
-
 mpet(co) = mpet(co) + pet
 mprc(co) = mprc(co) + prc
 mtmp(co) = mtmp(co) + tmp
@@ -91,7 +90,198 @@ endif
 end subroutine soil_dynamics2
 
 
+!**********************************************************************!
+!                                                                      !
+!                       soil_dynamics3 :: soil_methods                 !
+!                       ------------------------------                 !
+!                                                                      !
+! SUBROUTINE soil_dynamics3(pet,prc,tmp,flow1,flow2,nfix,              !
+! nci,sresp,lch,ca,site,year,yr0,yrf,speedc,ft,check_closure)          !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief                                                              !
+!! @details                                                            ! 
+!! @author ML,EPK                                                      !
+!! @date Jan 2017                                                      ! 
+!----------------------------------------------------------------------!
+subroutine soil_dynamics3(pet,prc,tmp,flow1,flow2,nfix, &
+ nci,sresp,lch,ca,site,year,yr0,yrf,speedc,ft,check_closure)
+!**********************************************************************!
+real(dp) :: pet,prc,tmp,flow1,flow2,ca,nfix,sresp,lch,nci(4)
+integer :: yr0,yrf,year,site,ft
+logical :: speedc,check_closure
+!----------------------------------------------------------------------!
 
+  call soil_dynamics4(pet,prc,tmp,&
+    ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4),&
+    flow1,flow2,nfix,nci,sresp,lch,ca,site,year,yr0,yrf,speedc,ft,check_closure)
+
+end subroutine soil_dynamics3
+
+
+
+
+
+!**********************************************************************!
+!                                                                      !
+!                       soil_dynamics :: soil_methods                  !
+!                       ------------------------------                 !
+!                                                                      !
+! SUBROUTINE soil_dynamics(avmnpet,avmnppt,avmnt,h2o,flow1,flow2,nfix, !
+! nci,srespm,lchm,ca,site,year,yr0,yrf,speedc,ft,check_closure)        !
+!                                                                      !
+!----------------------------------------------------------------------!
+subroutine soil_dynamics4(avmnpet,avmnppt,avmnt,h2o,flow1,flow2,nfix, &
+ nci,srespm,lchm,ca,site,year,yr0,yrf,speedc,ft,check_closure)
+!**********************************************************************!
+real(dp) :: ts,tc,avmnpet,avmnppt,avmnt,h2o,flow1,flow2,slnr,rlnr,scl,&
+ rcl,ca,nfix,srespm,lchm,nci(4),ar,fms,fmr,tm,cal,cap,cas,csp,csa,&
+ kr(8),ml,al,c(8),c0(8),n0(8),n(8),slc,rlc,sln,scn,t0,t1,fl(14),&
+ minn(3),xft,total_carbon,old_total_carbon,sum,sumc,sumn
+integer :: ij,yr0,yrf,year,site,ft,i
+logical :: speedc,check_closure
+!----------------------------------------------------------------------!
+
+!----------------------------------------------------------------------!
+! Check carbon closure.
+!----------------------------------------------------------------------!
+  if (check_closure) call SUM_CARBON(old_total_carbon,.false.)
+!----------------------------------------------------------------------!
+
+! Percentage of sand and clay
+ts = ssp%sand
+tc = ssp%clay
+
+! Should be surface litter carbon, root litter carbon and surface litter nitrogen.
+! They are multiplied by 360 because later they will be multiplied by delta 1/360
+! rlc and sln are not even plugged in
+slc = ssv(ft)%slc*360.0/ssv(ft)%cov
+rlc = ssv(ft)%rlc*360.0/ssv(ft)%cov
+sln = ssv(ft)%sln*360.0/ssv(ft)%cov
+
+ssv(ft)%slc = 0.0
+ssv(ft)%rlc = 0.0
+ssv(ft)%sln = 0.0
+
+sum = 0.0
+sumc = 0.0
+sumn = 0.0
+
+do i=1,8
+  ! Sum of carbon pools
+  sum = sum + ssv(ft)%c(i)
+  ! Initial values of carbon pools
+  c0(i) = ssv(ft)%c(i)
+  ! Initial values of nitrogen pools
+  n0(i) = ssv(ft)%n(i)
+  ! Sum of carbon pools
+  sumc = sumc + ssv(ft)%c(i)
+  ! Sum of nitrogen pools
+  sumn = sumn + ssv(ft)%n(i)
+enddo
+
+! Adds litter and root carbon to the total carbon
+sum = sum + slc/360.0 + rlc/360.0
+
+do i=1,3
+  minn(i) = ssv(ft)%minn(i)
+enddo
+
+! Calculate lignin to nitrogen ratios based on the C02 concentration.
+! Lignin is hard to decompose.slnr for shoots and rlnr for roots.Could find something better
+slnr = 0.18*ca + 2.7
+rlnr = 0.18*ca + 2.7
+
+! Fractions of lignin content for surface material
+scl = 0.12 
+! Fractions of lignin content for root material
+rcl = 0.35
+
+! Ratio of surface carbon to nitrogen.
+if (slc*sln>1e-6) then
+  scn = slc/sln
+else
+  scn = 10.0
+endif
+
+!----------------------------------------------------------------------!
+! Compute monthly accumulation of values required by century.          !
+!----------------------------------------------------------------------!
+call SETCENPAR2(ts,tc,avmnpet,avmnppt,avmnt,h2o,flow2,slnr, &
+ rlnr,ar,fms,fmr,scl,rcl,tm,xft,cal,cap,cas,csp,csa,kr)
+
+!----------------------------------------------------------------------!
+! Using century model compute the new carbon and nitrogen pools.       !
+!----------------------------------------------------------------------!
+
+t0 = 0.0
+t1 = 1.0/360.0
+srespm = 0.0
+lchm = 0.0
+
+if (c0(1)+c0(2)+c0(3)+c0(4)+c0(5)+c0(6)+c0(7)+c0(8)>1000.0) then
+  call cdyn(c0,c,t0,t1,slc,rlc,scl,rcl,kr,csa,cas,csp,cap, &
+ cal,fms,fmr,xft,srespm,lchm,year,yr0,yrf,speedc)
+
+  call flows(c0,c,t0,t1,fl,slc,rlc,scl,rcl,fms,fmr,csa,csp,cas,cap)
+
+  call ndyn(n0,n,minn,t0,t1,fl,c,flow1,flow2,ts,ml,al,scn,nfix,cal,nci,site)
+
+    if (srespm<0.0) then
+    write(*,*) 'Error: soil respiration negative'
+    write(*,'(''c : '',8f8.0)') c0
+    write(*,'(''slc rlc scl rcl : '',4f8.3)') slc,rlc,scl,rcl
+    stop
+  endif
+
+else
+  do ij=1,8
+    c(ij) = c0(ij)
+    n(ij) = n0(ij)
+  enddo
+
+  c(1) = c(1) + (1.0 - fms)*slc/360.0
+  c(2) = c(2) + (1.0 - fmr)*rlc/360.0
+  c(5) = c(5) + fms*slc/360.0
+  c(6) = c(6) + fmr*rlc/360.0
+
+  srespm = 0.0
+  lchm = 0.0
+
+endif
+
+!CALL SOILCLOSS(c0,soilcl,scl,kr,rcl,xft,cal)
+
+sumc = 0.0
+sumn = 0.0
+do i=1,8
+  sum = sum - c(i)
+  ssv(ft)%c(i) = c(i)
+  ssv(ft)%n(i) = n(i)
+  sumc = sumc + c(i)
+  sumn = sumn + n(i)
+enddo
+
+do i=1,3
+  ssv(ft)%minn(i) = minn(i)
+enddo
+
+!----------------------------------------------------------------------!
+! Check carbon closure.
+!----------------------------------------------------------------------!
+if (check_closure) then
+  call SUM_CARBON(total_carbon,.false.)
+  if (abs(total_carbon-old_total_carbon+(srespm+lchm)*ssv(ft)%cov) > &
+ 1.0e-1) then
+    write(*,*) 'Breach of carbon closure in DOLYMONTH:',&
+ total_carbon+(srespm+lchm)*ssv(ft)%cov-old_total_carbon,' g/m^2.'
+    write(*,*) &
+ total_carbon,srespm*ssv(ft)%cov,lchm*ssv(ft)%cov,old_total_carbon
+    stop
+  endif
+endif
+
+end subroutine soil_dynamics4
 
 
 !**********************************************************************!
@@ -352,6 +542,102 @@ sw(4) = 10.0
 end subroutine fcap
 
 
+!**********************************************************************!
+!                                                                      !
+!                        setcenpar2 :: soil_methods                    !
+!                        -------------------------                     !
+!                                                                      !
+! SETCENPAR sets the century parameters.                               !
+!                                                                      !
+! subroutine setcenpar2(ts,tc,pet,ppt,tmp,h2o,flow2,slnr,rlnr,ar,fms,  !
+! fmr,scl,rcl,tm,ft,cal,cap,cas,csp,csa,kr)                            !
+!                                                                      !
+!                                                                      !
+!----------------------------------------------------------------------!
+subroutine setcenpar2(ts,tc,pet,ppt,tmp,h2o,flow2,slnr,rlnr,ar,fms, &
+ fmr,scl,rcl,tm,ft,cal,cap,cas,csp,csa,kr)
+!**********************************************************************!
+real(dp) :: ts,tc,pet,ppt,tmp,h2o,flow2,slnr,rlnr,ar,fms,fmr,scl,rcl,&
+ tm,ft,cal,cap,cas,csp,csa,kr(8),smois,lcs,lcr,t
+!----------------------------------------------------------------------!
+
+! OLD method of calculating effect of soil moisture on soil resp
+! From Fig. 2 of Parton et al., 1993
+! The h2o could probably be just the top soil layer and that 0.2
+! has no place there
+
+!if (pet>0.0) then
+!  smois = (h2o + ppt*1.0)/pet*0.2
+!else
+!  smois = 1000.0
+!endif
+!ar =-eow(smois)*eot(tmp)
+
+ar =-eow2(msv%mv_soil2g)*eot(tmp)
+if (tmp<0.0) ar = 0.0
+
+! Ratio of structural to metabolic material for shoots.
+! Comes from lignin to nitrogen ratio slnr.This shows the
+! fraction of shoots that will be assigned to the active/metabolic/fast
+! pool and the rest to the structural slow.
+! From Eq. 1 of Parton et al., 1993
+fms = 0.99 - 0.018*slnr
+if (fms<0.001)  fms = 0.001
+
+! Ratio of structural to metabolic material for roots.
+! Comes from lignin to nitrogen ratio slnr.This shows the
+! fraction of roots that will be assigned to the active/metabolic/fast
+! pool and the rest to the structural slow.
+! From Eq. 1 of Parton et al., 1993
+fmr = 0.99 - 0.018*rlnr
+if (fmr<0.001)  fmr = 0.001
+
+! The impact of ligning content of structural surface material (Lc)
+! From Eq. 6 of Parton et al., 1993
+lcs = exp(-3.0*scl)
+! The impact of ligning content of structural root material (Lc)
+! From Eq. 6 of Parton et al., 1993
+lcr = exp(-3.0*rcl)
+
+! Fraction of silt plus clay content
+t = 1.0 - ts/100.0
+! Effect of soil texture on active SOM turnover (Tm)
+! From Eq. 5 of Parton et al., 1993
+tm = (1.0 - 0.75*t)
+
+! The fraction of active soil C lost to microbial respiration
+ft = 0.85 - 0.68*t
+! Fraction of active soil C going to leached C
+cal = (flow2/18.0)*(0.01 + 0.04*ts/100.0)
+! The fraction of active soil C allocated to passive pool
+cap = 0.003 + 0.032*tc/100.0
+! The fraction of active soil C allocated to slow pool
+cas = (1.0 - cap - cal - ft)
+! The fraction of slow soil carbon allocated to passive pool
+csp = 0.003 - 0.009*tc/100.0
+! The fraction of slow soil C allocated to active soil pool
+csa = 1.0 - csp - 0.55
+
+! Surface litter structural pool
+kr(1) = 3.9*ar*lcs*tgp%p_kscale
+! Soil litter structural pool
+kr(2) = 4.9*ar*lcr*tgp%p_kscale
+! Soil microbe/active pool
+kr(3) = 7.3*ar*tm*tgp%p_kscale
+! Surface microbe/active pool
+kr(4) = 6.0*ar*tgp%p_kscale
+! Surface litter metabolic pool
+kr(5) = 14.8*ar*tgp%p_kscale
+! Root litter metabolic pool
+kr(6) = 18.5*ar*tgp%p_kscale
+! Slow soil pool
+kr(7) = 0.2*ar*tgp%p_kscale
+! Passive soil pool
+kr(8) = 0.0045*ar*tgp%p_kscale
+
+end subroutine setcenpar2
+
+
 
 
 
@@ -483,14 +769,20 @@ ccal = cal
 cfms = fms
 cfmr = fmr
 cft = ft
+
+! c0 Initial values of carbon pools
+! kr the rates for each carbon pool including the combined effect
+! of soil moisture and temperature
 do i=1,8
   c1(i)=c0(i)
   ckr(i) = kr(i)
 enddo
 
+! t0 = 1 t1 = 1/360
 t01 = t0
 t11 = t1
 
+! First derivative
 call DER(c1,cp)
 call PDER(cjac)
 
@@ -507,6 +799,9 @@ if (speedc) then
   enddo
 endif
 
+! c1 goes in as the C in each carbon pool before the step and comes
+! as the C in each carbon pool after the step.sresp is the soil
+! respiration and lch the leeched C
 call diffeq(t01,t11,c1,cp,cjac,sresp,lch)
 
 end subroutine cdyn
@@ -531,9 +826,11 @@ subroutine diffeq(t01,t11,c1,cp,cjac,sresp,lch)
 real(dp) :: t01,t11,c1(8),cp(10),cjac(10,10),secder(10),delt,sresp,lch
 integer  :: i,j
 !----------------------------------------------------------------------!
- 
+
+! delta. t01 = 0  
 delt = t11 - t01
- 
+
+! Finds the new C for each pool from 1st and 2nd derivatives 
 do i=1,8
   secder(i) = 0.0
   do j=1,8
@@ -548,7 +845,10 @@ do j=1,10
   secder(9) = secder(9) + cjac(9,j)*cp(j)
   secder(10) = secder(10) + cjac(10,j)*cp(j)
 enddo
+
+! Soil respiration
 sresp = sresp + cp(9)*delt + secder(9)*delt**2.0/2.0
+! Leeched C
 lch = lch + cp(10)*delt + secder(10)*delt**2.0/2.0
 
 end subroutine diffeq
@@ -577,6 +877,11 @@ common /cder/cslc,crlc,cscl,crcl,ckr,ccsa,ccas,ccsp,ccap,ccal,cfms,&
  cfmr,cft
 !----------------------------------------------------------------------!
 
+! The derivatives for each of the 8 carbon pools.9 is all the respiration
+! pooled together and 10 the leeched C.These will be multiplied by delta
+! in diffeq (1/360) and added to each pool
+
+! The rate of C in/out of 1st pool.Fig.1 Parton et al., 1993
 f(1) = cslc*(1.0 - cfms) + ckr(1)*c(1)
 f(2) = crlc*(1.0 - cfmr) + ckr(2)*c(2)
 f(3) =-0.45*(1.0 - crcl)*ckr(2)*c(2) - 0.45*ckr(6)*c(6) - &
@@ -588,9 +893,12 @@ f(6) = crlc*cfmr + ckr(6)*c(6)
 f(7) =-0.7*cscl*ckr(1)*c(1) - 0.4*ckr(4)*c(4) - &
  0.7*crcl*ckr(2)*c(2) - ckr(3)*c(3)*ccas + ckr(7)*c(7)
 f(8) =-ckr(3)*c(3)*ccap - ckr(7)*c(7)*ccsp + ckr(8)*c(8)
+! The rate for soil respiration coming from all pools. For the 1st one e.g
+! 0.3*cscl+(1-cslc)*0.6 = (0.6-0.3*cscl).cscl is here the lignin fraction.
 f(9) =-(0.6-0.3*cscl)*ckr(1)*c(1) - (0.55-0.25*crcl)*ckr(2)*c(2) - &
  cft*ckr(3)*c(3) - 0.6*ckr(4)*c(4) - 0.6*ckr(5)*c(5) - &
- 0.55*ckr(6)*c(6) - 0.55*ckr(7)*c(7) - 0.55*ckr(8)*c(8) 
+ 0.55*ckr(6)*c(6) - 0.55*ckr(7)*c(7) - 0.55*ckr(8)*c(8)
+! The rate for leached coming from the soil microbe pool 
 f(10) = -ckr(3)*c(3)*ccal
 
 end subroutine der
@@ -773,9 +1081,13 @@ enddo
 if (flow1<1.0e-10) flow1 = 0.0
 if (flow2<1.0e-10) flow2 = 0.0
 
+! flow1 and flow2 from hydrology routine.Water flow in cm for 15-30
+! and 30-45 cm soil.ts is the % of sand
 f1 = flow1*(0.2 + 0.7*ts/100.0)/18.0
 f2 = flow2*(0.2 + 0.7*ts/100.0)/18.0
+
 nin = nfix
+
 if (abs(f1-f2)<1.0e-6) then
   f2 = f2 - 0.001
 endif
@@ -988,17 +1300,29 @@ real(dp) :: c0(8),c(8),t0,t1,fl(14),slc,rlc,scl,rcl,fms,fmr,csa,csp,&
 !----------------------------------------------------------------------!
 
 delt = t1 - t0
+! Carbon flows
 
+! From surface litter to 1st pool
 fl(1) = slc*(1.0 - fms)*delt
+! From surface litter to 5th pool
 fl(2) = slc*fms*delt
+! From root litter to 2nd pool
 fl(7) = rlc*(1.0 - fmr)*delt
+! From loot litter to 6th pool
 fl(8) = rlc*fmr*delt
+! From 1st pool to 7th pool.Without resp
 fl(3) = (c0(1) - c(1) + fl(1))*scl
+! From 1st pool to 4th pool.Without resp
 fl(4) = (c0(1) - c(1) + fl(1))*(1.0 - scl)
+! From 5th pool to 4th pool.Without resp
 fl(5) = c0(5) - c(5) + fl(2)
+! From 2nd pool to 7th pool.Without resp
 fl(9) = (c0(2) - c(2) + fl(7))*rcl
+! From 2nd pool to 3rd pool.Without resp
 fl(10) = (c0(2) - c(2) + fl(7))*(1.0 - rcl)
+! From 6th pool to 3rd pool.Without resp
 fl(11) = c0(6) - c(6) + fl(8)
+! From 4th pool to 7th pool.Without resp
 fl(6) = c0(4) - c(4) + 0.4*fl(4) + 0.4*fl(5)
 
 !----------------------------------------------------------------------!
@@ -1009,6 +1333,7 @@ fl(12) = (c0(3) - c(3) + 0.45*fl(10) + 0.45*fl(11) + &
  0.45*(c0(8) - c(8) + csp*(c0(7) - c(7) + 0.7*fl(3) + &
  0.4*fl(6) + 0.7*fl(9))))/(1.0 - csa*cas - 0.45*csp*cas - 0.45*cap)
 fl(13) = c0(7) - c(7) + 0.7*fl(3) + 0.4*fl(6) + 0.7*fl(9) + cas*fl(12)
+! From 8th pool to 3rd pool
 fl(14) = c0(8) - c(8) + csp*fl(13) + cap*fl(12)
 
 !     WRITE(*,*) 'c1',c(1)-c0(1),fl(1)-fl(3)-fl(4)
@@ -1153,17 +1478,19 @@ end function ncratsm
 
 
 
-
 !**********************************************************************!
 !                                                                      !
-!                       eot :: soil_methods                            !
-!                       -------------------                            !
+!                          eot :: soil methods                         !
+!                    -------------------------------                   !
 !                                                                      !
-! Calculates the effect of temperature used to calculate the           !
+! function eot(x)                                                      !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Calculates the effect of temperature used to calculate the   !
 ! decay rate multiplier 'a'.                                           !
-!                                                                      !
-! real(dp) function eot(x)                                             !
-!                                                                      !
+!! @details Piecewise function from Fig.2 Parton et al.,1993           ! 
+!! @author Mark Lomas                                                  ! 
+!! @date May,2017                                                      !
 !----------------------------------------------------------------------!
 real(dp) function eot(x)
 !**********************************************************************!
@@ -1191,17 +1518,19 @@ end function eot
 
 
 
-
 !**********************************************************************!
 !                                                                      !
-!                       eot1 :: soil_methods                           !
-!                       --------------------                           !
+!                          eot1 :: soil methods                        !
+!                    -------------------------------                   !
 !                                                                      !
-! Calculates the effect of temperature used to calculate the           !
+! function eot1(x)                                                     !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Calculates the effect of temperature used to calculate the   !
 ! decay rate multiplier 'a'.                                           !
-!                                                                      !
-! real(dp) function eot1(x)                                            !
-!                                                                      !
+!! @details Very close ot the piecewise of eot function                ! 
+!! @author Mark Lomas                                                  ! 
+!! @date May,2017                                                      !
 !----------------------------------------------------------------------!
 real(dp) function eot1(x)
 !**********************************************************************!
@@ -1286,6 +1615,44 @@ if (eow1<0.0001)  eow1 = 0.0001
 
 end function eow1
 
+
+!**********************************************************************!
+!                                                                      !
+!                          eow2 :: soil methods                        !
+!                    -------------------------------                   !
+!                                                                      !
+! function eow2(x)                                                     !
+!                                                                      !
+!----------------------------------------------------------------------!
+!> @brief Calculates the effect of water used to calculate the         !
+! decay rate multiplier 'a'.                                           !
+!! @details EPK changed this when the soil respiration step changed to !
+!! daily.Stepwise function of soil moisture that gives the effect of   !
+!! water in soil respiration                                   
+!! @author EPK                                                         !
+!! @date June,2019                                                     !
+!----------------------------------------------------------------------!
+real(dp) function eow2(x)
+!**********************************************************************!
+real(dp) :: x
+! Starting point of respiration effect for soil moisture x=0
+real(dp), parameter :: st = 0.1
+! For x=m1 to x=m2 the effect is 1.m2>m1
+real(dp), parameter :: m1 = 0.50
+real(dp), parameter :: m2 = 0.75
+! The effect drops to en at x=1;
+real(dp), parameter :: en = 0.4
+!----------------------------------------------------------------------!
+
+if (x<m1) then
+    eow2 = st + ((1-st)/m1)*x
+elseif (x<m2) then
+    eow2 = 1
+else
+    eow2 = 1 + ((en-1)/(1-m2))*(x-m2)
+endif
+
+end function eow2
 
 
 
