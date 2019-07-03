@@ -613,6 +613,7 @@ do site=1,sites
      nci,sresp(ft),lch(ft),ca,site,year,yr0,yrf,speedc,ft,check_closure)
               
               call sum_soilcn(soilc,soiln,minn)    
+              
 !----------------------------------------------------------------------!
               swc = ssv(ft)%soil_h2o(1)+ssv(ft)%soil_h2o(2)+ssv(ft)%soil_h2o(3)+ssv(ft)%soil_h2o(4)
               swf = (swc-sw(1)-sw(2)-sw(3)-sw(4))/(sfc(1)+sfc(2)+sfc(3)+sfc(4)-sw(1)-sw(2)-sw(3)-sw(4))
